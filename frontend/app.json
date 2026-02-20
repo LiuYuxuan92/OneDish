@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "简家厨",
+    "slug": "jianjiachu",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jianjiachu.app"
+    },
+    "android": {
+      "package": "com.jianjiachu.app",
+      "permissions": []
+    }
+  }
+}
