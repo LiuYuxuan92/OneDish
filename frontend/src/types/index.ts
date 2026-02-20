@@ -232,12 +232,14 @@ export type MainTabParamList = {
 export type HomeStackParamList = {
   Home: undefined;
   RecipeDetail: { recipeId: string };
+  CookingMode: { recipeId: string; babyAgeMonths: number };
 };
 
 export type RecipeStackParamList = {
   RecipeList: { ingredient?: string; type?: string; difficulty?: string } | undefined;
   RecipeDetail: { recipeId: string; babyAgeMonths?: number };
   Search: undefined;
+  CookingMode: { recipeId: string; babyAgeMonths: number };
 };
 
 export type PlanStackParamList = {
@@ -246,6 +248,7 @@ export type PlanStackParamList = {
   ShoppingListDetail: { listId: string };
   ShoppingListHistory: undefined;
   RecipeDetail: { recipeId: string };
+  CookingMode: { recipeId: string; babyAgeMonths: number };
 };
 
 export type ProfileStackParamList = {

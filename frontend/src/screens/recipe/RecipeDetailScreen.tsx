@@ -641,10 +641,27 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
 
         {/* 时间线视图 */}
         {activeTab === 'timeline' && (
-          <TimelineView
-            timeline={timelineData}
-            isLoading={isTimelineLoading}
-          />
+          <>
+            <TimelineView
+              timeline={timelineData}
+              isLoading={isTimelineLoading}
+            />
+            <TouchableOpacity
+              style={[
+                styles.startCookingButton,
+                !timelineData && styles.startCookingButtonDisabled,
+              ]}
+              onPress={() => {
+                navigation.navigate('CookingMode', {
+                  recipeId,
+                  babyAgeMonths: selectedBabyAge ?? 12,
+                });
+              }}
+              disabled={!timelineData}
+            >
+              <Text style={styles.startCookingButtonText}>🍳 开始烹饪（同步模式）</Text>
+            </TouchableOpacity>
+          </>
         )}
 
         {/* 烹饪小贴士 */}
@@ -1457,6 +1474,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   footerButtonText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  startCookingButton: {
+    backgroundColor: '#FF7043',
+    borderRadius: BorderRadius.lg,
+    margin: 16,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  startCookingButtonDisabled: {
+    opacity: 0.5,
+  },
+  startCookingButtonText: {
+    color: '#FFFFFF',
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
   },

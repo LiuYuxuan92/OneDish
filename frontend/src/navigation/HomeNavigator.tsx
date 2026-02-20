@@ -5,6 +5,7 @@ import { HomeScreen } from '../screens/home/HomeScreen';
 import { RecipeDetailScreen } from '../screens/recipe/RecipeDetailScreen';
 import { useTheme } from '../contexts/ThemeContext';
 import { buildHeaderOptions } from './headerOptions';
+import { CookingModeScreen } from '../screens/recipe/CookingModeScreen';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 
@@ -23,6 +24,11 @@ export function HomeNavigator() {
         name="RecipeDetail"
         component={RecipeDetailScreen}
         options={{ title: '菜谱详情' }}
+      />
+      <Stack.Screen
+        name="CookingMode"
+        component={CookingModeScreen}
+        options={{ headerShown: false, gestureEnabled: false }}
       />
     </Stack.Navigator>
   );

@@ -8,6 +8,7 @@ import { TouchableOpacity, StyleSheet } from 'react-native';
 import { SearchIcon } from '../components/common/Icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { buildHeaderOptions } from './headerOptions';
+import { CookingModeScreen } from '../screens/recipe/CookingModeScreen';
 
 const Stack = createNativeStackNavigator<RecipeStackParamList>();
 
@@ -44,6 +45,11 @@ export function RecipeNavigator() {
         name="Search"
         component={SearchScreen}
         options={{ title: '搜索菜谱' }}
+      />
+      <Stack.Screen
+        name="CookingMode"
+        component={CookingModeScreen}
+        options={{ headerShown: false, gestureEnabled: false }}
       />
     </Stack.Navigator>
   );
