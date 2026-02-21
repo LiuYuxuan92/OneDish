@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDailyRecipe } from '../../hooks/useRecipes';
+import { useBabyStageByAge } from '../../hooks/useBabyStages';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from '../../types';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
@@ -21,6 +22,8 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 export function HomeScreen({ navigation }: Props) {
   // 获取今日推荐（一菜两吃配对）
   const { data: dailyData, isLoading, error, refetch } = useDailyRecipe({ type: 'dinner' });
+  // 获取宝宝阶段信息（默认9个月）
+  const { data: currentStage } = useBabyStageByAge(9);
   const recipe = dailyData?.recipe;
   const [refreshing, setRefreshing] = useState(false);
 
@@ -149,6 +152,32 @@ export function HomeScreen({ navigation }: Props) {
             </View>
           )}
         </View>
+
+        {/* 今日辅食建议 */}
+        {currentStage && (
+          <View style={styles.babySection}>
+            <View style={styles.babySectionHeader}>
+              <Text style={styles.babySectionTitle}>🍼 今日辅食建议</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.babyCard}
+              onPress={() => {
+                const parentNav = navigation.getParent() as any;
+                parentNav?.navigate('Recipes', { screen: 'BabyStages' });
+              }}
+              activeOpacity={0.85}
+            >
+              <View style={styles.babyCardLeft}>
+                <Text style={styles.babyCardStage}>{currentStage.name} · {currentStage.age_range}</Text>
+                <Text style={styles.babyCardNutrients}>
+                  重点营养：{currentStage.key_nutrients.slice(0, 3).join(' · ')}
+                </Text>
+                <Text style={styles.babyCardHint}>点击查看适合的食谱 ›</Text>
+              </View>
+              <Text style={styles.babyCardArrow}>›</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* 核心食材快速入口 */}
         <View style={styles.section}>
@@ -511,4 +540,33 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.text.tertiary,
   },
+  babySection: { marginTop: 8, marginBottom: 8 },
+  babySectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+  babySectionTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
+  babyCard: {
+    marginHorizontal: 16,
+    backgroundColor: '#FFF8E1',
+    borderRadius: 14,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF7043',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+  },
+  babyCardLeft: { flex: 1 },
+  babyCardStage: { fontSize: 15, fontWeight: '700', color: '#1A1A1A', marginBottom: 4 },
+  babyCardNutrients: { fontSize: 13, color: '#FF9800', marginBottom: 4 },
+  babyCardHint: { fontSize: 12, color: '#888' },
+  babyCardArrow: { fontSize: 22, color: '#CCC', marginLeft: 8 },
 });
