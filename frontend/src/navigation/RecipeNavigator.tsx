@@ -9,6 +9,8 @@ import { SearchIcon } from '../components/common/Icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { buildHeaderOptions } from './headerOptions';
 import { CookingModeScreen } from '../screens/recipe/CookingModeScreen';
+import { BabyStageScreen } from '../screens/recipe/BabyStageScreen';
+import { StageDetailScreen } from '../screens/recipe/StageDetailScreen';
 
 const Stack = createNativeStackNavigator<RecipeStackParamList>();
 
@@ -50,6 +52,16 @@ export function RecipeNavigator() {
         name="CookingMode"
         component={CookingModeScreen}
         options={{ headerShown: false, gestureEnabled: false }}
+      />
+      <Stack.Screen
+        name="BabyStages"
+        component={BabyStageScreen}
+        options={{ title: '辅食体系' }}
+      />
+      <Stack.Screen
+        name="StageDetail"
+        component={StageDetailScreen}
+        options={({ route }) => ({ title: route.params.stageName })}
       />
     </Stack.Navigator>
   );

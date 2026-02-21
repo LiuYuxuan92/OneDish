@@ -92,6 +92,11 @@ export interface RecipeSummary {
   image_url?: string[];
   prep_time: number;
   source?: 'local' | 'tianxing' | 'ai';
+  stage?: string;
+  first_intro?: boolean;
+  key_nutrients?: string[];
+  scene_tags?: string[];
+  texture_level?: string;
 }
 
 // 餐食计划类型
@@ -240,6 +245,8 @@ export type RecipeStackParamList = {
   RecipeDetail: { recipeId: string; babyAgeMonths?: number };
   Search: undefined;
   CookingMode: { recipeId: string; babyAgeMonths: number };
+  BabyStages: undefined;
+  StageDetail: { stage: BabyStageKey; stageName: string };
 };
 
 export type PlanStackParamList = {
@@ -259,3 +266,23 @@ export type ProfileStackParamList = {
   Inventory: undefined;
   MyRecipes: undefined;
 };
+
+// ============================================
+// 宝宝阶段类型
+// ============================================
+
+export type BabyStageKey = '6-8m' | '8-10m' | '10-12m' | '12-18m' | '18-24m' | '24-36m';
+
+export interface BabyStageGuide {
+  stage: BabyStageKey;
+  name: string;
+  age_range: string;
+  age_min: number;
+  age_max: number;
+  can_eat: string[];
+  cannot_eat: string[];
+  texture_desc: string;
+  meal_frequency: string;
+  key_nutrients: string[];
+  guide_tips: string[];
+}
