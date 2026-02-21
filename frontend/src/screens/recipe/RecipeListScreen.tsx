@@ -351,6 +351,18 @@ export function RecipeListScreen({ navigation, route }: Props) {
         )}
       </View>
 
+      {/* 辅食体系入口 Banner */}
+      <TouchableOpacity
+        style={styles.babyBanner}
+        onPress={() => navigation.navigate('BabyStages')}
+      >
+        <View style={styles.babyBannerContent}>
+          <Text style={styles.babyBannerText}>🍼 辅食体系</Text>
+          <Text style={styles.babyBannerSub}>按月龄浏览，找到最适合的食谱</Text>
+        </View>
+        <Text style={styles.babyBannerArrow}>›</Text>
+      </TouchableOpacity>
+
       {/* 菜谱列表 */}
       <ScrollView
         ref={scrollViewRef}
@@ -576,6 +588,21 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     textAlign: 'center',
   },
+  babyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF8E1',
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 14,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF7043',
+  },
+  babyBannerContent: { flex: 1 },
+  babyBannerText: { fontSize: 15, fontWeight: '700', color: '#1A1A1A' },
+  babyBannerSub: { fontSize: 12, color: '#888', marginTop: 2 },
+  babyBannerArrow: { fontSize: 20, color: '#CCC', marginLeft: 8 },
   recipeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
