@@ -23,6 +23,7 @@ import pairingRoutes from './routes/pairing.routes';
 import ingredientInventoryRoutes from './routes/ingredientInventory.routes';
 import searchRoutes from './routes/search.routes';
 import userRecipeRoutes from './routes/userRecipe.routes';
+import babyStageRoutes from './routes/baby-stage.routes';
 import { RecipeTransformService } from './services/recipe-transform.service';
 
 const app = express();
@@ -55,6 +56,7 @@ app.use('/api/v1/pairing', pairingRoutes);
 app.use('/api/v1/ingredient-inventory', ingredientInventoryRoutes);
 app.use('/api/v1/search', searchRoutes);
 app.use('/api/v1/user-recipes', userRecipeRoutes);
+app.use('/api/v1/baby-stages', babyStageRoutes);
 
 // 404 处理
 app.use((_req, res) => {
