@@ -5,6 +5,7 @@ import { AISearchAdapter, AIProvider } from '../adapters/ai.adapter';
 import { logger } from '../utils/logger';
 import { quotaService } from './quota.service';
 import { metricsService } from './metrics.service';
+import { redisService } from './redis.service';
 
 export interface ResolveRequest {
   query: string;
@@ -39,12 +40,12 @@ export class SearchService {
 
     const cacheKey = quotaService.makeSearchCacheKey(query, req.context, tier);
     const cacheStart = Date.now();
-    const cached = this.cache.get(cacheKey);
-    if (!req.force_refresh && cached && cached.expiresAt > Date.now()) {
+    const cached = req.force_refresh ? null : await this.getCache(cacheKey);
+    if (cached) {
       metricsService.inc('onedish_cache_hit_total', { layer: 'l2', key_type: 'search' });
       metricsService.observe('onedish_cache_latency_ms', { layer: 'l2', op: 'get' }, Date.now() - cacheStart);
       metricsService.inc('onedish_router_route_total', { route_used: 'cache', intent_type: req.intent_type || 'unknown' });
-      return { items: cached.data, route_used: 'cache', cache_hit: true, degrade_level: 0 };
+      return { items: cached, route_used: 'cache', cache_hit: true, degrade_level: 0 };
     }
     metricsService.inc('onedish_cache_miss_total', { layer: 'l2', key_type: 'search' });
     metricsService.observe('onedish_cache_latency_ms', { layer: 'l2', op: 'get' }, Date.now() - cacheStart);
@@ -52,11 +53,11 @@ export class SearchService {
     const localResults = await this.localAdapter.search(query);
     if (localResults.length > 0) {
       metricsService.inc('onedish_router_route_total', { route_used: 'local', intent_type: req.intent_type || 'unknown' });
-      this.setCache(cacheKey, localResults, 30 * 60 * 1000);
+      await this.setCache(cacheKey, localResults, 30 * 60 * 1000);
       return { items: localResults, route_used: 'local', cache_hit: false, degrade_level: 0 };
     }
 
-    const webQuota = quotaService.consume(userId, tier, 'web');
+    const webQuota = await quotaService.consume(userId, tier, 'web');
     if (webQuota.allowed) {
       const webStart = Date.now();
       const webResults = await this.tianxingAdapter.search(query);
@@ -66,14 +67,14 @@ export class SearchService {
       metricsService.observe('onedish_upstream_latency_ms', { provider: 'tianxing', endpoint: 'search' }, Date.now() - webStart);
       if (webResults.length > 0) {
         metricsService.inc('onedish_router_route_total', { route_used: 'web', intent_type: req.intent_type || 'unknown' });
-        this.setCache(cacheKey, webResults, 10 * 60 * 1000);
+        await this.setCache(cacheKey, webResults, 10 * 60 * 1000);
         return { items: webResults, route_used: 'web', cache_hit: false, degrade_level: 0 };
       }
     } else {
       metricsService.inc('onedish_quota_reject_total', { level: webQuota.reason || 'user', user_tier: tier, type: 'web' });
     }
 
-    const aiQuota = quotaService.consume(userId, tier, 'ai');
+    const aiQuota = await quotaService.consume(userId, tier, 'ai');
     if (aiQuota.allowed) {
       const aiStart = Date.now();
       const aiResults = await this.aiAdapter.search(query);
@@ -83,7 +84,7 @@ export class SearchService {
       metricsService.observe('onedish_upstream_latency_ms', { provider: 'ai', endpoint: 'search' }, Date.now() - aiStart);
       if (aiResults.length > 0) {
         metricsService.inc('onedish_router_route_total', { route_used: 'ai', intent_type: req.intent_type || 'unknown' });
-        this.setCache(cacheKey, aiResults, 30 * 60 * 1000);
+        await this.setCache(cacheKey, aiResults, 30 * 60 * 1000);
         return { items: aiResults, route_used: 'ai', cache_hit: false, degrade_level: 0 };
       }
     } else {
@@ -122,8 +123,30 @@ export class SearchService {
     this.aiAdapter = new AISearchAdapter(provider);
   }
 
-  private setCache(key: string, data: SearchResult[], ttlMs: number): void {
-    this.cache.set(key, { data, expiresAt: Date.now() + ttlMs });
+  private async getCache(key: string): Promise<SearchResult[] | null> {
+    const redisCached = await redisService.getJson<SearchResult[]>(key);
+    if (redisCached) {
+      return redisCached;
+    }
+
+    const memoryCached = this.cache.get(key);
+    if (memoryCached && memoryCached.expiresAt > Date.now()) {
+      return memoryCached.data;
+    }
+
+    if (memoryCached && memoryCached.expiresAt <= Date.now()) {
+      this.cache.delete(key);
+    }
+
+    return null;
+  }
+
+  private async setCache(key: string, data: SearchResult[], ttlMs: number): Promise<void> {
+    const ttlSec = Math.max(1, Math.floor(ttlMs / 1000));
+    const redisSet = await redisService.setJson(key, data, ttlSec);
+    if (!redisSet) {
+      this.cache.set(key, { data, expiresAt: Date.now() + ttlMs });
+    }
     metricsService.observe('onedish_cache_latency_ms', { layer: 'l2', op: 'set' }, 1);
   }
 }

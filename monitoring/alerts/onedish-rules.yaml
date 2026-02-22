@@ -1,0 +1,61 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: onedish-alert-rules
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: onedish
+spec:
+  groups:
+    - name: onedish.slo
+      rules:
+        - alert: OneDishHigh5xxRate
+          expr: |
+            (
+              sum(rate(onedish_http_requests_total{status=~"5.."}[5m]))
+              /
+              clamp_min(sum(rate(onedish_http_requests_total[5m])), 1)
+            ) > 0.05
+          for: 10m
+          labels:
+            severity: critical
+            service: onedish-backend
+          annotations:
+            summary: "OneDish 5xx rate is too high"
+            description: "5xx 占比连续 10 分钟超过 5%，请检查后端可用性。"
+
+        - alert: OneDishHighP95Latency
+          expr: |
+            histogram_quantile(
+              0.95,
+              sum by (le) (rate(onedish_http_request_duration_ms_bucket[5m]))
+            ) > 800
+          for: 10m
+          labels:
+            severity: warning
+            service: onedish-backend
+          annotations:
+            summary: "OneDish P95 latency is high"
+            description: "P95 请求耗时连续 10 分钟超过 800ms。"
+
+        - alert: OneDishTooMany429
+          expr: |
+            sum(rate(onedish_http_requests_total{status="429"}[5m])) > 0.5
+          for: 10m
+          labels:
+            severity: warning
+            service: onedish-backend
+          annotations:
+            summary: "OneDish 429 is elevated"
+            description: "429 速率连续 10 分钟高于 0.5 req/s，可能存在配额/限流异常。"
+
+        - alert: OneDishQuotaBudgetPressure
+          expr: |
+            sum(increase(onedish_quota_reject_total{level="global"}[15m])) > 20
+          for: 10m
+          labels:
+            severity: warning
+            service: onedish-backend
+          annotations:
+            summary: "OneDish global quota budget near exhaustion"
+            description: "过去 1 小时预算消耗超过 80%，请检查流量峰值与上游成本。"

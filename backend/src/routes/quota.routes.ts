@@ -4,14 +4,14 @@ import { quotaService } from '../services/quota.service';
 
 const router = Router();
 
-router.get('/status', optionalAuth, (req, res) => {
+router.get('/status', optionalAuth, async (req, res) => {
   const userId = req.user?.userId || req.user?.id || `anon_${req.ip || 'unknown'}`;
   const tier = (req.user?.tier as 'free' | 'pro' | 'enterprise') || 'free';
 
   res.json({
     code: 200,
     message: 'success',
-    data: quotaService.getStatus(userId, tier),
+    data: await quotaService.getStatus(userId, tier),
   });
 });
 

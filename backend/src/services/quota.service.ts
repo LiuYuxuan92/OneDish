@@ -1,5 +1,6 @@
 import { createHash } from 'crypto';
 import { redisKeyService, QuotaType } from './redis-key.service';
+import { redisService } from './redis.service';
 
 type Tier = 'free' | 'pro' | 'enterprise';
 
@@ -31,9 +32,44 @@ class QuotaService {
     ai_limit: Number(process.env.QUOTA_GLOBAL_AI_LIMIT || 50000),
   };
 
-  getStatus(userId: string, tier: Tier = 'free') {
+  async getStatus(userId: string, tier: Tier = 'free') {
     const dateKey = this.currentDateKey();
+    const tierConf = this.tierQuota[tier] || this.tierQuota.free;
+    const resetAt = this.nextUtcMidnight();
+
+    const redisUserWeb = `${redisKeyService.userQuota(userId, dateKey)}:web`;
+    const redisUserAi = `${redisKeyService.userQuota(userId, dateKey)}:ai`;
+    const redisGlobalWeb = `${redisKeyService.globalQuota(dateKey)}:web`;
+    const redisGlobalAi = `${redisKeyService.globalQuota(dateKey)}:ai`;
+
+    const values = await redisService.mget([redisUserWeb, redisUserAi, redisGlobalWeb, redisGlobalAi]);
+
+    if (values) {
+      return {
+        user_id: userId,
+        tier,
+        daily: {
+          web_used: Number(values[0] || 0),
+          web_limit: tierConf.web_limit,
+          ai_used: Number(values[1] || 0),
+          ai_limit: tierConf.ai_limit,
+        },
+        global_daily: {
+          web_used: Number(values[2] || 0),
+          web_limit: this.globalLimit.web_limit,
+          ai_used: Number(values[3] || 0),
+          ai_limit: this.globalLimit.ai_limit,
+        },
+        reset_at: resetAt,
+        redis_keys: {
+          user_quota: redisKeyService.userQuota(userId, dateKey),
+          global_quota: redisKeyService.globalQuota(dateKey),
+        },
+      };
+    }
+
     const record = this.getOrInitUserQuota(userId, tier, dateKey);
+    const global = this.getOrInitGlobalQuota(dateKey);
     return {
       user_id: userId,
       tier,
@@ -43,6 +79,12 @@ class QuotaService {
         ai_used: record.ai_used,
         ai_limit: record.ai_limit,
       },
+      global_daily: {
+        web_used: global.web_used,
+        web_limit: this.globalLimit.web_limit,
+        ai_used: global.ai_used,
+        ai_limit: this.globalLimit.ai_limit,
+      },
       reset_at: record.reset_at,
       redis_keys: {
         user_quota: redisKeyService.userQuota(userId, dateKey),
@@ -51,21 +93,38 @@ class QuotaService {
     };
   }
 
-  consume(userId: string, tier: Tier, type: QuotaType): { allowed: boolean; reason?: 'user' | 'global'; retry_after_sec?: number } {
+  async consume(userId: string, tier: Tier, type: QuotaType): Promise<{ allowed: boolean; reason?: 'user' | 'global'; retry_after_sec?: number }> {
     const dateKey = this.currentDateKey();
+    const retryAfter = this.secondsToMidnight();
+
+    const userKey = `${redisKeyService.userQuota(userId, dateKey)}:${type}`;
+    const globalKey = `${redisKeyService.globalQuota(dateKey)}:${type}`;
+
+    const tierConf = this.tierQuota[tier] || this.tierQuota.free;
+    const userLimit = type === 'web' ? tierConf.web_limit : tierConf.ai_limit;
+    const globalLimit = type === 'web' ? this.globalLimit.web_limit : this.globalLimit.ai_limit;
+
+    if (redisService.isRedisReady() || process.env.REDIS_ENABLED !== 'false') {
+      const redisResult = await redisService.evalQuotaConsume([userKey, globalKey], [userLimit, globalLimit], retryAfter);
+      if (redisResult.allowed) {
+        return { allowed: true };
+      }
+      if (redisService.isRedisReady()) {
+        return { allowed: false, reason: redisResult.reason || 'global', retry_after_sec: retryAfter };
+      }
+    }
+
     const user = this.getOrInitUserQuota(userId, tier, dateKey);
     const global = this.getOrInitGlobalQuota(dateKey);
 
-    const userLimit = type === 'web' ? user.web_limit : user.ai_limit;
     const userUsed = type === 'web' ? user.web_used : user.ai_used;
     if (userUsed >= userLimit) {
-      return { allowed: false, reason: 'user', retry_after_sec: this.secondsToMidnight() };
+      return { allowed: false, reason: 'user', retry_after_sec: retryAfter };
     }
 
-    const globalLimit = type === 'web' ? this.globalLimit.web_limit : this.globalLimit.ai_limit;
     const globalUsed = type === 'web' ? global.web_used : global.ai_used;
     if (globalUsed >= globalLimit) {
-      return { allowed: false, reason: 'global', retry_after_sec: this.secondsToMidnight() };
+      return { allowed: false, reason: 'global', retry_after_sec: retryAfter };
     }
 
     if (type === 'web') {
