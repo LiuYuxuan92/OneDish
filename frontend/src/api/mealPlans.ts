@@ -48,6 +48,7 @@ export interface SmartRecommendationItem {
   baby_suitable: boolean;
   switch_hint: string;
   explain?: string[];
+  ranking_reasons?: Array<{ code: string; label: string; contribution: number; detail?: string }>;
   vs_last?: string;
 }
 

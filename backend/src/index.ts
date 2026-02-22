@@ -29,6 +29,7 @@ import babyStageRoutes from './routes/baby-stage.routes';
 import quotaRoutes from './routes/quota.routes';
 import metricsRoutes from './routes/metrics.routes';
 import { RecipeTransformService } from './services/recipe-transform.service';
+import { MealPlanService } from './services/mealPlan.service';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -85,6 +86,8 @@ app.listen(PORT, () => {
   setInterval(() => {
     RecipeTransformService.cleanExpiredCache();
   }, 24 * 60 * 60 * 1000);
+
+  MealPlanService.startRecommendationLearningScheduler();
 });
 
 export default app;

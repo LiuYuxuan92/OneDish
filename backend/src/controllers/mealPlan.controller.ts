@@ -222,4 +222,24 @@ export class MealPlanController {
       return res.status(500).json({ code: 500, message: '获取反馈统计失败', data: null });
     }
   };
+
+  recomputeRecommendationLearning = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const { meal_types } = req.body || {};
+      const mealTypes = Array.isArray(meal_types)
+        ? meal_types.filter((x: string) => ['breakfast', 'lunch', 'dinner'].includes(String(x)))
+        : undefined;
+
+      const result = await this.mealPlanService.recomputeRecommendationLearning({
+        userIds: [userId],
+        mealTypes,
+      });
+
+      return res.json({ code: 200, message: '重算完成', data: result });
+    } catch (error) {
+      logger.error('Failed to recompute recommendation learning', { error });
+      return res.status(500).json({ code: 500, message: '推荐学习重算失败', data: null });
+    }
+  };
 }

@@ -29,5 +29,6 @@ router.post('/recommendations', mealPlanController.getSmartRecommendations);
 // 推荐反馈闭环 V1
 router.post('/recommendations/feedback', mealPlanController.submitRecommendationFeedback);
 router.get('/recommendations/feedback/stats', mealPlanController.getRecommendationFeedbackStats);
+router.post('/recommendations/recompute', mealPlanController.recomputeRecommendationLearning);
 
 export default router;

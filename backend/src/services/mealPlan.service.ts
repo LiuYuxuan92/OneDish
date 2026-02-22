@@ -1,14 +1,12 @@
 import { db, generateUUID } from '../config/database';
 import { isIngredientSuitable } from '../utils/recipe-pairing-engine';
 
-// 菜谱池接口 - 用于存储每个餐别的可用菜谱
 interface RecipePool {
   breakfast: any[];
   lunch: any[];
   dinner: any[];
 }
 
-// 菜谱项接口
 interface RecipeItem {
   id: string;
   name: string;
@@ -32,15 +30,35 @@ interface RecommendationFeedbackInput {
   event_time?: string;
 }
 
-export class MealPlanService {
-  // 缓存的菜谱池（5分钟更新一次）
-  private recipePoolCache: RecipePool | null = null;
-  private poolCacheTime: number = 0;
-  private readonly POOL_CACHE_TTL = 5 * 60 * 1000; // 5分钟
+type MealType = 'breakfast' | 'lunch' | 'dinner';
 
-  /**
-   * 获取一周计划
-   */
+interface RankingWeights {
+  time: number;
+  inventory: number;
+  baby: number;
+  feedback: number;
+}
+
+export class MealPlanService {
+  private recipePoolCache: RecipePool | null = null;
+  private poolCacheTime = 0;
+  private readonly POOL_CACHE_TTL = 5 * 60 * 1000;
+
+  private readonly defaultRankingWeights: RankingWeights = {
+    time: this.readWeight('REC_RANK_V2_WEIGHT_TIME', 0.30),
+    inventory: this.readWeight('REC_RANK_V2_WEIGHT_INVENTORY', 0.25),
+    baby: this.readWeight('REC_RANK_V2_WEIGHT_BABY', 0.20),
+    feedback: this.readWeight('REC_RANK_V2_WEIGHT_FEEDBACK', 0.25),
+  };
+
+  private readonly mealWeightConfig: Record<MealType, RankingWeights> = {
+    breakfast: this.readMealWeights('breakfast'),
+    lunch: this.readMealWeights('lunch'),
+    dinner: this.readMealWeights('dinner'),
+  };
+
+  private lastRecommendationSnapshot = new Map<string, { A?: any; B?: any; at: string }>();
+
   async getWeeklyPlan(userId: string, startDate?: string, endDate?: string) {
     const start = startDate || this.getMonday(new Date());
     const end = endDate || this.getSunday(new Date());
@@ -60,18 +78,14 @@ export class MealPlanService {
       .orderBy('meal_plans.plan_date')
       .orderBy('meal_plans.meal_type');
 
-    // 组织数据 - 前端期望格式: { [date]: { [meal_type]: MealPlan } }
     const result: Record<string, any> = {};
 
     for (const plan of plans) {
-      // SQLite 返回的日期可能是字符串，需要处理
       const date = typeof plan.plan_date === 'string'
         ? plan.plan_date.split('T')[0]
         : plan.plan_date.toISOString().split('T')[0];
 
-      if (!result[date]) {
-        result[date] = {};
-      }
+      if (!result[date]) result[date] = {};
 
       result[date][plan.meal_type] = {
         id: plan.id,
@@ -81,16 +95,9 @@ export class MealPlanService {
       };
     }
 
-    return {
-      start_date: start,
-      end_date: end,
-      plans: result,
-    };
+    return { start_date: start, end_date: end, plans: result };
   }
 
-  /**
-   * 设置餐食计划
-   */
   async setMealPlan(data: {
     user_id: string;
     plan_date: string;
@@ -101,13 +108,7 @@ export class MealPlanService {
     const { user_id, plan_date, meal_type, recipe_id, servings } = data;
 
     const [plan] = await db('meal_plans')
-      .insert({
-        user_id,
-        plan_date,
-        meal_type,
-        recipe_id,
-        servings,
-      })
+      .insert({ user_id, plan_date, meal_type, recipe_id, servings })
       .onConflict(['user_id', 'plan_date', 'meal_type'])
       .merge()
       .returning('*');
@@ -115,24 +116,10 @@ export class MealPlanService {
     return plan;
   }
 
-  /**
-   * 删除餐食计划
-   */
   async deleteMealPlan(userId: string, planId: string) {
-    await db('meal_plans')
-      .where('id', planId)
-      .where('user_id', userId)
-      .delete();
+    await db('meal_plans').where('id', planId).where('user_id', userId).delete();
   }
 
-  /**
-   * 生成一周智能计划（重构版）
-   * 特性：
-   * 1. 使用菜谱池确保高效随机选择
-   * 2. 防重复：新菜谱与当前菜谱不同
-   * 3. 每餐独立随机，互不影响
-   * 4. 尽量避免同一天内菜谱重复
-   */
   async generateWeeklyPlan(userId: string, startDate: string, preferences?: any) {
     const start = new Date(startDate);
     const end = new Date(start);
@@ -142,22 +129,17 @@ export class MealPlanService {
     const babyAgeMonths = preferences?.baby_age_months || null;
     const excludeIngredients: string[] = preferences?.exclude_ingredients || [];
 
-    // 1. 获取当前用户的现有计划（用于防重复）
     const existingPlans = await this.getExistingPlans(userId, start, end);
-
-    // 2. 获取菜谱池（带缓存）
     const recipePool = await this.getRecipePool(maxPrepTime);
 
-    // 3. 如有宝宝月龄，过滤不适宜菜谱
     if (babyAgeMonths) {
       for (const mealType of ['breakfast', 'lunch', 'dinner'] as const) {
-        recipePool[mealType] = recipePool[mealType].filter(recipe => {
-          return this.scoreRecipeForBaby(recipe, babyAgeMonths, excludeIngredients) >= 0;
-        });
+        recipePool[mealType] = recipePool[mealType].filter(recipe => (
+          this.scoreRecipeForBaby(recipe, babyAgeMonths, excludeIngredients) >= 0
+        ));
       }
     }
 
-    // 4. 为7天生成计划，跟踪营养均衡
     const plans: Record<string, any> = {};
     const usedRecipeIds = new Set<string>();
     const nutritionTracker = { protein: 0, vegetable: 0, grain: 0, seafood: 0 };
@@ -166,54 +148,45 @@ export class MealPlanService {
       const date = new Date(start);
       date.setDate(date.getDate() + i);
       const dateStr = date.toISOString().split('T')[0];
-
       plans[dateStr] = {};
 
-      const mealTypes: Array<'breakfast' | 'lunch' | 'dinner'> = ['breakfast', 'lunch', 'dinner'];
-
-      for (const mealType of mealTypes) {
+      for (const mealType of ['breakfast', 'lunch', 'dinner'] as const) {
         const currentRecipeId = existingPlans[dateStr]?.[mealType];
-
-        // 优先选择食材复用度高的菜谱
         let pool = recipePool[mealType];
-        if (i > 0) {
-          pool = this.sortByIngredientOverlap(pool, plans, dateStr);
-        }
+        if (i > 0) pool = this.sortByIngredientOverlap(pool, plans, dateStr);
 
         const recipe = this.selectRandomRecipe(pool, currentRecipeId, usedRecipeIds);
+        if (!recipe) continue;
 
-        if (recipe) {
-          const isBabySuitable = babyAgeMonths
-            ? this.scoreRecipeForBaby(recipe, babyAgeMonths, excludeIngredients) > 0
-            : false;
+        const isBabySuitable = babyAgeMonths
+          ? this.scoreRecipeForBaby(recipe, babyAgeMonths, excludeIngredients) > 0
+          : false;
+        const nutritionScore = this.calculateNutritionBalance(recipe, nutritionTracker);
 
-          const nutritionScore = this.calculateNutritionBalance(recipe, nutritionTracker);
+        plans[dateStr][mealType] = {
+          id: recipe.id,
+          name: recipe.name,
+          image_url: recipe.image_url,
+          prep_time: recipe.prep_time,
+          is_baby_suitable: isBabySuitable,
+          nutrition_score: nutritionScore,
+        };
 
-          plans[dateStr][mealType] = {
-            id: recipe.id,
-            name: recipe.name,
-            image_url: recipe.image_url,
-            prep_time: recipe.prep_time,
+        usedRecipeIds.add(recipe.id);
+
+        await db('meal_plans')
+          .insert({
+            user_id: userId,
+            plan_date: dateStr,
+            meal_type: mealType,
+            recipe_id: recipe.id,
+            servings: 2,
+            baby_age_months: babyAgeMonths,
             is_baby_suitable: isBabySuitable,
-            nutrition_score: nutritionScore,
-          };
-
-          usedRecipeIds.add(recipe.id);
-
-          await db('meal_plans')
-            .insert({
-              user_id: userId,
-              plan_date: dateStr,
-              meal_type: mealType,
-              recipe_id: recipe.id,
-              servings: 2,
-              baby_age_months: babyAgeMonths,
-              is_baby_suitable: isBabySuitable,
-              nutrition_score: JSON.stringify(nutritionScore),
-            })
-            .onConflict(['user_id', 'plan_date', 'meal_type'])
-            .merge();
-        }
+            nutrition_score: JSON.stringify(nutritionScore),
+          })
+          .onConflict(['user_id', 'plan_date', 'meal_type'])
+          .merge();
       }
     }
 
@@ -224,10 +197,6 @@ export class MealPlanService {
     };
   }
 
-  /**
-   * 评估菜谱对宝宝的适宜性
-   * 返回 -1 表示不适宜，0 表示中等，1 表示适宜
-   */
   private scoreRecipeForBaby(recipe: any, babyAgeMonths: number, excludeIngredients: string[]): number {
     try {
       const adultVersion = typeof recipe.adult_version === 'string'
@@ -237,15 +206,9 @@ export class MealPlanService {
       if (!adultVersion?.ingredients) return 0;
 
       for (const ing of adultVersion.ingredients) {
-        // 检查排除食材
-        if (excludeIngredients.some(ex => ing.name.includes(ex))) {
-          return -1;
-        }
-        // 检查月龄适宜性
+        if (excludeIngredients.some(ex => ing.name.includes(ex))) return -1;
         const suitability = isIngredientSuitable(ing.name, babyAgeMonths);
-        if (!suitability.suitable && suitability.minAge && suitability.minAge > babyAgeMonths + 6) {
-          return -1;
-        }
+        if (!suitability.suitable && suitability.minAge && suitability.minAge > babyAgeMonths + 6) return -1;
       }
       return 1;
     } catch {
@@ -253,50 +216,28 @@ export class MealPlanService {
     }
   }
 
-  /**
-   * 计算营养均衡评分
-   */
   private calculateNutritionBalance(
     recipe: any,
     tracker: { protein: number; vegetable: number; grain: number; seafood: number }
-  ): { protein: number; vegetable: number; grain: number; seafood: number } {
+  ) {
     try {
-      const adultVersion = typeof recipe.adult_version === 'string'
-        ? JSON.parse(recipe.adult_version)
-        : recipe.adult_version;
-
+      const adultVersion = typeof recipe.adult_version === 'string' ? JSON.parse(recipe.adult_version) : recipe.adult_version;
       if (!adultVersion?.ingredients) return { ...tracker };
 
       for (const ing of adultVersion.ingredients) {
         const name = ing.name;
-        if (['肉', '鸡', '鸭', '牛', '猪', '羊', '蛋', '豆腐'].some(k => name.includes(k))) {
-          tracker.protein++;
-        }
-        if (['菜', '萝卜', '番茄', '白菜', '青椒', '菠菜', '西兰花'].some(k => name.includes(k))) {
-          tracker.vegetable++;
-        }
-        if (['米', '面', '粉', '饭', '馒头', '面条'].some(k => name.includes(k))) {
-          tracker.grain++;
-        }
-        if (['鱼', '虾', '蟹', '海'].some(k => name.includes(k))) {
-          tracker.seafood++;
-        }
+        if (['肉', '鸡', '鸭', '牛', '猪', '羊', '蛋', '豆腐'].some(k => name.includes(k))) tracker.protein++;
+        if (['菜', '萝卜', '番茄', '白菜', '青椒', '菠菜', '西兰花'].some(k => name.includes(k))) tracker.vegetable++;
+        if (['米', '面', '粉', '饭', '馒头', '面条'].some(k => name.includes(k))) tracker.grain++;
+        if (['鱼', '虾', '蟹', '海'].some(k => name.includes(k))) tracker.seafood++;
       }
     } catch {
-      // ignore parse errors
+      // ignore
     }
     return { ...tracker };
   }
 
-  /**
-   * 按食材复用度排序菜谱池
-   */
-  private sortByIngredientOverlap(
-    pool: any[],
-    plans: Record<string, any>,
-    currentDate: string
-  ): any[] {
-    // 收集前一天的食材
+  private sortByIngredientOverlap(pool: any[], plans: Record<string, any>, currentDate: string): any[] {
     const prevDate = new Date(currentDate);
     prevDate.setDate(prevDate.getDate() - 1);
     const prevDateStr = prevDate.toISOString().split('T')[0];
@@ -305,15 +246,10 @@ export class MealPlanService {
 
     const prevIngredients = new Set<string>();
     for (const meal of Object.values(prevMeals) as any[]) {
-      // 从已选菜谱中提取食材名
-      // 由于此处只有 id/name 信息，简单使用名字中的关键词
-      if (meal?.name) {
-        const chars = meal.name.split('');
-        chars.forEach((c: string) => prevIngredients.add(c));
-      }
+      if (!meal?.name) continue;
+      meal.name.split('').forEach((c: string) => prevIngredients.add(c));
     }
 
-    // 排序：与前一天名字重叠多的排前面（简单启发式）
     return [...pool].sort((a, b) => {
       const overlapA = this.getIngredientOverlap(a.name, prevIngredients);
       const overlapB = this.getIngredientOverlap(b.name, prevIngredients);
@@ -321,207 +257,99 @@ export class MealPlanService {
     });
   }
 
-  /**
-   * 计算食材名称重叠度
-   */
   private getIngredientOverlap(name: string, prevChars: Set<string>): number {
     let overlap = 0;
-    for (const c of name) {
-      if (prevChars.has(c)) overlap++;
-    }
+    for (const c of name) if (prevChars.has(c)) overlap++;
     return overlap;
   }
 
-  /**
-   * 获取用户现有的餐食计划（用于防重复）
-   * 返回格式: { [date]: { [meal_type]: recipe_id } }
-   */
-  private async getExistingPlans(
-    userId: string,
-    start: Date,
-    end: Date
-  ): Promise<Record<string, Record<string, string>>> {
+  private async getExistingPlans(userId: string, start: Date, end: Date) {
     const plans = await db('meal_plans')
       .where('user_id', userId)
-      .whereBetween('plan_date', [
-        start.toISOString().split('T')[0],
-        end.toISOString().split('T')[0],
-      ])
+      .whereBetween('plan_date', [start.toISOString().split('T')[0], end.toISOString().split('T')[0]])
       .select('plan_date', 'meal_type', 'recipe_id');
 
     const result: Record<string, Record<string, string>> = {};
     for (const plan of plans) {
-      const date = typeof plan.plan_date === 'string'
-        ? plan.plan_date.split('T')[0]
-        : plan.plan_date.toISOString().split('T')[0];
-
-      if (!result[date]) {
-        result[date] = {};
-      }
+      const date = typeof plan.plan_date === 'string' ? plan.plan_date.split('T')[0] : plan.plan_date.toISOString().split('T')[0];
+      if (!result[date]) result[date] = {};
       result[date][plan.meal_type] = plan.recipe_id;
     }
-
     return result;
   }
 
-  /**
-   * 获取菜谱池（带缓存）
-   * 将菜谱按类型分组，提高随机选择效率
-   */
   private async getRecipePool(maxPrepTime: number): Promise<RecipePool> {
     const now = Date.now();
+    if (this.recipePoolCache && (now - this.poolCacheTime) < this.POOL_CACHE_TTL) return this.recipePoolCache;
 
-    // 检查缓存是否有效
-    if (this.recipePoolCache && (now - this.poolCacheTime) < this.POOL_CACHE_TTL) {
-      return this.recipePoolCache;
-    }
-
-    // 从数据库获取所有激活的菜谱
-    const recipes = await db('recipes')
-      .where('is_active', true)
-      .where('prep_time', '<=', maxPrepTime)
-      .select('*');
-
-    // 按类型分组
-    const pool: RecipePool = {
-      breakfast: [],
-      lunch: [],
-      dinner: [],
-    };
-
-    // 如果某个类型的菜谱少于3个，则将该菜谱也放入其他类型池中
-    // 这样可以确保即使某类菜谱很少，也能有足够的随机性
+    const recipes = await db('recipes').where('is_active', true).where('prep_time', '<=', maxPrepTime).select('*');
+    const pool: RecipePool = { breakfast: [], lunch: [], dinner: [] };
     const typeCounts: Record<string, number> = { breakfast: 0, lunch: 0, dinner: 0 };
 
     for (const recipe of recipes) {
-      if (pool[recipe.type]) {
-        pool[recipe.type].push(recipe);
-        typeCounts[recipe.type]++;
-      }
+      if (!pool[recipe.type as MealType]) continue;
+      pool[recipe.type as MealType].push(recipe);
+      typeCounts[recipe.type]++;
     }
 
-    // 如果某类型菜谱少于3个，补充其他类型的菜谱
-    if (typeCounts.breakfast < 3) {
-      pool.breakfast.push(...recipes.filter(r => r.type !== 'breakfast'));
-    }
-    if (typeCounts.lunch < 3) {
-      pool.lunch.push(...recipes.filter(r => r.type !== 'lunch'));
-    }
-    if (typeCounts.dinner < 3) {
-      pool.dinner.push(...recipes.filter(r => r.type !== 'dinner'));
-    }
+    if (typeCounts.breakfast < 3) pool.breakfast.push(...recipes.filter(r => r.type !== 'breakfast'));
+    if (typeCounts.lunch < 3) pool.lunch.push(...recipes.filter(r => r.type !== 'lunch'));
+    if (typeCounts.dinner < 3) pool.dinner.push(...recipes.filter(r => r.type !== 'dinner'));
 
-    // 更新缓存
     this.recipePoolCache = pool;
     this.poolCacheTime = now;
-
     return pool;
   }
 
-  /**
-   * 从菜谱池中随机选择一个菜谱
-   * @param pool - 该餐别的菜谱池
-   * @param excludeId - 要排除的菜谱ID（当前显示的）
-   * @param usedIds - 已使用的菜谱ID集合
-   * @returns 随机选择的菜谱，如果没有可用菜谱则返回null
-   */
-  private selectRandomRecipe(
-    pool: any[],
-    excludeId?: string,
-    usedIds?: Set<string>
-  ): RecipeItem | null {
-    if (pool.length === 0) {
-      return null;
-    }
-
-    // 过滤掉要排除的菜谱
+  private selectRandomRecipe(pool: any[], excludeId?: string, usedIds?: Set<string>): RecipeItem | null {
+    if (pool.length === 0) return null;
     let availablePool = pool;
 
     if (excludeId || (usedIds && usedIds.size > 0)) {
-      availablePool = pool.filter(r =>
-        r.id !== excludeId && !usedIds?.has(r.id)
-      );
+      availablePool = pool.filter(r => r.id !== excludeId && !usedIds?.has(r.id));
     }
+    if (availablePool.length === 0 && excludeId) availablePool = pool.filter(r => r.id !== excludeId);
+    if (availablePool.length === 0) availablePool = pool;
 
-    // 如果过滤后没有菜谱了，放宽限制：只排除当前显示的
-    if (availablePool.length === 0 && excludeId) {
-      availablePool = pool.filter(r => r.id !== excludeId);
-    }
-
-    // 如果还是没有菜谱，使用整个池子（总比没有好）
-    if (availablePool.length === 0) {
-      availablePool = pool;
-    }
-
-    // 随机选择
     const randomIndex = Math.floor(Math.random() * availablePool.length);
     return availablePool[randomIndex];
   }
 
-  /**
-   * 标记餐食已完成，并按菜谱用量扣减库存（FIFO）
-   */
   async markMealCompleted(userId: string, planId: string) {
-    // 获取计划
-    const plan = await db('meal_plans')
-      .where('id', planId)
-      .where('user_id', userId)
-      .first();
-
+    const plan = await db('meal_plans').where('id', planId).where('user_id', userId).first();
     if (!plan) throw new Error('餐食计划不存在');
 
-    // 标记为已完成
-    await db('meal_plans')
-      .where('id', planId)
-      .update({ is_completed: true });
+    await db('meal_plans').where('id', planId).update({ is_completed: true });
 
-    // 获取菜谱食材
     const recipe = await db('recipes').where('id', plan.recipe_id).first();
     if (!recipe) return;
 
     let adultVersion;
     try {
-      adultVersion = typeof recipe.adult_version === 'string'
-        ? JSON.parse(recipe.adult_version)
-        : recipe.adult_version;
+      adultVersion = typeof recipe.adult_version === 'string' ? JSON.parse(recipe.adult_version) : recipe.adult_version;
     } catch {
       return;
     }
-
     if (!adultVersion?.ingredients) return;
 
-    // 按食材扣减库存（FIFO：先过期的先扣）
     for (const ing of adultVersion.ingredients) {
       const inventoryItems = await db('ingredient_inventory')
         .where('user_id', userId)
         .where('ingredient_name', ing.name)
         .where('quantity', '>', 0)
-        .orderBy('expiry_date', 'asc') // FIFO
+        .orderBy('expiry_date', 'asc')
         .select('*');
 
-      if (inventoryItems.length > 0) {
-        const item = inventoryItems[0];
-        const newQty = Math.max(0, item.quantity - 1);
-        if (newQty === 0) {
-          await db('ingredient_inventory').where('id', item.id).delete();
-        } else {
-          await db('ingredient_inventory').where('id', item.id).update({ quantity: newQty });
-        }
+      if (inventoryItems.length === 0) continue;
+      const item = inventoryItems[0];
+      const newQty = Math.max(0, item.quantity - 1);
+      if (newQty === 0) {
+        await db('ingredient_inventory').where('id', item.id).delete();
+      } else {
+        await db('ingredient_inventory').where('id', item.id).update({ quantity: newQty });
       }
     }
   }
-
-  /**
-   * 三餐智能推荐 V2（反馈驱动排序，A/B方案）
-   */
-  private readonly rankingWeights = {
-    time: this.readWeight('REC_RANK_V2_WEIGHT_TIME', 0.30),
-    inventory: this.readWeight('REC_RANK_V2_WEIGHT_INVENTORY', 0.25),
-    baby: this.readWeight('REC_RANK_V2_WEIGHT_BABY', 0.20),
-    feedback: this.readWeight('REC_RANK_V2_WEIGHT_FEEDBACK', 0.25),
-  };
-
-  private lastRecommendationSnapshot = new Map<string, { A?: any; B?: any; at: string }>();
 
   private readWeight(envKey: string, fallback: number): number {
     const raw = process.env[envKey];
@@ -530,24 +358,45 @@ export class MealPlanService {
     return parsed;
   }
 
+  private normalizeWeights(raw: RankingWeights): RankingWeights {
+    const total = raw.time + raw.inventory + raw.baby + raw.feedback;
+    if (total <= 0) return { ...this.defaultRankingWeights };
+    return {
+      time: Number((raw.time / total).toFixed(4)),
+      inventory: Number((raw.inventory / total).toFixed(4)),
+      baby: Number((raw.baby / total).toFixed(4)),
+      feedback: Number((raw.feedback / total).toFixed(4)),
+    };
+  }
+
+  private readMealWeights(mealType: MealType): RankingWeights {
+    const p = `REC_RANK_V2_${mealType.toUpperCase()}_WEIGHT_`;
+    const base = this.defaultRankingWeights;
+    return this.normalizeWeights({
+      time: this.readWeight(`${p}TIME`, base.time),
+      inventory: this.readWeight(`${p}INVENTORY`, base.inventory),
+      baby: this.readWeight(`${p}BABY`, base.baby),
+      feedback: this.readWeight(`${p}FEEDBACK`, base.feedback),
+    });
+  }
+
+  private getWeightsForMeal(mealType: MealType): RankingWeights {
+    return this.mealWeightConfig[mealType] || this.defaultRankingWeights;
+  }
+
   async getSmartRecommendations(userId: string, input: SmartRecommendationInput) {
     const mealType = input.meal_type || 'all-day';
     const maxPrepTime = input.max_prep_time || 40;
     const babyAgeMonths = input.baby_age_months;
     const excludeIngredients = input.exclude_ingredients || [];
 
-    const inventoryFromDb = await db('ingredient_inventory')
-      .where('user_id', userId)
-      .where('quantity', '>', 0)
-      .select('ingredient_name');
-
+    const inventoryFromDb = await db('ingredient_inventory').where('user_id', userId).where('quantity', '>', 0).select('ingredient_name');
     const inventorySet = new Set<string>([
       ...(input.inventory || []),
       ...inventoryFromDb.map((row: any) => row.ingredient_name),
     ]);
 
-    const targetMealTypes: Array<'breakfast' | 'lunch' | 'dinner'> =
-      mealType === 'all-day' ? ['breakfast', 'lunch', 'dinner'] : [mealType];
+    const targetMealTypes: MealType[] = mealType === 'all-day' ? ['breakfast', 'lunch', 'dinner'] : [mealType as MealType];
 
     const recipes = await db('recipes')
       .where('is_active', true)
@@ -555,19 +404,16 @@ export class MealPlanService {
       .whereIn('type', targetMealTypes)
       .select('*');
 
-    const grouped: Record<string, any[]> = {
-      breakfast: [],
-      lunch: [],
-      dinner: [],
-    };
+    const grouped: Record<MealType, any[]> = { breakfast: [], lunch: [], dinner: [] };
     for (const r of recipes) {
-      if (grouped[r.type]) grouped[r.type].push(r);
+      if (grouped[r.type as MealType]) grouped[r.type as MealType].push(r);
     }
 
     const recommendations: Record<string, any> = {};
 
     for (const mt of targetMealTypes) {
-      const feedbackStats = await this.getMealFeedbackSignal(userId, mt);
+      const feedbackProfile = await this.getMealFeedbackSignal(userId, mt);
+      const mealWeights = this.getWeightsForMeal(mt);
       const pool = grouped[mt] || [];
       const scored = pool
         .map((recipe) => this.buildCandidateMetaV2(recipe, {
@@ -575,10 +421,11 @@ export class MealPlanService {
           inventorySet,
           excludeIngredients,
           maxPrepTime,
-          feedbackStats,
+          feedbackProfile,
+          mealWeights,
         }))
         .filter((item) => item.score >= 0)
-        .sort((a, b) => b.score - a.score || a.recipe.prep_time - b.recipe.prep_time);
+        .sort((a, b) => b.score - a.score || a.recipe.prep_time - b.recipe.prep_time || a.recipe.id.localeCompare(b.recipe.id));
 
       const pickA = scored[0] || null;
       const pickB = scored.find((x) => x.recipe.id !== pickA?.recipe.id) || null;
@@ -589,11 +436,7 @@ export class MealPlanService {
       const nextB = pickB ? this.toRecommendationItemV2(pickB, lastSnapshot?.B || lastSnapshot?.A) : null;
 
       recommendations[mt] = { A: nextA, B: nextB };
-      this.lastRecommendationSnapshot.set(snapshotKey, {
-        A: nextA,
-        B: nextB,
-        at: new Date().toISOString(),
-      });
+      this.lastRecommendationSnapshot.set(snapshotKey, { A: nextA, B: nextB, at: new Date().toISOString() });
     }
 
     return {
@@ -606,41 +449,94 @@ export class MealPlanService {
       },
       ranking_v2: {
         enabled: true,
-        feedback_window_days: 7,
-        weights: this.rankingWeights,
+        feedback_window_days: { near: 7, long: 30 },
+        weights: {
+          default: this.defaultRankingWeights,
+          by_meal: this.mealWeightConfig,
+        },
       },
       recommendations,
     };
   }
 
-  private async getMealFeedbackSignal(userId: string, mealType: 'breakfast' | 'lunch' | 'dinner') {
-    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  private async getMealFeedbackSignal(userId: string, mealType: MealType) {
+    const profile = await db('recommendation_learning_profiles')
+      .where({ user_id: userId, meal_type: mealType })
+      .first();
+
+    if (profile?.signal_snapshot) {
+      try {
+        const signal = typeof profile.signal_snapshot === 'string'
+          ? JSON.parse(profile.signal_snapshot)
+          : profile.signal_snapshot;
+        return {
+          ...signal,
+          meal_type: mealType,
+          source: 'profile',
+        };
+      } catch {
+        // fallback below
+      }
+    }
+
+    return this.computeFeedbackSignalFromRows(userId, mealType);
+  }
+
+  private async computeFeedbackSignalFromRows(userId: string, mealType: MealType) {
+    const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const rows = await db('recommendation_feedbacks')
       .where('user_id', userId)
       .andWhere('meal_type', mealType)
-      .andWhere('event_time', '>=', since)
-      .select('selected_option', 'reject_reason');
+      .andWhere('event_time', '>=', since30d)
+      .select('selected_option', 'reject_reason', 'event_time');
 
-    const total = rows.length;
-    const accepted = rows.filter((r: any) => r.selected_option === 'A' || r.selected_option === 'B').length;
-    const adoptionRate = total > 0 ? accepted / total : 0;
+    const now = Date.now();
+    let nearWeightTotal = 0;
+    let nearAcceptWeight = 0;
+    let longWeightTotal = 0;
+    let longAcceptWeight = 0;
+    const reasonScores = { time: 0, inventory: 0, baby: 0 };
 
-    const reasons = rows
-      .filter((r: any) => r.selected_option === 'NONE' && r.reject_reason)
-      .map((r: any) => String(r.reject_reason).toLowerCase());
+    for (const row of rows as any[]) {
+      const ts = new Date(row.event_time).getTime();
+      const ageDays = Number.isNaN(ts) ? 999 : Math.max(0, (now - ts) / (24 * 60 * 60 * 1000));
+      if (ageDays > 30) continue;
 
-    const hasTimePressure = reasons.some((x) => /耗时|时间|来不及|太久/.test(x));
-    const hasInventoryIssue = reasons.some((x) => /没食材|缺食材|库存|买菜|食材不够/.test(x));
-    const hasBabyIssue = reasons.some((x) => /宝宝|孩子|太辣|刺激/.test(x));
+      const decayNear = ageDays <= 7 ? 1 : 0;
+      const decayLong = ageDays <= 7 ? 1 : 0.35;
+      const accepted = row.selected_option === 'A' || row.selected_option === 'B';
+
+      nearWeightTotal += decayNear;
+      longWeightTotal += decayLong;
+      if (accepted) {
+        nearAcceptWeight += decayNear;
+        longAcceptWeight += decayLong;
+      }
+
+      if (row.selected_option === 'NONE' && row.reject_reason) {
+        const text = String(row.reject_reason).toLowerCase();
+        if (/耗时|时间|来不及|太久/.test(text)) reasonScores.time += decayLong;
+        if (/没食材|缺食材|库存|买菜|食材不够/.test(text)) reasonScores.inventory += decayLong;
+        if (/宝宝|孩子|太辣|刺激/.test(text)) reasonScores.baby += decayLong;
+      }
+    }
+
+    const adoptionRate7d = nearWeightTotal > 0 ? nearAcceptWeight / nearWeightTotal : 0;
+    const adoptionRate30d = longWeightTotal > 0 ? longAcceptWeight / longWeightTotal : 0;
+    const feedbackScore = Math.min(1, Math.max(0, adoptionRate7d * 0.7 + adoptionRate30d * 0.3));
 
     return {
       meal_type: mealType,
-      total,
-      accepted,
-      adoptionRate,
-      hasTimePressure,
-      hasInventoryIssue,
-      hasBabyIssue,
+      window_7d: { total_weight: Number(nearWeightTotal.toFixed(4)), adoption_rate: Number(adoptionRate7d.toFixed(4)) },
+      window_30d: { total_weight: Number(longWeightTotal.toFixed(4)), adoption_rate: Number(adoptionRate30d.toFixed(4)) },
+      reason_scores: {
+        time: Number(reasonScores.time.toFixed(4)),
+        inventory: Number(reasonScores.inventory.toFixed(4)),
+        baby: Number(reasonScores.baby.toFixed(4)),
+      },
+      feedback_score: Number(feedbackScore.toFixed(4)),
+      total_feedbacks: rows.length,
+      source: 'realtime',
     };
   }
 
@@ -651,17 +547,16 @@ export class MealPlanService {
       inventorySet?: Set<string>;
       excludeIngredients?: string[];
       maxPrepTime: number;
-      feedbackStats: any;
+      feedbackProfile: any;
+      mealWeights: RankingWeights;
     }
   ) {
-    const { babyAgeMonths, inventorySet, excludeIngredients = [], maxPrepTime, feedbackStats } = opts;
+    const { babyAgeMonths, inventorySet, excludeIngredients = [], maxPrepTime, feedbackProfile, mealWeights } = opts;
     let ingredients: string[] = [];
     let babySuitable = true;
 
     try {
-      const adultVersion = typeof recipe.adult_version === 'string'
-        ? JSON.parse(recipe.adult_version)
-        : recipe.adult_version;
+      const adultVersion = typeof recipe.adult_version === 'string' ? JSON.parse(recipe.adult_version) : recipe.adult_version;
       ingredients = (adultVersion?.ingredients || []).map((i: any) => i.name).filter(Boolean);
     } catch {
       ingredients = [];
@@ -669,7 +564,7 @@ export class MealPlanService {
 
     for (const ing of ingredients) {
       if (excludeIngredients.some(ex => ing.includes(ex))) {
-        return { recipe, score: -1, missingIngredients: [], babySuitable: false, switchHint: '命中忌口食材，已过滤', explain: ['命中忌口食材，已剔除'] };
+        return { recipe, score: -1, missingIngredients: [], babySuitable: false, switchHint: '命中忌口食材，已过滤', explain: ['命中忌口食材，已剔除'], ranking_reasons: [] };
       }
       if (babyAgeMonths) {
         const suitability = isIngredientSuitable(ing, babyAgeMonths);
@@ -690,25 +585,31 @@ export class MealPlanService {
       : 0.6;
     const babyScore = babyAgeMonths ? (babySuitable ? 1 : 0.1) : 0.6;
 
-    const feedbackBase = feedbackStats.adoptionRate;
+    const feedbackBase = Number(feedbackProfile.feedback_score || 0);
+    const reasonScores = feedbackProfile.reason_scores || { time: 0, inventory: 0, baby: 0 };
     let feedbackAdjust = 0;
-    if (feedbackStats.hasTimePressure && prep <= 20) feedbackAdjust += 0.15;
-    if (feedbackStats.hasInventoryIssue && missingIngredients.length <= 1) feedbackAdjust += 0.15;
-    if (feedbackStats.hasBabyIssue && babySuitable) feedbackAdjust += 0.15;
+    if (reasonScores.time > 0 && prep <= 20) feedbackAdjust += 0.12;
+    if (reasonScores.inventory > 0 && missingIngredients.length <= 1) feedbackAdjust += 0.12;
+    if (reasonScores.baby > 0 && babySuitable) feedbackAdjust += 0.12;
     const feedbackScore = Math.max(0, Math.min(1, feedbackBase + feedbackAdjust));
 
-    const score =
-      this.rankingWeights.time * timeScore
-      + this.rankingWeights.inventory * inventoryScore
-      + this.rankingWeights.baby * babyScore
-      + this.rankingWeights.feedback * feedbackScore;
+    const scoreParts = {
+      time: mealWeights.time * timeScore,
+      inventory: mealWeights.inventory * inventoryScore,
+      baby: mealWeights.baby * babyScore,
+      feedback: mealWeights.feedback * feedbackScore,
+    };
 
-    const explain: string[] = [];
-    if (feedbackStats.adoptionRate >= 0.6 && feedbackStats.total >= 3) explain.push('近期同餐次采纳率高');
-    if (feedbackStats.hasTimePressure && prep <= 20) explain.push('近期该餐次反馈更偏好快手方案');
-    if (prep <= 20) explain.push('准备时间更短');
-    if (missingIngredients.length <= 1) explain.push('库存覆盖更好，缺口食材更少');
-    if (babyAgeMonths && babySuitable) explain.push('宝宝月龄适配更好');
+    const score = scoreParts.time + scoreParts.inventory + scoreParts.baby + scoreParts.feedback;
+
+    const rankingReasons = [
+      { code: 'time', label: prep <= 20 ? '准备时间更短' : '准备耗时可接受', contribution: scoreParts.time, detail: `约${prep}分钟` },
+      { code: 'inventory', label: missingIngredients.length <= 1 ? '库存覆盖更好，缺口食材更少' : '库存缺口较大', contribution: scoreParts.inventory, detail: `缺口${missingIngredients.length}项` },
+      { code: 'baby', label: babyAgeMonths ? (babySuitable ? '宝宝月龄适配更好' : '宝宝适配一般') : '未启用宝宝筛选', contribution: scoreParts.baby, detail: babyAgeMonths ? `月龄${babyAgeMonths}` : '默认' },
+      { code: 'feedback', label: '历史反馈衰减学习加权', contribution: scoreParts.feedback, detail: `7天${Math.round((feedbackProfile.window_7d?.adoption_rate || 0) * 100)}%/30天${Math.round((feedbackProfile.window_30d?.adoption_rate || 0) * 100)}%` },
+    ].sort((a, b) => b.contribution - a.contribution || a.code.localeCompare(b.code));
+
+    const explain = rankingReasons.filter(x => x.contribution > 0.03).slice(0, 3).map(x => x.label);
     if (explain.length === 0) explain.push('综合时间与库存表现稳定');
 
     const switchHint = missingIngredients.length > 0
@@ -722,6 +623,7 @@ export class MealPlanService {
       babySuitable,
       switchHint,
       explain,
+      ranking_reasons: rankingReasons,
     };
   }
 
@@ -751,6 +653,7 @@ export class MealPlanService {
       baby_suitable: item.babySuitable,
       switch_hint: item.switchHint,
       explain: item.explain || [],
+      ranking_reasons: item.ranking_reasons || [],
     };
 
     return {
@@ -761,9 +664,7 @@ export class MealPlanService {
 
   async submitRecommendationFeedback(userId: string, input: RecommendationFeedbackInput) {
     const eventTime = input.event_time ? new Date(input.event_time) : new Date();
-    if (Number.isNaN(eventTime.getTime())) {
-      throw new Error('INVALID_EVENT_TIME');
-    }
+    if (Number.isNaN(eventTime.getTime())) throw new Error('INVALID_EVENT_TIME');
 
     const id = generateUUID();
     await db('recommendation_feedbacks').insert({
@@ -774,6 +675,10 @@ export class MealPlanService {
       reject_reason: input.reject_reason || null,
       event_time: eventTime.toISOString(),
     });
+
+    if (input.meal_type !== 'all-day') {
+      await this.recomputeRecommendationLearning({ userIds: [userId], mealTypes: [input.meal_type as MealType] });
+    }
 
     return { accepted: true, id };
   }
@@ -816,9 +721,56 @@ export class MealPlanService {
     };
   }
 
-  /**
-   * 获取本周一
-   */
+  async recomputeRecommendationLearning(input?: { userIds?: string[]; mealTypes?: MealType[] }) {
+    const mealTypes: MealType[] = (input?.mealTypes && input.mealTypes.length > 0)
+      ? input.mealTypes
+      : ['breakfast', 'lunch', 'dinner'];
+
+    let userIds = input?.userIds;
+    if (!userIds || userIds.length === 0) {
+      const users = await db('recommendation_feedbacks').distinct('user_id');
+      userIds = users.map((u: any) => u.user_id).filter(Boolean);
+    }
+
+    let affected = 0;
+    for (const uid of userIds) {
+      for (const mt of mealTypes) {
+        const signal = await this.computeFeedbackSignalFromRows(uid, mt);
+        const id = `${uid}:${mt}`;
+        await db('recommendation_learning_profiles')
+          .insert({
+            id,
+            user_id: uid,
+            meal_type: mt,
+            weight_config: JSON.stringify(this.getWeightsForMeal(mt)),
+            signal_snapshot: JSON.stringify(signal),
+            computed_at: new Date().toISOString(),
+          })
+          .onConflict(['user_id', 'meal_type'])
+          .merge({
+            weight_config: JSON.stringify(this.getWeightsForMeal(mt)),
+            signal_snapshot: JSON.stringify(signal),
+            computed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+        affected++;
+      }
+    }
+
+    return { affected_users: userIds.length, affected_profiles: affected, meal_types: mealTypes };
+  }
+
+  static startRecommendationLearningScheduler() {
+    const service = new MealPlanService();
+    const intervalMs = Math.max(5 * 60 * 1000, Number(process.env.REC_RECOMPUTE_INTERVAL_MS || 6 * 60 * 60 * 1000));
+    setTimeout(() => {
+      service.recomputeRecommendationLearning().catch(() => null);
+    }, 15 * 1000);
+    setInterval(() => {
+      service.recomputeRecommendationLearning().catch(() => null);
+    }, intervalMs);
+  }
+
   private getMonday(date: Date) {
     const d = new Date(date);
     const day = d.getDay();
@@ -827,9 +779,6 @@ export class MealPlanService {
     return monday.toISOString().split('T')[0];
   }
 
-  /**
-   * 获取本周日
-   */
   private getSunday(date: Date) {
     const monday = new Date(this.getMonday(date));
     const sunday = new Date(monday);
