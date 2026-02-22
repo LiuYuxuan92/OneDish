@@ -1,0 +1,132 @@
+# HELP onedish_http_requests_total HTTP request count
+# TYPE onedish_http_requests_total counter
+onedish_http_requests_total{method="GET",route="/health",status="200"} 3
+onedish_http_requests_total{method="POST",route="/api/v1/auth/guest",status="200"} 13
+onedish_http_requests_total{method="GET",route="/api/v1/recipes/daily",status="200"} 3
+onedish_http_requests_total{method="GET",route="/api/v1/recipes/:id",status="200"} 3
+onedish_http_requests_total{method="GET",route="/api/v1/meal-plans/weekly",status="200"} 3
+onedish_http_requests_total{method="GET",route="/api/v1/shopping-lists/",status="200"} 3
+onedish_http_requests_total{method="GET",route="/metrics",status="200"} 1
+onedish_http_requests_total{method="POST",route="/api/v1/shopping-lists/add-recipe",status="500"} 8
+onedish_http_requests_total{method="POST",route="/api/v1/auth/guest",status="429"} 15
+# HELP onedish_router_route_total Router route selection count
+# TYPE onedish_router_route_total counter
+# HELP onedish_router_degrade_total Router degrade count
+# TYPE onedish_router_degrade_total counter
+# HELP onedish_quota_user_used_total User quota usage count
+# TYPE onedish_quota_user_used_total counter
+# HELP onedish_quota_global_used_total Global quota usage count
+# TYPE onedish_quota_global_used_total counter
+# HELP onedish_quota_reject_total Quota reject count
+# TYPE onedish_quota_reject_total counter
+# HELP onedish_cache_hit_total Cache hit count
+# TYPE onedish_cache_hit_total counter
+# HELP onedish_cache_miss_total Cache miss count
+# TYPE onedish_cache_miss_total counter
+# HELP onedish_upstream_requests_total Upstream request count
+# TYPE onedish_upstream_requests_total counter
+# HELP onedish_redis_fallback_total Redis fallback count
+# TYPE onedish_redis_fallback_total counter
+onedish_redis_fallback_total{reason="redis_runtime_error"} 574
+# HELP onedish_http_request_duration_ms HTTP request duration in ms
+# TYPE onedish_http_request_duration_ms histogram
+onedish_http_request_duration_ms_bucket{le="50",route="/health"} 3
+onedish_http_request_duration_ms_bucket{le="100",route="/health"} 3
+onedish_http_request_duration_ms_bucket{le="200",route="/health"} 3
+onedish_http_request_duration_ms_bucket{le="500",route="/health"} 3
+onedish_http_request_duration_ms_bucket{le="800",route="/health"} 3
+onedish_http_request_duration_ms_bucket{le="1500",route="/health"} 3
+onedish_http_request_duration_ms_bucket{le="3000",route="/health"} 3
+onedish_http_request_duration_ms_bucket{le="6000",route="/health"} 3
+onedish_http_request_duration_ms_bucket{le="10000",route="/health"} 3
+onedish_http_request_duration_ms_bucket{le="+Inf",route="/health"} 3
+onedish_http_request_duration_ms_sum{route="/health"} 13
+onedish_http_request_duration_ms_count{route="/health"} 3
+onedish_http_request_duration_ms_bucket{le="50",route="/api/v1/auth/guest"} 28
+onedish_http_request_duration_ms_bucket{le="100",route="/api/v1/auth/guest"} 28
+onedish_http_request_duration_ms_bucket{le="200",route="/api/v1/auth/guest"} 28
+onedish_http_request_duration_ms_bucket{le="500",route="/api/v1/auth/guest"} 28
+onedish_http_request_duration_ms_bucket{le="800",route="/api/v1/auth/guest"} 28
+onedish_http_request_duration_ms_bucket{le="1500",route="/api/v1/auth/guest"} 28
+onedish_http_request_duration_ms_bucket{le="3000",route="/api/v1/auth/guest"} 28
+onedish_http_request_duration_ms_bucket{le="6000",route="/api/v1/auth/guest"} 28
+onedish_http_request_duration_ms_bucket{le="10000",route="/api/v1/auth/guest"} 28
+onedish_http_request_duration_ms_bucket{le="+Inf",route="/api/v1/auth/guest"} 28
+onedish_http_request_duration_ms_sum{route="/api/v1/auth/guest"} 54
+onedish_http_request_duration_ms_count{route="/api/v1/auth/guest"} 28
+onedish_http_request_duration_ms_bucket{le="50",route="/api/v1/recipes/daily"} 3
+onedish_http_request_duration_ms_bucket{le="100",route="/api/v1/recipes/daily"} 3
+onedish_http_request_duration_ms_bucket{le="200",route="/api/v1/recipes/daily"} 3
+onedish_http_request_duration_ms_bucket{le="500",route="/api/v1/recipes/daily"} 3
+onedish_http_request_duration_ms_bucket{le="800",route="/api/v1/recipes/daily"} 3
+onedish_http_request_duration_ms_bucket{le="1500",route="/api/v1/recipes/daily"} 3
+onedish_http_request_duration_ms_bucket{le="3000",route="/api/v1/recipes/daily"} 3
+onedish_http_request_duration_ms_bucket{le="6000",route="/api/v1/recipes/daily"} 3
+onedish_http_request_duration_ms_bucket{le="10000",route="/api/v1/recipes/daily"} 3
+onedish_http_request_duration_ms_bucket{le="+Inf",route="/api/v1/recipes/daily"} 3
+onedish_http_request_duration_ms_sum{route="/api/v1/recipes/daily"} 19
+onedish_http_request_duration_ms_count{route="/api/v1/recipes/daily"} 3
+onedish_http_request_duration_ms_bucket{le="50",route="/api/v1/recipes/:id"} 3
+onedish_http_request_duration_ms_bucket{le="100",route="/api/v1/recipes/:id"} 3
+onedish_http_request_duration_ms_bucket{le="200",route="/api/v1/recipes/:id"} 3
+onedish_http_request_duration_ms_bucket{le="500",route="/api/v1/recipes/:id"} 3
+onedish_http_request_duration_ms_bucket{le="800",route="/api/v1/recipes/:id"} 3
+onedish_http_request_duration_ms_bucket{le="1500",route="/api/v1/recipes/:id"} 3
+onedish_http_request_duration_ms_bucket{le="3000",route="/api/v1/recipes/:id"} 3
+onedish_http_request_duration_ms_bucket{le="6000",route="/api/v1/recipes/:id"} 3
+onedish_http_request_duration_ms_bucket{le="10000",route="/api/v1/recipes/:id"} 3
+onedish_http_request_duration_ms_bucket{le="+Inf",route="/api/v1/recipes/:id"} 3
+onedish_http_request_duration_ms_sum{route="/api/v1/recipes/:id"} 10
+onedish_http_request_duration_ms_count{route="/api/v1/recipes/:id"} 3
+onedish_http_request_duration_ms_bucket{le="50",route="/api/v1/meal-plans/weekly"} 3
+onedish_http_request_duration_ms_bucket{le="100",route="/api/v1/meal-plans/weekly"} 3
+onedish_http_request_duration_ms_bucket{le="200",route="/api/v1/meal-plans/weekly"} 3
+onedish_http_request_duration_ms_bucket{le="500",route="/api/v1/meal-plans/weekly"} 3
+onedish_http_request_duration_ms_bucket{le="800",route="/api/v1/meal-plans/weekly"} 3
+onedish_http_request_duration_ms_bucket{le="1500",route="/api/v1/meal-plans/weekly"} 3
+onedish_http_request_duration_ms_bucket{le="3000",route="/api/v1/meal-plans/weekly"} 3
+onedish_http_request_duration_ms_bucket{le="6000",route="/api/v1/meal-plans/weekly"} 3
+onedish_http_request_duration_ms_bucket{le="10000",route="/api/v1/meal-plans/weekly"} 3
+onedish_http_request_duration_ms_bucket{le="+Inf",route="/api/v1/meal-plans/weekly"} 3
+onedish_http_request_duration_ms_sum{route="/api/v1/meal-plans/weekly"} 8
+onedish_http_request_duration_ms_count{route="/api/v1/meal-plans/weekly"} 3
+onedish_http_request_duration_ms_bucket{le="50",route="/api/v1/shopping-lists/"} 3
+onedish_http_request_duration_ms_bucket{le="100",route="/api/v1/shopping-lists/"} 3
+onedish_http_request_duration_ms_bucket{le="200",route="/api/v1/shopping-lists/"} 3
+onedish_http_request_duration_ms_bucket{le="500",route="/api/v1/shopping-lists/"} 3
+onedish_http_request_duration_ms_bucket{le="800",route="/api/v1/shopping-lists/"} 3
+onedish_http_request_duration_ms_bucket{le="1500",route="/api/v1/shopping-lists/"} 3
+onedish_http_request_duration_ms_bucket{le="3000",route="/api/v1/shopping-lists/"} 3
+onedish_http_request_duration_ms_bucket{le="6000",route="/api/v1/shopping-lists/"} 3
+onedish_http_request_duration_ms_bucket{le="10000",route="/api/v1/shopping-lists/"} 3
+onedish_http_request_duration_ms_bucket{le="+Inf",route="/api/v1/shopping-lists/"} 3
+onedish_http_request_duration_ms_sum{route="/api/v1/shopping-lists/"} 8
+onedish_http_request_duration_ms_count{route="/api/v1/shopping-lists/"} 3
+onedish_http_request_duration_ms_bucket{le="50",route="/metrics"} 1
+onedish_http_request_duration_ms_bucket{le="100",route="/metrics"} 1
+onedish_http_request_duration_ms_bucket{le="200",route="/metrics"} 1
+onedish_http_request_duration_ms_bucket{le="500",route="/metrics"} 1
+onedish_http_request_duration_ms_bucket{le="800",route="/metrics"} 1
+onedish_http_request_duration_ms_bucket{le="1500",route="/metrics"} 1
+onedish_http_request_duration_ms_bucket{le="3000",route="/metrics"} 1
+onedish_http_request_duration_ms_bucket{le="6000",route="/metrics"} 1
+onedish_http_request_duration_ms_bucket{le="10000",route="/metrics"} 1
+onedish_http_request_duration_ms_bucket{le="+Inf",route="/metrics"} 1
+onedish_http_request_duration_ms_sum{route="/metrics"} 1
+onedish_http_request_duration_ms_count{route="/metrics"} 1
+onedish_http_request_duration_ms_bucket{le="50",route="/api/v1/shopping-lists/add-recipe"} 8
+onedish_http_request_duration_ms_bucket{le="100",route="/api/v1/shopping-lists/add-recipe"} 8
+onedish_http_request_duration_ms_bucket{le="200",route="/api/v1/shopping-lists/add-recipe"} 8
+onedish_http_request_duration_ms_bucket{le="500",route="/api/v1/shopping-lists/add-recipe"} 8
+onedish_http_request_duration_ms_bucket{le="800",route="/api/v1/shopping-lists/add-recipe"} 8
+onedish_http_request_duration_ms_bucket{le="1500",route="/api/v1/shopping-lists/add-recipe"} 8
+onedish_http_request_duration_ms_bucket{le="3000",route="/api/v1/shopping-lists/add-recipe"} 8
+onedish_http_request_duration_ms_bucket{le="6000",route="/api/v1/shopping-lists/add-recipe"} 8
+onedish_http_request_duration_ms_bucket{le="10000",route="/api/v1/shopping-lists/add-recipe"} 8
+onedish_http_request_duration_ms_bucket{le="+Inf",route="/api/v1/shopping-lists/add-recipe"} 8
+onedish_http_request_duration_ms_sum{route="/api/v1/shopping-lists/add-recipe"} 27
+onedish_http_request_duration_ms_count{route="/api/v1/shopping-lists/add-recipe"} 8
+# HELP onedish_cache_latency_ms Cache operation latency in ms
+# TYPE onedish_cache_latency_ms histogram
+# HELP onedish_upstream_latency_ms Upstream latency in ms
+# TYPE onedish_upstream_latency_ms histogram

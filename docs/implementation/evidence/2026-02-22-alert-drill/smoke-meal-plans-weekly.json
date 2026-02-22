@@ -1,0 +1,1 @@
+{"code":200,"message":"success","data":{"start_date":"2026-02-16","end_date":"2026-02-22","plans":{"2026-02-22":{"dinner":{"id":"recipe_072","name":"夫妻肺片","image_url":null,"prep_time":30}}}},"meta":{"request_id":"req_9fffa7ff-e0a4-4075-9194-45383b709944","route":"/weekly","latency_ms":2}}

@@ -80,6 +80,8 @@ export class SearchService {
       const aiResults = await this.aiAdapter.search(query);
       metricsService.inc('onedish_quota_user_used_total', { channel: 'search', type: 'ai', tier });
       metricsService.inc('onedish_quota_global_used_total', { type: 'ai' });
+      // 最小可行预算指标：按每次 AI 请求估算固定成本（USD）
+      metricsService.inc('onedish_ai_cost_usd_total', { provider: 'ai', endpoint: 'search', tier }, 0.002);
       metricsService.inc('onedish_upstream_requests_total', { provider: 'ai', endpoint: 'search', status: String(aiResults.length > 0 ? 200 : 204) });
       metricsService.observe('onedish_upstream_latency_ms', { provider: 'ai', endpoint: 'search' }, Date.now() - aiStart);
       if (aiResults.length > 0) {

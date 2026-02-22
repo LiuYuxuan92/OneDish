@@ -97,7 +97,7 @@ clamp_min(
 
 ## 4) 预算水位（AI 成本）
 
-> 假设预算通过 recording rule 固化为常量指标：`onedish_ai_daily_budget_usd`（单值，如 50）。
+> 当前后端已提供成本累计指标：`onedish_ai_cost_usd_total`（按 AI 请求累计估算美元成本，MVP 版本每次请求 +0.002 USD）。预算阈值可通过 `onedish_ai_daily_budget_usd`（recording rule/常量）配置。
 
 ### 4.1 当日消耗
 ```promql
@@ -115,6 +115,12 @@ max(onedish_ai_daily_budget_usd{job="onedish-backend"})
 - 预警（70%）：`> 0.7`，建议 `for: 10m`
 - 告警（90%）：`> 0.9`，建议 `for: 5m`
 - 紧急（100%）：`>= 1`，建议 `for: 2m` + 自动触发 AI 降级
+
+### 4.4 最小演练命令（验证预算指标会增长）
+```bash
+bash scripts/test/alert-budget-drill.sh
+```
+期望输出 `OK: increased by ... USD`，并可在 `/metrics` 中看到 `onedish_ai_cost_usd_total` 增加。
 
 ---
 

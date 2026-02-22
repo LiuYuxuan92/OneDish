@@ -132,3 +132,4 @@ metricsService.histogram('onedish_cache_latency_ms', 'Cache operation latency in
 metricsService.counter('onedish_upstream_requests_total', 'Upstream request count');
 metricsService.histogram('onedish_upstream_latency_ms', 'Upstream latency in ms', [50, 100, 200, 500, 1000, 3000, 6000, 10000]);
 metricsService.counter('onedish_redis_fallback_total', 'Redis fallback count');
+metricsService.counter('onedish_ai_cost_usd_total', 'Estimated AI cost in USD');

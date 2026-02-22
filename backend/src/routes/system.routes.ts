@@ -5,6 +5,7 @@
 import { Router } from 'express';
 import { db } from '../config/database';
 import { logger } from '../utils/logger';
+import { metricsService } from '../services/metrics.service';
 
 const router = Router();
 
@@ -203,6 +204,21 @@ router.get('/stats', async (req, res) => {
       message: '获取统计失败',
     });
   }
+});
+
+/**
+ * POST /api/v1/system/metrics/ai-cost/drill
+ * 告警演练辅助：手动推进 AI 成本指标（仅用于演练）
+ */
+router.post('/metrics/ai-cost/drill', (req, res) => {
+  const amountRaw = Number(req.body?.amount);
+  const amount = Number.isFinite(amountRaw) && amountRaw > 0 ? amountRaw : 0.002;
+  metricsService.inc('onedish_ai_cost_usd_total', { provider: 'drill', endpoint: 'manual', tier: 'drill' }, amount);
+  res.json({
+    code: 200,
+    message: 'success',
+    data: { metric: 'onedish_ai_cost_usd_total', amount },
+  });
 });
 
 export default router;
