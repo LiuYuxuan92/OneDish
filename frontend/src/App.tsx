@@ -11,6 +11,7 @@ import { RootNavigator } from './navigation/RootNavigator';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { useAuth } from './hooks/useAuth';
 import { ActivityIndicator, View, StyleSheet, Text } from 'react-native';
+import { trackEvent, trackSessionStart } from './analytics/sdk';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,6 +38,15 @@ function AppContent() {
       onlineManager.setOnline(!!state.isConnected);
     });
   }, []);
+
+  useEffect(() => {
+    trackSessionStart('app');
+    trackEvent('app_opened', {
+      page_id: 'app',
+      entry_page: isAuthenticated ? 'main' : 'auth',
+      is_first_open: false,
+    });
+  }, [isAuthenticated]);
 
   if (isLoading) {
     return (

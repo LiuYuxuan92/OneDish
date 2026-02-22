@@ -23,16 +23,40 @@ export interface SearchResult {
 // 统一搜索返回结果
 export interface UnifiedSearchResult {
   results: SearchResult[];
-  source: 'local' | 'tianxing' | 'ai';
+  source: 'local' | 'tianxing' | 'web' | 'cache' | 'ai';
+  route_source?: 'local' | 'cache' | 'web' | 'ai';
   total: number;
+  quota?: {
+    user_remaining?: number;
+    reset_at?: string;
+  };
 }
+
+const normalizeSource = (source?: string): 'local' | 'cache' | 'web' | 'ai' => {
+  if (source === 'ai') return 'ai';
+  if (source === 'cache') return 'cache';
+  if (source === 'web' || source === 'tianxing') return 'web';
+  return 'local';
+};
+
+const normalizeUnifiedData = (data: any, meta?: any): UnifiedSearchResult => ({
+  results: data?.results || [],
+  total: data?.total || 0,
+  source: normalizeSource(data?.source),
+  route_source: normalizeSource(data?.route_source || meta?.route || data?.source),
+  quota: data?.quota || meta?.quota,
+});
 
 export const searchApi = {
   // 统一搜索
-  search: (keyword: string) =>
-    apiClient.get<UnifiedSearchResult>('/search', { params: { keyword } }),
+  search: async (keyword: string) => {
+    const res = await apiClient.get<UnifiedSearchResult>('/search', { params: { keyword } });
+    return { ...res, data: normalizeUnifiedData(res.data, (res as any).meta) };
+  },
 
   // 指定来源搜索
-  searchFromSource: (keyword: string, source: 'local' | 'tianxing' | 'ai') =>
-    apiClient.get<UnifiedSearchResult>(`/search/source/${source}`, { params: { keyword } }),
+  searchFromSource: async (keyword: string, source: 'local' | 'tianxing' | 'ai') => {
+    const res = await apiClient.get<UnifiedSearchResult>(`/search/source/${source}`, { params: { keyword } });
+    return { ...res, data: normalizeUnifiedData(res.data, (res as any).meta) };
+  },
 };

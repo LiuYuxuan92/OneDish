@@ -9,7 +9,7 @@
  * 5. 加载状态优化：骨架屏加载动画
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -32,6 +32,7 @@ import { useUnifiedSearch, useSourceSearch } from '../../hooks/useSearch';
 import type { SearchResult } from '../../api/search';
 import { recipesApi, TransformResult } from '../../api/recipes';
 import { useSaveSearchResult } from '../../hooks/useUserRecipes';
+import { trackEvent } from '../../analytics/sdk';
 
 type Props = NativeStackScreenProps<RecipeStackParamList, 'Search'>;
 
@@ -79,16 +80,32 @@ export function SearchScreen({ navigation }: Props) {
   const currentData = searchSource === 'all' ? unifiedData : sourceData;
   const searchResults = currentData?.results || [];
   const resultSource = searchSource === 'all' ? (unifiedData?.source || 'local') : searchSource;
+  const routeSource = currentData?.route_source || (resultSource === 'tianxing' ? 'web' : resultSource);
   const total = searchResults.length;
   const isLoading = hasSearched && (searchSource === 'all' ? isUnifiedLoading : isSourceLoading);
+
+  useEffect(() => {
+    if (!hasSearched || isLoading) return;
+    trackEvent('recipe_list_viewed', {
+      page_id: 'search',
+      list_type: searchSource === 'all' ? 'search_result' : `search_result_${searchSource}`,
+      result_count: total,
+      route_source: routeSource,
+    });
+  }, [hasSearched, isLoading, searchSource, total, routeSource]);
 
   const handleSearch = useCallback(() => {
     const trimmed = inputValue.trim();
     if (trimmed) {
       setSubmittedKeyword(trimmed);
       setSelectedRecipe(null);
+      trackEvent('recipe_searched', {
+        page_id: 'search',
+        keyword: trimmed,
+        search_mode: searchSource,
+      });
     }
-  }, [inputValue]);
+  }, [inputValue, searchSource]);
 
   const handleSourceChange = useCallback((source: SearchSource) => {
     setSearchSource(source);
@@ -97,6 +114,13 @@ export function SearchScreen({ navigation }: Props) {
   }, []);
 
   const handleRecipePress = useCallback((recipe: SearchResult) => {
+    trackEvent('recipe_detail_viewed', {
+      page_id: 'search',
+      recipe_id: recipe.id,
+      recipe_name: recipe.name,
+      route_source: recipe.source === 'tianxing' ? 'web' : recipe.source,
+    });
+
     if (recipe.source === 'local') {
       navigation.navigate('RecipeDetail', { recipeId: recipe.id });
     } else {
@@ -664,7 +688,15 @@ export function SearchScreen({ navigation }: Props) {
             </Text>
             <View style={styles.resultSourceBadge}>
               <Text style={styles.resultSourceBadgeText}>
-                {resultSource === 'local' ? '📚 本地' : resultSource === 'tianxing' ? '🌐 联网' : resultSource === 'ai' ? '🤖 AI' : '🔍 全部'}
+                {routeSource === 'local'
+                  ? '📚 Local'
+                  : routeSource === 'cache'
+                    ? '⚡ Cache'
+                    : routeSource === 'web' || routeSource === 'tianxing'
+                      ? '🌐 Web'
+                      : routeSource === 'ai'
+                        ? '🤖 AI'
+                        : '🔍 全部'}
               </Text>
             </View>
           </View>

@@ -26,6 +26,7 @@ import {
 } from '../../hooks/useShoppingLists';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { PlanStackParamList } from '../../types';
+import { trackEvent } from '../../analytics/sdk';
 
 type Props = NativeStackScreenProps<PlanStackParamList, 'ShoppingList'>;
 
@@ -121,6 +122,10 @@ export function ShoppingListScreen({ navigation }: Props) {
         meal_types: ['breakfast', 'lunch', 'dinner'],
         servings: 2,
       });
+      trackEvent('shopping_list_created', {
+        page_id: 'shopping_list',
+        source: 'meal_plan',
+      });
     } catch (error) {
       console.error('生成购物清单失败:', error);
       Alert.alert('生成失败', '请确保今日有餐食计划');
@@ -166,6 +171,12 @@ export function ShoppingListScreen({ navigation }: Props) {
         ingredient_id: ingredientId,
         checked: !checked,
       });
+      trackEvent('shopping_item_checked', {
+        page_id: 'shopping_list',
+        list_id: shoppingList?.id,
+        item_id: ingredientId,
+        checked: !checked,
+      });
     } catch (error) {
       console.error('更新失败:', error);
       Alert.alert('更新失败', '请稍后重试');
@@ -201,6 +212,12 @@ export function ShoppingListScreen({ navigation }: Props) {
         item_name: newItemName.trim(),
         amount: newItemAmount.trim(),
         area: selectedArea,
+      });
+      trackEvent('shopping_item_added', {
+        page_id: 'shopping_list',
+        list_id: shoppingList?.id,
+        item_name: newItemName.trim(),
+        source: 'manual',
       });
       setShowAddModal(false);
       setNewItemName('');
