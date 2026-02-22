@@ -3,6 +3,7 @@ import { searchService } from '../services/search.service';
 import { logger } from '../utils/logger';
 import { createError } from '../middleware/errorHandler';
 import { ErrorCodes } from '../config/error-codes';
+import { idempotencyService } from '../services/idempotency.service';
 
 const router = Router();
 
@@ -11,6 +12,23 @@ router.post('/resolve', async (req: Request, res: Response): Promise<void> => {
     const { query, intent_type, freshness_required, user_tier, context, force_refresh } = req.body || {};
     if (!query || typeof query !== 'string') {
       throw createError('query is required', 400, ErrorCodes.BAD_REQUEST);
+    }
+
+    const idemKey = (req.header('Idempotency-Key') || '').trim();
+    const idemTtlSec = Number(process.env.IDEMPOTENCY_TTL_SEC || 600);
+    if (idemKey) {
+      const begin = await idempotencyService.begin('search-resolve', idemKey, req.body || {}, idemTtlSec);
+      if (begin.state === 'replay') {
+        const replayData = await idempotencyService.replay('search-resolve', idemKey);
+        if (replayData) {
+          res.setHeader('X-Idempotency-Replayed', 'true');
+          res.json(replayData);
+          return;
+        }
+      }
+      if (begin.state === 'conflict') {
+        throw createError('idempotency key is in-flight or payload conflict', 409, ErrorCodes.CONFLICT);
+      }
     }
 
     const result = await searchService.resolve({
@@ -24,14 +42,20 @@ router.post('/resolve', async (req: Request, res: Response): Promise<void> => {
     });
 
     res.locals.routeUsed = result.route_used;
-    res.json({
+    const payload = {
       code: 200,
       message: 'success',
       data: result,
       meta: {
         route: result.route_used,
       },
-    });
+    };
+
+    if (idemKey) {
+      await idempotencyService.complete('search-resolve', idemKey, req.body || {}, payload, idemTtlSec);
+    }
+
+    res.json(payload);
   } catch (error) {
     logger.error('Search resolve error:', error);
     throw error;

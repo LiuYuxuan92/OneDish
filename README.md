@@ -112,6 +112,17 @@ cd backend
 npm run migrate
 ```
 
+### 环境变量（Redis / Quota / 幂等）
+后端新增了可直接复制的模板：`backend/.env.example`。
+
+关键项：
+- `REDIS_ENABLED`（默认 `true`）
+- `REDIS_URL` / `REDIS_HOST` / `REDIS_PORT`
+- `REDIS_FAULT_INJECT_MODE`（默认 `off`，支持 `all` 或 `connect,get,set,mget,eval`）
+- `QUOTA_GLOBAL_WEB_LIMIT`（默认 `200000`）
+- `QUOTA_GLOBAL_AI_LIMIT`（默认 `50000`）
+- `IDEMPOTENCY_TTL_SEC`（默认 `600`）
+
 ## 贡献
 
 欢迎提交 Issue 和 Pull Request！

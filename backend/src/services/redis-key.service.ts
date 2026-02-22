@@ -30,6 +30,10 @@ export class RedisKeyService {
   cacheShopping(userId: string, listId: string): string {
     return `onedish:${this.env}:cache:shopping:${userId}:${listId}`;
   }
+
+  idempotency(namespace: string, key: string): string {
+    return `onedish:${this.env}:idempotency:${namespace}:${key}`;
+  }
 }
 
 export const redisKeyService = new RedisKeyService();

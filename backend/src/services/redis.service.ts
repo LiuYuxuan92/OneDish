@@ -15,6 +15,18 @@ class RedisService {
     return process.env.REDIS_ENABLED !== 'false';
   }
 
+  private shouldInjectFault(op: string): boolean {
+    const mode = (process.env.REDIS_FAULT_INJECT_MODE || '').trim();
+    if (!mode || mode === 'off') return false;
+    if (mode === 'all') return true;
+    return mode.split(',').map((v) => v.trim()).filter(Boolean).includes(op);
+  }
+
+  private maybeInjectFault(op: string): void {
+    if (!this.shouldInjectFault(op)) return;
+    throw new Error(`Injected Redis fault for op=${op}`);
+  }
+
   async getClient(): Promise<ReturnType<typeof createClient> | null> {
     if (!this.redisEnabled) {
       this.mode = 'disabled';
@@ -37,6 +49,7 @@ class RedisService {
 
   private async connect(): Promise<ReturnType<typeof createClient> | null> {
     try {
+      this.maybeInjectFault('connect');
       const client = createClient({
         url: this.redisUrl,
         socket: {
@@ -71,11 +84,34 @@ class RedisService {
     metricsService.inc('onedish_redis_fallback_total', { reason });
   }
 
-  async getJson<T>(key: string): Promise<T | null> {
+  async getRaw(key: string): Promise<string | null> {
     try {
+      this.maybeInjectFault('get');
       const client = await this.getClient();
       if (!client) return null;
-      const raw = await client.get(key);
+      return await client.get(key);
+    } catch (error) {
+      this.enterFallback('redis_get_failed', error);
+      return null;
+    }
+  }
+
+  async setRaw(key: string, value: string, ttlSec: number): Promise<boolean> {
+    try {
+      this.maybeInjectFault('set');
+      const client = await this.getClient();
+      if (!client) return false;
+      await client.set(key, value, { EX: ttlSec });
+      return true;
+    } catch (error) {
+      this.enterFallback('redis_set_failed', error);
+      return false;
+    }
+  }
+
+  async getJson<T>(key: string): Promise<T | null> {
+    try {
+      const raw = await this.getRaw(key);
       if (!raw) return null;
       return JSON.parse(raw) as T;
     } catch (error) {
@@ -85,19 +121,12 @@ class RedisService {
   }
 
   async setJson(key: string, value: unknown, ttlSec: number): Promise<boolean> {
-    try {
-      const client = await this.getClient();
-      if (!client) return false;
-      await client.set(key, JSON.stringify(value), { EX: ttlSec });
-      return true;
-    } catch (error) {
-      this.enterFallback('redis_set_failed', error);
-      return false;
-    }
+    return this.setRaw(key, JSON.stringify(value), ttlSec);
   }
 
   async mget(keys: string[]): Promise<(string | null)[] | null> {
     try {
+      this.maybeInjectFault('mget');
       const client = await this.getClient();
       if (!client) return null;
       return await client.mGet(keys);
@@ -139,6 +168,7 @@ class RedisService {
     `;
 
     try {
+      this.maybeInjectFault('eval');
       const client = await this.getClient();
       if (!client) return { allowed: false, reason: 'global' };
       const result = (await client.eval(script, {
@@ -151,6 +181,52 @@ class RedisService {
     } catch (error) {
       this.enterFallback('redis_eval_failed', error);
       return { allowed: false, reason: 'global' };
+    }
+  }
+
+  async evalIdempotencyBegin(
+    key: string,
+    fingerprint: string,
+    ttlSec: number
+  ): Promise<{ state: 'proceed' | 'replay' | 'conflict' }> {
+    const script = `
+      local idem_key = KEYS[1]
+      local fp = ARGV[1]
+      local ttl = tonumber(ARGV[2])
+
+      local raw = redis.call('GET', idem_key)
+      if not raw then
+        local pending = cjson.encode({ status = 'pending', fp = fp })
+        redis.call('SET', idem_key, pending, 'EX', ttl, 'NX')
+        return {'proceed'}
+      end
+
+      local data = cjson.decode(raw)
+      if data.fp ~= fp then
+        return {'conflict'}
+      end
+
+      if data.status == 'done' then
+        return {'replay'}
+      end
+
+      return {'conflict'}
+    `;
+
+    try {
+      this.maybeInjectFault('eval');
+      const client = await this.getClient();
+      if (!client) return { state: 'conflict' };
+      const result = (await client.eval(script, {
+        keys: [key],
+        arguments: [fingerprint, String(ttlSec)],
+      })) as [string];
+
+      const state = (result?.[0] || 'conflict') as 'proceed' | 'replay' | 'conflict';
+      return { state };
+    } catch (error) {
+      this.enterFallback('redis_eval_failed', error);
+      return { state: 'conflict' };
     }
   }
 
