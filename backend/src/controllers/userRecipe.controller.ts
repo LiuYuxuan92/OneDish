@@ -38,21 +38,26 @@ export class UserRecipeController {
       const { id } = req.params;
       const result = await this.service.submitForReview(userId, id);
       res.json({ code: 200, message: '已提交审核', data: result });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to submit recipe', { error });
-      res.status(400).json({ code: 400, message: '提交失败', data: null });
+      res.status(400).json({ code: 400, message: error?.message || '提交失败', data: null });
     }
   };
 
   review = async (req: Request, res: Response) => {
     try {
+      const role = (req as any).user?.role;
+      if (role !== 'admin') {
+        return res.status(403).json({ code: 403, message: '仅管理员可审核', data: null });
+      }
+
       const { id } = req.params;
       const { action, reason } = req.body;
       const result = await this.service.reviewRecipe(id, action, reason);
       res.json({ code: 200, message: '审核完成', data: result });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to review recipe', { error });
-      res.status(400).json({ code: 400, message: '审核失败', data: null });
+      res.status(400).json({ code: 400, message: error?.message || '审核失败', data: null });
     }
   };
 

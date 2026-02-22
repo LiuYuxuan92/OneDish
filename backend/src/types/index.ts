@@ -29,6 +29,7 @@ export interface User {
   family_size: number;
   baby_age?: number;
   preferences: UserPreferences;
+  role?: 'user' | 'admin';
   created_at: Date;
   updated_at: Date;
 }
@@ -42,6 +43,7 @@ export interface UserPreferences {
 export interface JwtPayload {
   user_id: string;
   username: string;
+  role?: 'user' | 'admin';
 }
 
 // 菜谱相关类型

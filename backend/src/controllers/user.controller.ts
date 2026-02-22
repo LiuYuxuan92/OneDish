@@ -35,6 +35,7 @@ export class UserController {
           family_size: user.family_size,
           baby_age: user.baby_age,
           preferences: user.preferences,
+          role: user.role || 'user',
         },
       });
     } catch (error) {

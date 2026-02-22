@@ -18,6 +18,10 @@ export interface UserRecipe {
   category?: string[];
   status: 'draft' | 'pending' | 'published' | 'rejected';
   reject_reason?: string;
+  baby_age_range?: string;
+  allergens?: string[];
+  is_one_pot?: boolean;
+  step_branches?: any[];
   is_favorited?: boolean;
   is_active: boolean;
   created_at: string;

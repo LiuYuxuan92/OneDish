@@ -63,6 +63,7 @@ export class AuthService {
       {
         user_id: user.id,
         username: user.username,
+        role: (user as any).role || 'user',
       },
       secret,
       { expiresIn: jwtConfig.accessTokenExpiry as SignOptions['expiresIn'] }
@@ -77,6 +78,7 @@ export class AuthService {
       {
         user_id: user.id,
         username: user.username,
+        role: (user as any).role || 'user',
       },
       secret,
       { expiresIn: jwtConfig.refreshTokenExpiry as SignOptions['expiresIn'] }

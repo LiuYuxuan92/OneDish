@@ -45,6 +45,18 @@ export function useSubmitUserRecipe() {
   });
 }
 
+export function useReviewUserRecipe() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, action, reason }: { id: string; action: 'published' | 'rejected'; reason?: string }) =>
+      userRecipesApi.review(id, action, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userRecipes'] });
+      queryClient.invalidateQueries({ queryKey: ['publishedUserRecipes'] });
+    },
+  });
+}
+
 export function useToggleUserRecipeFavorite() {
   const queryClient = useQueryClient();
   return useMutation({

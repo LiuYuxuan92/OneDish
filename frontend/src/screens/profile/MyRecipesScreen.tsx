@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
 import {
@@ -10,20 +10,30 @@ import {
   useSubmitUserRecipe,
   useDeleteUserRecipe,
   useToggleUserRecipeFavorite,
+  useReviewUserRecipe,
 } from '../../hooks/useUserRecipes';
+import { useUserInfo } from '../../hooks/useUsers';
 
 export function MyRecipesScreen() {
   const [tab, setTab] = React.useState<'mine' | 'plaza'>('mine');
   const [name, setName] = React.useState('');
   const [adultIngredients, setAdultIngredients] = React.useState('');
   const [babyIngredients, setBabyIngredients] = React.useState('');
+  const [babyAgeRange, setBabyAgeRange] = React.useState('');
+  const [allergens, setAllergens] = React.useState('');
+  const [isOnePot, setIsOnePot] = React.useState(false);
+  const [stepBranches, setStepBranches] = React.useState('');
   const [editingId, setEditingId] = React.useState<string | null>(null);
 
   const { data: mineData, isLoading } = useUserRecipes();
   const { data: plazaData, isLoading: plazaLoading } = usePublishedUserRecipes();
+  const { data: userInfo } = useUserInfo();
+  const isAdmin = userInfo?.role === 'admin';
+
   const createMutation = useCreateUserRecipe();
   const updateMutation = useUpdateUserRecipe();
   const submitMutation = useSubmitUserRecipe();
+  const reviewMutation = useReviewUserRecipe();
   const deleteMutation = useDeleteUserRecipe();
   const favMutation = useToggleUserRecipeFavorite();
 
@@ -32,6 +42,10 @@ export function MyRecipesScreen() {
     setName('');
     setAdultIngredients('');
     setBabyIngredients('');
+    setBabyAgeRange('');
+    setAllergens('');
+    setIsOnePot(false);
+    setStepBranches('');
   };
 
   const buildPayload = () => ({
@@ -39,6 +53,10 @@ export function MyRecipesScreen() {
     source: 'ugc',
     adult_version: { ingredients: adultIngredients.split(/\n|,/).filter(Boolean).map((i) => ({ name: i.trim(), amount: '' })), steps: [] },
     baby_version: { ingredients: babyIngredients.split(/\n|,/).filter(Boolean).map((i) => ({ name: i.trim(), amount: '' })), steps: [] },
+    baby_age_range: babyAgeRange.trim() || null,
+    allergens: allergens.split(/\n|,/).filter(Boolean).map((s) => s.trim()),
+    is_one_pot: isOnePot,
+    step_branches: stepBranches.trim() ? [{ note: stepBranches.trim() }] : [],
   });
 
   const onSave = async () => {
@@ -73,6 +91,10 @@ export function MyRecipesScreen() {
             <TextInput placeholder="菜谱名称" value={name} onChangeText={setName} style={styles.input} />
             <TextInput placeholder="成人版食材（逗号/换行分隔）" value={adultIngredients} onChangeText={setAdultIngredients} style={[styles.input, styles.multiline]} multiline />
             <TextInput placeholder="宝宝版食材（逗号/换行分隔）" value={babyIngredients} onChangeText={setBabyIngredients} style={[styles.input, styles.multiline]} multiline />
+            <TextInput placeholder="月龄范围（如 8-12个月）" value={babyAgeRange} onChangeText={setBabyAgeRange} style={styles.input} />
+            <TextInput placeholder="过敏原（逗号/换行分隔）" value={allergens} onChangeText={setAllergens} style={styles.input} />
+            <View style={styles.switchRow}><Text>是否一锅出</Text><Switch value={isOnePot} onValueChange={setIsOnePot} /></View>
+            <TextInput placeholder="步骤分叉（最小版备注）" value={stepBranches} onChangeText={setStepBranches} style={[styles.input, styles.multiline]} multiline />
             <View style={styles.formActions}>
               <TouchableOpacity style={styles.btn} onPress={onSave}><Text style={styles.btnText}>保存草稿</Text></TouchableOpacity>
               <TouchableOpacity style={[styles.btn, styles.btnGhost]} onPress={resetForm}><Text>清空</Text></TouchableOpacity>
@@ -83,14 +105,27 @@ export function MyRecipesScreen() {
             <View key={recipe.id} style={styles.card}>
               <Text style={styles.title}>{recipe.name}</Text>
               <Text style={styles.meta}>状态：{recipe.status}</Text>
-              {recipe.reject_reason ? <Text style={styles.warn}>驳回原因：{recipe.reject_reason}</Text> : null}
+              {recipe.reject_reason ? <Text style={styles.warn}>原因：{recipe.reject_reason}</Text> : null}
               <View style={styles.row}>
                 <TouchableOpacity style={styles.smallBtn} onPress={() => {
                   setEditingId(recipe.id); setName(recipe.name || '');
                   setAdultIngredients((recipe.adult_version?.ingredients || []).map((i: any) => i.name).join('\n'));
                   setBabyIngredients((recipe.baby_version?.ingredients || []).map((i: any) => i.name).join('\n'));
+                  setBabyAgeRange(recipe.baby_age_range || '');
+                  setAllergens((recipe.allergens || []).join('\n'));
+                  setIsOnePot(Boolean(recipe.is_one_pot));
+                  setStepBranches((recipe.step_branches || []).map((x: any) => x?.note || '').join('\n'));
                 }}><Text>编辑</Text></TouchableOpacity>
-                <TouchableOpacity style={styles.smallBtn} onPress={() => submitMutation.mutate(recipe.id)}><Text>提交审核</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.smallBtn} onPress={async () => {
+                  try { await submitMutation.mutateAsync(recipe.id); Alert.alert('提交成功', '已提交审核'); }
+                  catch (e: any) { Alert.alert('提交失败', e?.response?.data?.message || e?.message || '提交失败'); }
+                }}><Text>提交审核</Text></TouchableOpacity>
+                {isAdmin && recipe.status === 'pending' ? (
+                  <TouchableOpacity style={styles.smallBtn} onPress={async () => {
+                    try { await reviewMutation.mutateAsync({ id: recipe.id, action: 'published' }); Alert.alert('审核成功', '已审核通过'); }
+                    catch (e: any) { Alert.alert('审核失败', e?.response?.data?.message || e?.message || '审核失败'); }
+                  }}><Text>审核通过</Text></TouchableOpacity>
+                ) : null}
                 <TouchableOpacity style={styles.smallBtn} onPress={() => deleteMutation.mutate(recipe.id)}><Text>删除</Text></TouchableOpacity>
               </View>
             </View>
@@ -126,6 +161,7 @@ const styles = StyleSheet.create({
   formTitle: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.bold, marginBottom: Spacing.sm },
   input: { backgroundColor: Colors.neutral.gray100, borderRadius: BorderRadius.md, padding: Spacing.sm, marginBottom: Spacing.sm },
   multiline: { minHeight: 80, textAlignVertical: 'top' },
+  switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm },
   formActions: { flexDirection: 'row', gap: Spacing.sm },
   btn: { backgroundColor: Colors.primary.main, borderRadius: BorderRadius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, alignSelf: 'flex-start' },
   btnGhost: { backgroundColor: Colors.neutral.gray100 },

@@ -5,6 +5,7 @@ export interface UserInfo {
   id: string;
   username: string;
   email: string;
+  role?: 'user' | 'admin';
   phone?: string;
   avatar_url?: string;
   family_size: number;
