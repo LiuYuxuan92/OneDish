@@ -159,6 +159,59 @@ export class UserRecipeController {
     }
   };
 
+
+  listAdminByStatus = async (req: Request, res: Response) => {
+    try {
+      const role = (req as any).user?.role;
+      if (role !== 'admin') return res.status(403).json({ code: 403, message: '仅管理员可查看', data: null });
+      const { status = 'pending', page = 1, limit = 20 } = req.query as any;
+      if (!['pending', 'rejected', 'published'].includes(String(status))) {
+        return res.status(400).json({ code: 400, message: 'status 仅支持 pending/rejected/published', data: null });
+      }
+      const data = await this.service.listForAdmin(status as any, Number(page), Number(limit));
+      res.json({ code: 200, message: 'success', data });
+    } catch (error) {
+      logger.error('Failed to list admin recipes', { error });
+      res.status(500).json({ code: 500, message: '获取审核列表失败', data: null });
+    }
+  };
+
+  batchReview = async (req: Request, res: Response) => {
+    try {
+      const role = (req as any).user?.role;
+      if (role !== 'admin') return res.status(403).json({ code: 403, message: '仅管理员可审核', data: null });
+      const { ids, action, note } = req.body;
+      const data = await this.service.batchReview(Array.isArray(ids) ? ids : [], action, note);
+      res.json({ code: 200, message: '批量审核完成', data });
+    } catch (error: any) {
+      logger.error('Failed to batch review recipes', { error });
+      res.status(400).json({ code: 400, message: error?.message || '批量审核失败', data: null });
+    }
+  };
+
+  recordQualityEvent = async (req: Request, res: Response) => {
+    try {
+      const role = (req as any).user?.role;
+      if (role !== 'admin') return res.status(403).json({ code: 403, message: '仅管理员可操作', data: null });
+      const { id } = req.params;
+      const { event_type, event_value, payload } = req.body;
+      if (!['report', 'adoption'].includes(String(event_type))) {
+        return res.status(400).json({ code: 400, message: 'event_type 仅支持 report/adoption', data: null });
+      }
+      const data = await this.service.recordQualityEvent({
+        recipeId: id,
+        eventType: event_type,
+        eventValue: typeof event_value === 'number' ? event_value : undefined,
+        actorUserId: (req as any).user?.user_id,
+        payload,
+      });
+      res.json({ code: 200, message: '事件已记录并回流', data });
+    } catch (error: any) {
+      logger.error('Failed to record quality event', { error });
+      res.status(400).json({ code: 400, message: error?.message || '记录失败', data: null });
+    }
+  };
+
   delete = async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.user_id;

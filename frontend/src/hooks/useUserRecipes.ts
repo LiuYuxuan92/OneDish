@@ -86,3 +86,26 @@ export function useDeleteUserRecipe() {
     },
   });
 }
+
+export function useAdminReviewList(status: 'pending' | 'rejected' | 'published' = 'pending', page: number = 1, limit: number = 20) {
+  return useQuery({
+    queryKey: ['adminUserRecipes', status, page, limit],
+    queryFn: async () => {
+      const result = await userRecipesApi.adminList({ status, page, limit });
+      return (result as any)?.data ?? result;
+    },
+  });
+}
+
+export function useAdminBatchReview() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ ids, action, note }: { ids: string[]; action: 'published' | 'rejected'; note?: string }) =>
+      userRecipesApi.adminBatchReview(ids, action, note),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminUserRecipes'] });
+      queryClient.invalidateQueries({ queryKey: ['userRecipes'] });
+      queryClient.invalidateQueries({ queryKey: ['publishedUserRecipes'] });
+    },
+  });
+}

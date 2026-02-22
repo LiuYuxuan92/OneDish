@@ -64,7 +64,12 @@ export class ShoppingListService {
     for (const [areaKey, areaItems] of Object.entries(items)) {
       const area = this.normalizeArea(areaKey);
       const list = Array.isArray(areaItems) ? areaItems : [];
-      normalized[area].push(...list.map((item: any) => ({ ...item, category: area })));
+      normalized[area].push(...list.map((item: any) => ({
+        ...item,
+        category: area,
+        assignee: typeof item?.assignee === 'undefined' ? null : item.assignee,
+        status: item?.status || (item?.checked ? 'done' : 'todo'),
+      })));
     }
 
     return normalized;
@@ -248,6 +253,8 @@ export class ShoppingListService {
         note: ingredient.note,
         recipes: [recipeName],
         checked: false,
+        assignee: null,
+        status: 'todo',
       });
     }
   }
@@ -388,9 +395,11 @@ export class ShoppingListService {
     user_id: string;
     area: string;
     ingredient_id: string;
-    checked: boolean;
+    checked?: boolean;
+    assignee?: string | null;
+    status?: 'todo' | 'doing' | 'done' | null;
   }) {
-    const { list_id, user_id, area, ingredient_id, checked } = data;
+    const { list_id, user_id, area, ingredient_id, checked, assignee, status } = data;
 
     logger.debug('[Backend] updateListItem called:', { list_id, user_id, area, ingredient_id, checked });
 
@@ -429,8 +438,10 @@ export class ShoppingListService {
 
       if (item) {
         const oldChecked = item.checked;
-        item.checked = checked;
-        logger.debug('[Backend] Updated item:', { ingredient_id, oldChecked, newChecked: checked });
+        if (typeof checked === 'boolean') item.checked = checked;
+        if (typeof assignee !== 'undefined') item.assignee = assignee;
+        if (typeof status === 'string') item.status = status;
+        logger.debug('[Backend] Updated item:', { ingredient_id, oldChecked, newChecked: checked, assignee, status });
       } else {
         logger.debug('[Backend] ERROR: Item not found!');
       }
@@ -680,6 +691,8 @@ export class ShoppingListService {
           category,
           ingredient_id: ingredient?.id,
           estimated_price: estimatedPrice,
+          assignee: data.assignee ?? null,
+          status: data.status || 'todo',
         });
       }
     }
@@ -939,6 +952,8 @@ export class ShoppingListService {
       note: '',
       recipes: ['手动添加'],
       checked: false,
+      assignee: null,
+      status: 'todo',
       category: storageArea,
       ingredient_id: ingredient?.id,
       estimated_price: estimatedPrice,

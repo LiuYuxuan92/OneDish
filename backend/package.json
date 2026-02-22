@@ -10,7 +10,8 @@
     "test": "jest",
     "lint": "eslint src --ext .ts",
     "migrate": "knex migrate:latest",
-    "seed": "knex seed:run"
+    "seed": "knex seed:run",
+    "ugc:recompute-quality": "tsx src/scripts/recompute-ugc-quality.ts"
   },
   "dependencies": {
     "@types/sqlite3": "^3.1.11",

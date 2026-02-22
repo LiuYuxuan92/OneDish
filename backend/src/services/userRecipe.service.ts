@@ -201,8 +201,30 @@ export class UserRecipeService {
     const rows = await query.select('*');
     let affected = 0;
     for (const row of rows) {
-      const quality = this.computeQualityFields(row);
-      await db('user_recipes').where({ id: row.id }).update({ ...quality, updated_at: db.fn.now() });
+      const reportAgg = await db('ugc_quality_events')
+        .where({ user_recipe_id: row.id, event_type: 'report' })
+        .count('id as total')
+        .first();
+      const adoptionAgg = await db('ugc_quality_events')
+        .where({ user_recipe_id: row.id, event_type: 'adoption' })
+        .select(
+          db.raw('COUNT(id) as total'),
+          db.raw('SUM(CASE WHEN event_value > 0 THEN 1 ELSE 0 END) as accepted')
+        )
+        .first();
+
+      const reportCount = Number((reportAgg as any)?.total || 0);
+      const adoptionTotal = Number((adoptionAgg as any)?.total || 0);
+      const adoptionAccepted = Number((adoptionAgg as any)?.accepted || 0);
+      const adoptionRate = adoptionTotal > 0 ? Number((adoptionAccepted / adoptionTotal).toFixed(4)) : 0;
+
+      const quality = this.computeQualityFields({ ...row, report_count: reportCount, adoption_rate: adoptionRate });
+      await db('user_recipes').where({ id: row.id }).update({
+        ...quality,
+        report_count: reportCount,
+        adoption_rate: adoptionRate,
+        updated_at: db.fn.now(),
+      });
       affected += 1;
     }
     return { affected };
@@ -222,6 +244,66 @@ export class UserRecipeService {
       .limit(limit);
 
     return { total, page, limit, items: rows.map((r: any) => this.parseRecipe(r)) };
+  }
+
+
+  async listForAdmin(status: 'pending' | 'rejected' | 'published', page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
+    const [countResult] = await db('user_recipes')
+      .where({ is_active: true, status })
+      .count('id as total');
+
+    const total = Number((countResult as any)?.total || 0);
+    const rows = await db('user_recipes')
+      .where({ is_active: true, status })
+      .orderBy(status === 'pending' ? 'submitted_at' : 'updated_at', 'desc')
+      .offset(offset)
+      .limit(limit);
+
+    return { total, page, limit, items: rows.map((r: any) => this.parseRecipe(r)) };
+  }
+
+  async batchReview(recipes: string[], action: 'published' | 'rejected', note?: string) {
+    const ids = (recipes || []).filter(Boolean);
+    if (ids.length === 0) throw new Error('请至少选择一条待审核内容');
+
+    let affected = 0;
+    const failures: Array<{ id: string; reason: string }> = [];
+
+    for (const id of ids) {
+      try {
+        await this.reviewRecipe(id, action, note);
+        affected += 1;
+      } catch (error: any) {
+        failures.push({ id, reason: error?.message || '审核失败' });
+      }
+    }
+
+    return { affected, failures, action, note: note || null };
+  }
+
+  async recordQualityEvent(input: {
+    recipeId: string;
+    eventType: 'report' | 'adoption';
+    eventValue?: number;
+    actorUserId?: string;
+    payload?: any;
+  }) {
+    const recipe = await db('user_recipes').where({ id: input.recipeId, is_active: true }).first();
+    if (!recipe) throw new Error('菜谱不存在');
+
+    await db('ugc_quality_events').insert({
+      user_recipe_id: input.recipeId,
+      actor_user_id: input.actorUserId || null,
+      event_type: input.eventType,
+      event_value: typeof input.eventValue === 'number' ? input.eventValue : (input.eventType === 'report' ? 1 : 0),
+      payload: JSON.stringify(input.payload || {}),
+      created_at: db.fn.now(),
+    });
+
+    await this.recomputeQualityScores([input.recipeId]);
+    const updated = await db('user_recipes').where({ id: input.recipeId }).first();
+    return this.parseRecipe(updated);
   }
 
   async deleteUserRecipe(userId: string, recipeId: string) {

@@ -45,6 +45,12 @@ export const userRecipesApi = {
   submit: (id: string) => apiClient.post<UserRecipe>(`/user-recipes/${id}/submit`),
   review: (id: string, action: 'published' | 'rejected', reason?: string) =>
     apiClient.post<UserRecipe>(`/user-recipes/${id}/review`, { action, reason }),
+  adminList: (params?: { status?: 'pending' | 'rejected' | 'published'; page?: number; limit?: number }) =>
+    apiClient.get<PaginationResult<UserRecipe>>('/user-recipes/admin/list', { params }),
+  adminBatchReview: (ids: string[], action: 'published' | 'rejected', note?: string) =>
+    apiClient.post('/user-recipes/admin/batch-review', { ids, action, note }),
+  recordQualityEvent: (id: string, event_type: 'report' | 'adoption', event_value?: number, payload?: any) =>
+    apiClient.post<UserRecipe>(`/user-recipes/${id}/admin/quality-events`, { event_type, event_value, payload }),
   getList: (params?: { page?: number; limit?: number }) =>
     apiClient.get<PaginationResult<UserRecipe>>('/user-recipes', { params }),
   getPublished: (params?: { page?: number; limit?: number }) =>

@@ -11,6 +11,8 @@ import {
   useDeleteUserRecipe,
   useToggleUserRecipeFavorite,
   useReviewUserRecipe,
+  useAdminReviewList,
+  useAdminBatchReview,
 } from '../../hooks/useUserRecipes';
 import { useUserInfo } from '../../hooks/useUsers';
 import { RiskHit } from '../../api/userRecipes';
@@ -25,7 +27,10 @@ const QualityTag = ({ inPool, score }: { inPool?: boolean; score?: number }) => 
 );
 
 export function MyRecipesScreen() {
-  const [tab, setTab] = React.useState<'mine' | 'plaza'>('mine');
+  const [tab, setTab] = React.useState<'mine' | 'plaza' | 'admin'>('mine');
+  const [adminStatus, setAdminStatus] = React.useState<'pending' | 'rejected' | 'published'>('pending');
+  const [batchNote, setBatchNote] = React.useState('');
+  const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
   const [name, setName] = React.useState('');
   const [adultIngredients, setAdultIngredients] = React.useState('');
   const [babyIngredients, setBabyIngredients] = React.useState('');
@@ -39,6 +44,7 @@ export function MyRecipesScreen() {
   const { data: plazaData, isLoading: plazaLoading } = usePublishedUserRecipes();
   const { data: userInfo } = useUserInfo();
   const isAdmin = userInfo?.role === 'admin';
+  const { data: adminListData, isLoading: adminLoading } = useAdminReviewList(adminStatus);
 
   const createMutation = useCreateUserRecipe();
   const updateMutation = useUpdateUserRecipe();
@@ -46,6 +52,7 @@ export function MyRecipesScreen() {
   const reviewMutation = useReviewUserRecipe();
   const deleteMutation = useDeleteUserRecipe();
   const favMutation = useToggleUserRecipeFavorite();
+  const batchReviewMutation = useAdminBatchReview();
 
   const resetForm = () => {
     setEditingId(null);
@@ -92,6 +99,7 @@ export function MyRecipesScreen() {
       <View style={styles.tabs}>
         <TouchableOpacity style={[styles.tabBtn, tab === 'mine' && styles.tabBtnActive]} onPress={() => setTab('mine')}><Text style={styles.tabText}>我的投稿</Text></TouchableOpacity>
         <TouchableOpacity style={[styles.tabBtn, tab === 'plaza' && styles.tabBtnActive]} onPress={() => setTab('plaza')}><Text style={styles.tabText}>发布广场</Text></TouchableOpacity>
+        {isAdmin ? <TouchableOpacity style={[styles.tabBtn, tab === 'admin' && styles.tabBtnActive]} onPress={() => setTab('admin')}><Text style={styles.tabText}>审核台</Text></TouchableOpacity> : null}
       </View>
 
       {tab === 'mine' && (
@@ -166,6 +174,37 @@ export function MyRecipesScreen() {
               </View>
             </View>
           ))}
+        </ScrollView>
+      )}
+
+      {tab === 'admin' && isAdmin && (
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.formCard}>
+            <Text style={styles.formTitle}>UGC 审核列表</Text>
+            <View style={styles.row}>
+              {(['pending', 'rejected', 'published'] as const).map((s) => (
+                <TouchableOpacity key={s} style={[styles.smallBtn, adminStatus === s && styles.tabBtnActive]} onPress={() => { setAdminStatus(s); setSelectedIds([]); }}>
+                  <Text>{s}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TextInput placeholder="审核备注（批量拒绝建议填写）" value={batchNote} onChangeText={setBatchNote} style={styles.input} />
+            <View style={styles.row}>
+              <TouchableOpacity style={styles.btn} onPress={() => batchReviewMutation.mutate({ ids: selectedIds, action: 'published', note: batchNote })}><Text style={styles.btnText}>批量通过</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.btn} onPress={() => batchReviewMutation.mutate({ ids: selectedIds, action: 'rejected', note: batchNote })}><Text style={styles.btnText}>批量拒绝</Text></TouchableOpacity>
+            </View>
+          </View>
+
+          {adminLoading ? <ActivityIndicator /> : (adminListData?.items || []).map((recipe: any) => {
+            const selected = selectedIds.includes(recipe.id);
+            return (
+              <TouchableOpacity key={recipe.id} style={styles.card} onPress={() => setSelectedIds((prev) => selected ? prev.filter((id) => id !== recipe.id) : [...prev, recipe.id])}>
+                <Text style={styles.title}>{selected ? '☑' : '☐'} {recipe.name}</Text>
+                <Text style={styles.meta}>状态：{recipe.status}</Text>
+                {recipe.reject_reason ? <Text style={styles.warn}>备注：{recipe.reject_reason}</Text> : null}
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       )}
 

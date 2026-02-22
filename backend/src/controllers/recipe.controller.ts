@@ -20,9 +20,11 @@ export class RecipeController {
   getDailyRecommendation = async (req: Request, res: Response) => {
     try {
       const { type, max_time } = req.query;
+      const userId = (req as any).user?.user_id;
       const result = await this.recipeService.getDailyRecommendation({
         type: type as string,
         max_time: max_time ? Number(max_time) : undefined,
+        user_id: userId,
       });
       res.json({
         code: 200,

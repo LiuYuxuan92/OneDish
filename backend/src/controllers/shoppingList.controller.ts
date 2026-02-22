@@ -92,7 +92,7 @@ export class ShoppingListController {
     try {
       const userId = (req as any).user.user_id;
       const { listId } = req.params;
-      const { area, ingredient_id, checked } = req.body;
+      const { area, ingredient_id, checked, assignee, status } = req.body;
 
       const result = await this.shoppingListService.updateListItem({
         list_id: listId,
@@ -100,6 +100,8 @@ export class ShoppingListController {
         area,
         ingredient_id,
         checked,
+        assignee,
+        status,
       });
 
       res.json({

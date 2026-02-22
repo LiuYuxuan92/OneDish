@@ -5,6 +5,7 @@ import { logger } from '../utils/logger';
 interface DailyRecommendationParams {
   type?: string;
   max_time?: number;
+  user_id?: string;
 }
 
 interface SearchRecipesParams {
@@ -20,8 +21,14 @@ interface SearchRecipesParams {
 export class RecipeService {
   // 获取今日推荐
   async getDailyRecommendation(params: DailyRecommendationParams) {
-    const { type, max_time = 30 } = params;
+    const { type, max_time = 30, user_id } = params;
     const mixUgcEnabled = process.env.RECOMMEND_MIX_UGC_ENABLED !== 'false';
+
+    let profileTags: any = null;
+    if (user_id) {
+      const user = await db('users').where({ id: user_id }).first();
+      profileTags = user?.preferences?.profile_tags || null;
+    }
 
     let query = db('recipes')
       .where('is_active', true)
@@ -29,6 +36,8 @@ export class RecipeService {
 
     if (type) {
       query = query.where('type', type) as any;
+    } else if (Array.isArray(profileTags?.meal_slots) && profileTags.meal_slots.length > 0) {
+      query = query.whereIn('type', profileTags.meal_slots) as any;
     }
 
     const recipes = await query.select('*');
@@ -42,8 +51,20 @@ export class RecipeService {
         .limit(30);
 
       if (type) ugcQuery.andWhere('type', type);
+      if (!type && Array.isArray(profileTags?.meal_slots) && profileTags.meal_slots.length > 0) {
+        ugcQuery.whereIn('type', profileTags.meal_slots);
+      }
+      if (profileTags?.baby_stage) ugcQuery.andWhere('baby_age_range', 'like', `%${profileTags.baby_stage}%`);
 
-      const ugcCandidates = await ugcQuery.select('*');
+      let ugcCandidates = await ugcQuery.select('*');
+      if (Array.isArray(profileTags?.flavors) && profileTags.flavors.length > 0) {
+        ugcCandidates = ugcCandidates.filter((r: any) => {
+          const tags = Array.isArray(r.tags) ? r.tags : (() => {
+            try { return JSON.parse(r.tags || '[]'); } catch { return []; }
+          })();
+          return tags.some((t: string) => profileTags.flavors.includes(t));
+        });
+      }
       if (ugcCandidates.length > 0 && Math.random() < 0.3) {
         const picked = ugcCandidates[Math.floor(Math.random() * ugcCandidates.length)];
         recipe = {

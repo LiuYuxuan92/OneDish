@@ -16,8 +16,11 @@ router.post('/', controller.createDraft);
 router.put('/:id', controller.updateDraft);
 router.post('/:id/submit', controller.submit);
 router.post('/:id/review', controller.review); // V1: 管理员模拟接口
+router.get('/admin/list', controller.listAdminByStatus);
+router.post('/admin/batch-review', controller.batchReview);
 router.post('/admin/recompute-quality', controller.recomputeQuality);
 router.get('/admin/recommend-pool', controller.listRecommendPool);
+router.post('/:id/admin/quality-events', controller.recordQualityEvent);
 router.post('/:id/favorite', controller.favorite);
 router.get('/', controller.getList);
 router.get('/:id', controller.getDetail);

@@ -16,5 +16,6 @@ router.put('/me', userController.updateUserInfo);
 
 // 更新用户偏好
 router.put('/me/preferences', userController.updatePreferences);
+router.put('/me/profile-tags', userController.updateProfileTags);
 
 export default router;

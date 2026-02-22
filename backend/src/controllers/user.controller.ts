@@ -75,6 +75,23 @@ export class UserController {
     }
   };
 
+  // 更新用户画像标签（口味/餐次/月龄段）
+  updateProfileTags = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const { flavors, meal_slots, baby_stage } = req.body || {};
+      const user = await this.userService.updateProfileTags(userId, { flavors, meal_slots, baby_stage });
+      res.json({
+        code: 200,
+        message: '更新成功',
+        data: { profile_tags: user?.preferences?.profile_tags || null },
+      });
+    } catch (error) {
+      logger.error('Failed to update profile tags', { error });
+      res.status(500).json({ code: 500, message: '更新画像标签失败', data: null });
+    }
+  };
+
   // 更新用户偏好
   updatePreferences = async (req: Request, res: Response) => {
     try {
