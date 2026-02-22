@@ -1,6 +1,14 @@
 import { apiClient } from './client';
 import { PaginationResult } from '../types';
 
+export interface RiskHit {
+  key: string;
+  level: 'block' | 'warn';
+  keyword: string;
+  reason: string;
+  suggestion?: string;
+}
+
 export interface UserRecipe {
   id: string;
   user_id: string;
@@ -23,6 +31,7 @@ export interface UserRecipe {
   is_one_pot?: boolean;
   step_branches?: any[];
   is_favorited?: boolean;
+  risk_hits?: RiskHit[];
   is_active: boolean;
   created_at: string;
   updated_at: string;

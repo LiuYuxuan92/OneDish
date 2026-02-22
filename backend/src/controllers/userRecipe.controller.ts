@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { UserRecipeService } from '../services/userRecipe.service';
+import { SafetyValidationError, UserRecipeService } from '../services/userRecipe.service';
 import { logger } from '../utils/logger';
 
 export class UserRecipeController {
@@ -40,6 +40,15 @@ export class UserRecipeController {
       res.json({ code: 200, message: '已提交审核', data: result });
     } catch (error: any) {
       logger.error('Failed to submit recipe', { error });
+      if (error instanceof SafetyValidationError) {
+        return res.status(400).json({
+          code: 400,
+          message: error.message,
+          data: null,
+          validation_errors: error.riskHits.map((h) => h.reason),
+          risk_hits: error.riskHits,
+        });
+      }
       res.status(400).json({ code: 400, message: error?.message || '提交失败', data: null });
     }
   };
@@ -57,6 +66,15 @@ export class UserRecipeController {
       res.json({ code: 200, message: '审核完成', data: result });
     } catch (error: any) {
       logger.error('Failed to review recipe', { error });
+      if (error instanceof SafetyValidationError) {
+        return res.status(400).json({
+          code: 400,
+          message: error.message,
+          data: null,
+          validation_errors: error.riskHits.map((h) => h.reason),
+          risk_hits: error.riskHits,
+        });
+      }
       res.status(400).json({ code: 400, message: error?.message || '审核失败', data: null });
     }
   };

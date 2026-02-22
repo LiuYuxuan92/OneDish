@@ -1,8 +1,18 @@
 import { db } from '../config/database';
+import { RiskHit, UgcRiskService } from './ugc-risk.service';
 
 const JSON_FIELDS = ['original_data', 'adult_version', 'baby_version', 'cooking_tips', 'image_url', 'tags', 'category', 'allergens', 'step_branches'];
 
+export class SafetyValidationError extends Error {
+  constructor(public readonly riskHits: RiskHit[]) {
+    super(`内容安全校验未通过：${riskHits.map((h) => `${h.reason}${h.suggestion ? `（建议：${h.suggestion}）` : ''}`).join('；')}`);
+    this.name = 'SafetyValidationError';
+  }
+}
+
 export class UserRecipeService {
+  private readonly riskService = new UgcRiskService();
+
   async createDraft(userId: string, payload: any) {
     return this.upsertDraft(userId, undefined, payload);
   }
@@ -44,13 +54,14 @@ export class UserRecipeService {
 
     if (!existing) throw new Error('仅草稿/驳回状态可提交审核');
 
-    const safetyResult = this.validateSafety(existing);
-    if (!safetyResult.safe) {
-      const reason = `内容安全校验未通过：${safetyResult.reasons.join('；')}`;
+    const safetyResult = this.riskService.evaluate(existing);
+    const blockingHits = safetyResult.riskHits.filter((h) => h.level === 'block');
+    if (!safetyResult.safeForSubmit) {
+      const reason = `内容安全校验未通过：${blockingHits.map((h) => `${h.reason}${h.suggestion ? `（建议：${h.suggestion}）` : ''}`).join('；')}`;
       await db('user_recipes')
         .where({ id: recipeId })
         .update({ reject_reason: reason, updated_at: db.fn.now() });
-      throw new Error(reason);
+      throw new SafetyValidationError(blockingHits);
     }
 
     const [row] = await db('user_recipes')
@@ -67,9 +78,10 @@ export class UserRecipeService {
     if (!current) throw new Error('仅待审核内容可处理');
 
     if (action === 'published') {
-      const safetyResult = this.validateSafety(current);
-      if (!safetyResult.safe) {
-        throw new Error(`内容安全校验未通过：${safetyResult.reasons.join('；')}`);
+      const safetyResult = this.riskService.evaluate(current);
+      const blockingHits = safetyResult.riskHits.filter((h) => h.level === 'block');
+      if (!safetyResult.safeForSubmit) {
+        throw new SafetyValidationError(blockingHits);
       }
     }
 
@@ -223,35 +235,6 @@ export class UserRecipeService {
     };
   }
 
-  private validateSafety(recipe: any): { safe: boolean; reasons: string[] } {
-    const textParts: string[] = [];
-    const pushText = (v: any) => {
-      if (v == null) return;
-      if (typeof v === 'string') textParts.push(v);
-      else textParts.push(JSON.stringify(v));
-    };
-
-    pushText(recipe.name);
-    pushText(recipe.cooking_tips);
-    pushText(recipe.tags);
-    pushText(recipe.adult_version);
-    pushText(recipe.baby_version);
-
-    const plainText = textParts.join(' ').toLowerCase();
-    const riskRules: Array<{ words: string[]; reason: string }> = [
-      { words: ['蜂蜜'], reason: '1岁以下婴幼儿禁用蜂蜜' },
-      { words: ['整颗坚果', '整粒坚果', '整颗花生', '整粒花生'], reason: '整颗/整粒坚果存在窒息风险' },
-      { words: ['酒精', '白酒', '啤酒', '料酒', '黄酒', '葡萄酒'], reason: '婴幼儿喂养不应含酒精相关食材' },
-      { words: ['高盐', '重盐', '高糖', '重糖', '加糖', '盐焗'], reason: '婴幼儿饮食应避免高盐高糖' },
-    ];
-
-    const reasons = riskRules
-      .filter((rule) => rule.words.some((w) => plainText.includes(w.toLowerCase())))
-      .map((r) => r.reason);
-
-    return { safe: reasons.length === 0, reasons };
-  }
-
   private parseRecipe(recipe: any) {
     if (!recipe) return recipe;
     for (const field of JSON_FIELDS) {
@@ -264,6 +247,8 @@ export class UserRecipeService {
     if (typeof recipe.baby_age_range === 'undefined') recipe.baby_age_range = null;
     if (typeof recipe.is_one_pot === 'undefined') recipe.is_one_pot = null;
     if (typeof recipe.is_favorited !== 'boolean') recipe.is_favorited = Boolean(recipe.is_favorited);
+    const risk = this.riskService.evaluate(recipe);
+    recipe.risk_hits = risk.riskHits;
     return recipe;
   }
 }

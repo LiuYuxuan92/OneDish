@@ -13,6 +13,10 @@ import {
   useReviewUserRecipe,
 } from '../../hooks/useUserRecipes';
 import { useUserInfo } from '../../hooks/useUsers';
+import { RiskHit } from '../../api/userRecipes';
+
+const formatRiskHits = (riskHits: RiskHit[] = []) =>
+  riskHits.map((hit) => `• [${hit.level.toUpperCase()}] ${hit.keyword}：${hit.reason}${hit.suggestion ? `（建议：${hit.suggestion}）` : ''}`).join('\n');
 
 export function MyRecipesScreen() {
   const [tab, setTab] = React.useState<'mine' | 'plaza'>('mine');
@@ -106,6 +110,16 @@ export function MyRecipesScreen() {
               <Text style={styles.title}>{recipe.name}</Text>
               <Text style={styles.meta}>状态：{recipe.status}</Text>
               {recipe.reject_reason ? <Text style={styles.warn}>原因：{recipe.reject_reason}</Text> : null}
+              {(recipe.risk_hits || []).length > 0 ? (
+                <View style={styles.riskBox}>
+                  <Text style={styles.riskTitle}>提审反馈</Text>
+                  {(recipe.risk_hits || []).map((hit: RiskHit, idx: number) => (
+                    <Text key={`${recipe.id}-risk-${idx}`} style={hit.level === 'block' ? styles.blockText : styles.warnText}>
+                      {`[${hit.level.toUpperCase()}] ${hit.keyword}：${hit.reason}${hit.suggestion ? `（建议：${hit.suggestion}）` : ''}`}
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
               <View style={styles.row}>
                 <TouchableOpacity style={styles.smallBtn} onPress={() => {
                   setEditingId(recipe.id); setName(recipe.name || '');
@@ -117,8 +131,24 @@ export function MyRecipesScreen() {
                   setStepBranches((recipe.step_branches || []).map((x: any) => x?.note || '').join('\n'));
                 }}><Text>编辑</Text></TouchableOpacity>
                 <TouchableOpacity style={styles.smallBtn} onPress={async () => {
-                  try { await submitMutation.mutateAsync(recipe.id); Alert.alert('提交成功', '已提交审核'); }
-                  catch (e: any) { Alert.alert('提交失败', e?.response?.data?.message || e?.message || '提交失败'); }
+                  try {
+                    await submitMutation.mutateAsync(recipe.id);
+                    const warnHits = (recipe?.risk_hits || []).filter((h: RiskHit) => h.level === 'warn');
+                    if (warnHits.length > 0) {
+                      Alert.alert('已提交审核（含风险提醒）', formatRiskHits(warnHits));
+                    } else {
+                      Alert.alert('提交成功', '已提交审核');
+                    }
+                  }
+                  catch (e: any) {
+                    const msg = e?.response?.data?.message || e?.message || '提交失败';
+                    const riskHits = e?.response?.data?.risk_hits || [];
+                    if (riskHits.length > 0) {
+                      Alert.alert('提交失败（命中拦截规则）', `${msg}\n\n${formatRiskHits(riskHits)}`);
+                    } else {
+                      Alert.alert('提交失败', msg);
+                    }
+                  }
                 }}><Text>提交审核</Text></TouchableOpacity>
                 {isAdmin && recipe.status === 'pending' ? (
                   <TouchableOpacity style={styles.smallBtn} onPress={async () => {
@@ -170,6 +200,10 @@ const styles = StyleSheet.create({
   title: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.text.primary },
   meta: { marginTop: 4, color: Colors.text.secondary },
   warn: { color: Colors.functional.error, marginTop: 4 },
+  riskBox: { marginTop: Spacing.sm, padding: Spacing.sm, backgroundColor: Colors.neutral.gray100, borderRadius: BorderRadius.md, gap: 4 },
+  riskTitle: { fontWeight: Typography.fontWeight.medium, color: Colors.text.primary },
+  blockText: { color: Colors.functional.error },
+  warnText: { color: Colors.functional.warning },
   row: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm, flexWrap: 'wrap' },
   smallBtn: { backgroundColor: Colors.neutral.gray100, borderRadius: BorderRadius.md, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
 });
