@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { mealPlansApi, WeeklyPlanResponse, MealPlan } from '../api/mealPlans';
+import { mealPlansApi, WeeklyPlanResponse, MealPlan, SmartRecommendationParams } from '../api/mealPlans';
 
 /**
  * 获取一周计划
@@ -83,6 +83,16 @@ export function useGenerateWeeklyPlan() {
         queryClient.resetQueries({ mutationKey: ['generateWeeklyPlan'] });
       }
     },
+  });
+}
+
+/**
+ * 三餐智能推荐 V1（A/B方案）
+ */
+export function useSmartRecommendations() {
+  return useMutation({
+    mutationFn: (params?: SmartRecommendationParams) =>
+      mealPlansApi.getSmartRecommendations(params).then(res => res.data),
   });
 }
 

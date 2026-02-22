@@ -31,6 +31,30 @@ export interface GenerateWeeklyPlanParams {
   };
 }
 
+export interface SmartRecommendationParams {
+  meal_type?: 'breakfast' | 'lunch' | 'dinner' | 'all-day';
+  baby_age_months?: number;
+  max_prep_time?: number;
+  inventory?: string[];
+  exclude_ingredients?: string[];
+}
+
+export interface SmartRecommendationItem {
+  id: string;
+  name: string;
+  image_url?: string;
+  time_estimate: number;
+  missing_ingredients: string[];
+  baby_suitable: boolean;
+  switch_hint: string;
+}
+
+export interface SmartRecommendationResponse {
+  meal_type: string;
+  constraints: Record<string, any>;
+  recommendations: Record<string, { A: SmartRecommendationItem | null; B: SmartRecommendationItem | null }>;
+}
+
 export const mealPlansApi = {
   // 获取一周计划
   getWeekly: (params?: { start_date?: string; end_date?: string }) =>
@@ -61,4 +85,8 @@ export const mealPlansApi = {
   // 标记餐食为已完成
   markMealComplete: (planId: string) =>
     apiClient.post(`/meal-plans/${planId}/complete`),
+
+  // 三餐智能推荐V1（A/B方案）
+  getSmartRecommendations: (params?: SmartRecommendationParams) =>
+    apiClient.post<SmartRecommendationResponse>('/meal-plans/recommendations', params),
 };

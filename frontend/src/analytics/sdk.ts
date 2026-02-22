@@ -11,7 +11,9 @@ export type CoreEventName =
   | 'shopping_list_created'
   | 'shopping_item_added'
   | 'shopping_item_checked'
-  | 'api_request_failed';
+  | 'api_request_failed'
+  | 'smart_recommendation_requested'
+  | 'smart_recommendation_viewed';
 
 export interface TrackPayload {
   [key: string]: unknown;

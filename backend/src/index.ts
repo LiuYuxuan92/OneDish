@@ -27,6 +27,7 @@ import searchRoutes from './routes/search.routes';
 import userRecipeRoutes from './routes/userRecipe.routes';
 import babyStageRoutes from './routes/baby-stage.routes';
 import quotaRoutes from './routes/quota.routes';
+import metricsRoutes from './routes/metrics.routes';
 import { RecipeTransformService } from './services/recipe-transform.service';
 
 const app = express();
@@ -65,6 +66,7 @@ app.use('/api/v1/search', searchRoutes);
 app.use('/api/v1/user-recipes', userRecipeRoutes);
 app.use('/api/v1/baby-stages', babyStageRoutes);
 app.use('/api/v1/quota', quotaRoutes);
+app.use('/api/v1/metrics', metricsRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({

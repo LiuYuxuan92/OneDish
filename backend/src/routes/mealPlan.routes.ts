@@ -23,4 +23,7 @@ router.post('/:planId/complete', mealPlanController.markMealComplete);
 // 生成一周智能计划
 router.post('/generate', mealPlanController.generateWeeklyPlan);
 
+// 三餐智能推荐 V1（A/B 方案）
+router.post('/recommendations', mealPlanController.getSmartRecommendations);
+
 export default router;

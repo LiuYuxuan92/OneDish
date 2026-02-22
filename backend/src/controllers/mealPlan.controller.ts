@@ -144,4 +144,39 @@ export class MealPlanController {
       });
     }
   };
+
+  // 三餐智能推荐 V1（A/B 方案）
+  getSmartRecommendations = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const {
+        meal_type = 'all-day',
+        baby_age_months,
+        max_prep_time,
+        inventory = [],
+        exclude_ingredients = [],
+      } = req.body || {};
+
+      const result = await this.mealPlanService.getSmartRecommendations(userId, {
+        meal_type,
+        baby_age_months,
+        max_prep_time,
+        inventory,
+        exclude_ingredients,
+      });
+
+      res.json({
+        code: 200,
+        message: '生成成功',
+        data: result,
+      });
+    } catch (error) {
+      logger.error('Failed to generate smart recommendations', { error });
+      res.status(500).json({
+        code: 500,
+        message: '生成智能推荐失败',
+        data: null,
+      });
+    }
+  };
 }

@@ -17,6 +17,14 @@ interface RecipeItem {
   type: string;
 }
 
+interface SmartRecommendationInput {
+  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'all-day';
+  baby_age_months?: number;
+  max_prep_time?: number;
+  inventory?: string[];
+  exclude_ingredients?: string[];
+}
+
 export class MealPlanService {
   // 缓存的菜谱池（5分钟更新一次）
   private recipePoolCache: RecipePool | null = null;
@@ -494,6 +502,130 @@ export class MealPlanService {
         }
       }
     }
+  }
+
+  /**
+   * 三餐智能推荐 V1（A/B方案）
+   */
+  async getSmartRecommendations(userId: string, input: SmartRecommendationInput) {
+    const mealType = input.meal_type || 'all-day';
+    const maxPrepTime = input.max_prep_time || 40;
+    const babyAgeMonths = input.baby_age_months;
+    const excludeIngredients = input.exclude_ingredients || [];
+
+    const inventoryFromDb = await db('ingredient_inventory')
+      .where('user_id', userId)
+      .where('quantity', '>', 0)
+      .select('ingredient_name');
+
+    const inventorySet = new Set<string>([
+      ...(input.inventory || []),
+      ...inventoryFromDb.map((row: any) => row.ingredient_name),
+    ]);
+
+    const targetMealTypes: Array<'breakfast' | 'lunch' | 'dinner'> =
+      mealType === 'all-day' ? ['breakfast', 'lunch', 'dinner'] : [mealType];
+
+    const recipes = await db('recipes')
+      .where('is_active', true)
+      .where('prep_time', '<=', maxPrepTime)
+      .whereIn('type', targetMealTypes)
+      .select('*');
+
+    const grouped: Record<string, any[]> = {
+      breakfast: [],
+      lunch: [],
+      dinner: [],
+    };
+    for (const r of recipes) {
+      if (grouped[r.type]) grouped[r.type].push(r);
+    }
+
+    const recommendations: Record<string, any> = {};
+
+    for (const mt of targetMealTypes) {
+      const pool = grouped[mt] || [];
+      const scored = pool
+        .map((recipe) => this.buildCandidateMeta(recipe, babyAgeMonths, inventorySet, excludeIngredients))
+        .filter((item) => item.score >= 0)
+        .sort((a, b) => b.score - a.score || a.recipe.prep_time - b.recipe.prep_time);
+
+      const pickA = scored[0] || null;
+      const pickB = scored.find((x) => x.recipe.id !== pickA?.recipe.id) || null;
+
+      recommendations[mt] = {
+        A: pickA ? this.toRecommendationItem(pickA) : null,
+        B: pickB ? this.toRecommendationItem(pickB) : null,
+      };
+    }
+
+    return {
+      meal_type: mealType,
+      constraints: {
+        baby_age_months: babyAgeMonths || null,
+        max_prep_time: maxPrepTime,
+        inventory_count: inventorySet.size,
+        exclude_ingredients: excludeIngredients,
+      },
+      recommendations,
+    };
+  }
+
+  private buildCandidateMeta(
+    recipe: any,
+    babyAgeMonths?: number,
+    inventorySet?: Set<string>,
+    excludeIngredients: string[] = []
+  ) {
+    let ingredients: string[] = [];
+    let babySuitable = true;
+
+    try {
+      const adultVersion = typeof recipe.adult_version === 'string'
+        ? JSON.parse(recipe.adult_version)
+        : recipe.adult_version;
+      ingredients = (adultVersion?.ingredients || []).map((i: any) => i.name).filter(Boolean);
+    } catch {
+      ingredients = [];
+    }
+
+    for (const ing of ingredients) {
+      if (excludeIngredients.some(ex => ing.includes(ex))) {
+        return { recipe, score: -1, missingIngredients: [], babySuitable: false, switchHint: '命中忌口食材，已过滤' };
+      }
+      if (babyAgeMonths) {
+        const suitability = isIngredientSuitable(ing, babyAgeMonths);
+        if (!suitability.suitable) babySuitable = false;
+      }
+    }
+
+    const missingIngredients = ingredients.filter((ing) => {
+      if (!inventorySet || inventorySet.size === 0) return false;
+      return !Array.from(inventorySet).some((x) => ing.includes(x) || x.includes(ing));
+    });
+
+    const score =
+      (babySuitable ? 30 : 5)
+      + Math.max(0, 20 - (recipe.prep_time || 0))
+      + Math.max(0, 10 - missingIngredients.length * 2);
+
+    const switchHint = missingIngredients.length > 0
+      ? `缺少${missingIngredients.slice(0, 2).join('、')}，建议切换B方案降低采购量`
+      : '库存覆盖较好，优先推荐此方案';
+
+    return { recipe, score, missingIngredients, babySuitable, switchHint };
+  }
+
+  private toRecommendationItem(item: any) {
+    return {
+      id: item.recipe.id,
+      name: item.recipe.name,
+      image_url: item.recipe.image_url,
+      time_estimate: item.recipe.prep_time,
+      missing_ingredients: item.missingIngredients,
+      baby_suitable: item.babySuitable,
+      switch_hint: item.switchHint,
+    };
   }
 
   /**

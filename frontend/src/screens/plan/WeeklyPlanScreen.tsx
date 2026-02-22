@@ -15,10 +15,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
-import { useWeeklyPlan, useGenerateWeeklyPlan, useMarkMealComplete } from '../../hooks/useMealPlans';
+import { useWeeklyPlan, useGenerateWeeklyPlan, useMarkMealComplete, useSmartRecommendations } from '../../hooks/useMealPlans';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { PlanStackParamList } from '../../types';
 import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon, ShoppingBagIcon, RefreshCwIcon, BabyIcon, CheckIcon } from '../../components/common/Icons';
+import { trackEvent } from '../../analytics/sdk';
 
 type Props = NativeStackScreenProps<PlanStackParamList, 'WeeklyPlan'>;
 
@@ -55,10 +56,13 @@ export function WeeklyPlanScreen({ navigation }: Props) {
   const [showGenOptions, setShowGenOptions] = useState(false);
   const [genBabyAge, setGenBabyAge] = useState<number | null>(null);
   const [genExclude, setGenExclude] = useState('');
+  const [showSmartRec, setShowSmartRec] = useState(false);
+  const [smartMealType, setSmartMealType] = useState<'all-day' | 'breakfast' | 'lunch' | 'dinner'>('all-day');
 
   const { data: weeklyData, isLoading, error, refetch } = useWeeklyPlan();
   const generateMutation = useGenerateWeeklyPlan();
   const markCompleteMutation = useMarkMealComplete();
+  const smartRecMutation = useSmartRecommendations();
 
   const getWeekRange = (date: Date) => {
     const d = new Date(date);
@@ -121,6 +125,37 @@ export function WeeklyPlanScreen({ navigation }: Props) {
       // 清除刷新状态
       setIsGenerating(false);
       setRefreshingMeals(new Set());
+    }
+  };
+
+  const handleSmartRecommendation = async () => {
+    try {
+      await trackEvent('smart_recommendation_requested', {
+        page_id: 'weekly_plan',
+        meal_type: smartMealType,
+        has_baby_age: Boolean(genBabyAge),
+        has_exclude_ingredients: Boolean(genExclude.trim()),
+      });
+
+      const data = await smartRecMutation.mutateAsync({
+        meal_type: smartMealType,
+        baby_age_months: genBabyAge || undefined,
+        exclude_ingredients: genExclude.trim()
+          ? genExclude.split(/[,，、]/).map(s => s.trim()).filter(Boolean)
+          : undefined,
+        max_prep_time: 40,
+      });
+
+      const mealGroupCount = Object.keys(data?.recommendations || {}).length;
+      await trackEvent('smart_recommendation_viewed', {
+        page_id: 'weekly_plan',
+        meal_type: smartMealType,
+        meal_group_count: mealGroupCount,
+      });
+
+      setShowSmartRec(true);
+    } catch (e) {
+      console.error('智能推荐失败', e);
     }
   };
 
@@ -265,6 +300,13 @@ export function WeeklyPlanScreen({ navigation }: Props) {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.iconButton}
+              onPress={handleSmartRecommendation}
+              accessibilityLabel="三餐智能推荐"
+            >
+              <Text style={{ color: Colors.primary.main, fontWeight: '700' }}>A/B</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.iconButton}
               onPress={() => navigation.navigate('ShoppingList')}
               accessibilityLabel="查看购物清单"
             >
@@ -386,6 +428,47 @@ export function WeeklyPlanScreen({ navigation }: Props) {
           <TodayDetailTab startDate={start} weeklyData={weeklyData} navigation={navigation} />
         )}
       </ScrollView>
+
+      {/* 三餐智能推荐结果 */}
+      <Modal visible={showSmartRec} transparent animationType="slide" onRequestClose={() => setShowSmartRec(false)}>
+        <View style={styles.genModalOverlay}>
+          <View style={styles.genModalContent}>
+            <Text style={styles.genModalTitle}>三餐智能推荐 V1（A/B）</Text>
+            <ScrollView style={{ maxHeight: 420 }}>
+              {Object.entries(smartRecMutation.data?.recommendations || {}).map(([mt, pair]: any) => (
+                <View key={mt} style={{ marginBottom: 16 }}>
+                  <Text style={styles.sectionTitle}>{MEAL_LABELS[mt]?.label || mt}</Text>
+                  {['A', 'B'].map((k) => {
+                    const item = pair?.[k];
+                    if (!item) {
+                      return <Text key={k} style={styles.genOptionLabel}>方案{k}：暂无可推荐</Text>;
+                    }
+                    return (
+                      <View key={k} style={styles.todayMealCard}>
+                        <Text style={styles.todayMealName}>方案{k}：{item.name}</Text>
+                        <Text style={styles.genOptionLabel}>耗时：{item.time_estimate} 分钟</Text>
+                        <Text style={styles.genOptionLabel}>缺口食材：{item.missing_ingredients?.join('、') || '无'}</Text>
+                        <Text style={styles.genOptionLabel}>宝宝适配：{item.baby_suitable ? '是' : '否'}</Text>
+                        <Text style={styles.genOptionLabel}>替换理由：{item.switch_hint}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              ))}
+            </ScrollView>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+              {(['all-day', 'breakfast', 'lunch', 'dinner'] as const).map((t) => (
+                <TouchableOpacity key={t} style={[styles.genAgeOption, smartMealType === t && styles.genAgeOptionSelected]} onPress={() => setSmartMealType(t)}>
+                  <Text style={[styles.genAgeOptionText, smartMealType === t && styles.genAgeOptionTextSelected]}>{t}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity style={styles.genStartButton} onPress={() => setShowSmartRec(false)}>
+              <Text style={styles.genStartButtonText}>关闭</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* 智能生成选项弹窗 */}
       <Modal visible={showGenOptions} transparent animationType="fade" onRequestClose={() => setShowGenOptions(false)}>
