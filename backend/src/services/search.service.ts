@@ -3,73 +3,106 @@ import { LocalSearchAdapter } from '../adapters/local.adapter';
 import { TianxingSearchAdapter } from '../adapters/tianxing.adapter';
 import { AISearchAdapter, AIProvider } from '../adapters/ai.adapter';
 import { logger } from '../utils/logger';
+import { quotaService } from './quota.service';
+import { metricsService } from './metrics.service';
+
+export interface ResolveRequest {
+  query: string;
+  intent_type?: string;
+  freshness_required?: boolean;
+  user_tier?: 'free' | 'pro' | 'enterprise';
+  context?: unknown;
+  force_refresh?: boolean;
+  user_id?: string;
+}
 
 export class SearchService {
   private localAdapter: LocalSearchAdapter;
   private tianxingAdapter: TianxingSearchAdapter;
   private aiAdapter: AISearchAdapter;
+  private cache = new Map<string, { data: SearchResult[]; expiresAt: number }>();
 
   constructor() {
     this.localAdapter = new LocalSearchAdapter();
     this.tianxingAdapter = new TianxingSearchAdapter();
-    // 默认使用MiniMax
     this.aiAdapter = new AISearchAdapter('minimax');
   }
 
-  async search(keyword: string): Promise<UnifiedSearchResult> {
-    if (!keyword || keyword.trim() === '') {
-      return {
-        results: [],
-        source: 'local',
-        total: 0,
-      };
+  async resolve(req: ResolveRequest): Promise<{ items: SearchResult[]; route_used: 'local' | 'cache' | 'web' | 'ai'; cache_hit: boolean; degrade_level: number }> {
+    const query = (req.query || '').trim();
+    const tier = req.user_tier || 'free';
+    const userId = req.user_id || 'anonymous';
+
+    if (!query) {
+      return { items: [], route_used: 'local', cache_hit: false, degrade_level: 0 };
     }
 
-    const trimmedKeyword = keyword.trim();
+    const cacheKey = quotaService.makeSearchCacheKey(query, req.context, tier);
+    const cacheStart = Date.now();
+    const cached = this.cache.get(cacheKey);
+    if (!req.force_refresh && cached && cached.expiresAt > Date.now()) {
+      metricsService.inc('onedish_cache_hit_total', { layer: 'l2', key_type: 'search' });
+      metricsService.observe('onedish_cache_latency_ms', { layer: 'l2', op: 'get' }, Date.now() - cacheStart);
+      metricsService.inc('onedish_router_route_total', { route_used: 'cache', intent_type: req.intent_type || 'unknown' });
+      return { items: cached.data, route_used: 'cache', cache_hit: true, degrade_level: 0 };
+    }
+    metricsService.inc('onedish_cache_miss_total', { layer: 'l2', key_type: 'search' });
+    metricsService.observe('onedish_cache_latency_ms', { layer: 'l2', op: 'get' }, Date.now() - cacheStart);
 
-    // 1. 先查本地数据库
-    const localResults = await this.localAdapter.search(trimmedKeyword);
+    const localResults = await this.localAdapter.search(query);
     if (localResults.length > 0) {
-      logger.debug(`Local search found ${localResults.length} results for "${trimmedKeyword}"`);
-      return {
-        results: localResults,
-        source: 'local',
-        total: localResults.length,
-      };
+      metricsService.inc('onedish_router_route_total', { route_used: 'local', intent_type: req.intent_type || 'unknown' });
+      this.setCache(cacheKey, localResults, 30 * 60 * 1000);
+      return { items: localResults, route_used: 'local', cache_hit: false, degrade_level: 0 };
     }
 
-    // 2. 本地无结果，查天行数据API
-    const tianxingResults = await this.tianxingAdapter.search(trimmedKeyword);
-    if (tianxingResults.length > 0) {
-      logger.debug(`Tianxing search found ${tianxingResults.length} results for "${trimmedKeyword}"`);
-      return {
-        results: tianxingResults,
-        source: 'tianxing',
-        total: tianxingResults.length,
-      };
+    const webQuota = quotaService.consume(userId, tier, 'web');
+    if (webQuota.allowed) {
+      const webStart = Date.now();
+      const webResults = await this.tianxingAdapter.search(query);
+      metricsService.inc('onedish_quota_user_used_total', { channel: 'search', type: 'web', tier });
+      metricsService.inc('onedish_quota_global_used_total', { type: 'web' });
+      metricsService.inc('onedish_upstream_requests_total', { provider: 'tianxing', endpoint: 'search', status: String(webResults.length > 0 ? 200 : 204) });
+      metricsService.observe('onedish_upstream_latency_ms', { provider: 'tianxing', endpoint: 'search' }, Date.now() - webStart);
+      if (webResults.length > 0) {
+        metricsService.inc('onedish_router_route_total', { route_used: 'web', intent_type: req.intent_type || 'unknown' });
+        this.setCache(cacheKey, webResults, 10 * 60 * 1000);
+        return { items: webResults, route_used: 'web', cache_hit: false, degrade_level: 0 };
+      }
+    } else {
+      metricsService.inc('onedish_quota_reject_total', { level: webQuota.reason || 'user', user_tier: tier, type: 'web' });
     }
 
-    // 3. API无结果，AI生成
-    const aiResults = await this.aiAdapter.search(trimmedKeyword);
-    if (aiResults.length > 0) {
-      logger.debug(`AI search found ${aiResults.length} results for "${trimmedKeyword}"`);
-      return {
-        results: aiResults,
-        source: 'ai',
-        total: aiResults.length,
-      };
+    const aiQuota = quotaService.consume(userId, tier, 'ai');
+    if (aiQuota.allowed) {
+      const aiStart = Date.now();
+      const aiResults = await this.aiAdapter.search(query);
+      metricsService.inc('onedish_quota_user_used_total', { channel: 'search', type: 'ai', tier });
+      metricsService.inc('onedish_quota_global_used_total', { type: 'ai' });
+      metricsService.inc('onedish_upstream_requests_total', { provider: 'ai', endpoint: 'search', status: String(aiResults.length > 0 ? 200 : 204) });
+      metricsService.observe('onedish_upstream_latency_ms', { provider: 'ai', endpoint: 'search' }, Date.now() - aiStart);
+      if (aiResults.length > 0) {
+        metricsService.inc('onedish_router_route_total', { route_used: 'ai', intent_type: req.intent_type || 'unknown' });
+        this.setCache(cacheKey, aiResults, 30 * 60 * 1000);
+        return { items: aiResults, route_used: 'ai', cache_hit: false, degrade_level: 0 };
+      }
+    } else {
+      metricsService.inc('onedish_quota_reject_total', { level: aiQuota.reason || 'user', user_tier: tier, type: 'ai' });
     }
 
-    // 4. 都没有结果
-    logger.debug(`No results found for "${trimmedKeyword}"`);
-    return {
-      results: [],
-      source: 'ai',
-      total: 0,
-    };
+    metricsService.inc('onedish_router_degrade_total', { degrade_level: '2', reason: 'no_route_or_quota' });
+    return { items: [], route_used: 'local', cache_hit: false, degrade_level: 2 };
   }
 
-  // 单独搜索某个来源
+  async search(keyword: string): Promise<UnifiedSearchResult> {
+    const result = await this.resolve({ query: keyword, intent_type: 'search', user_tier: 'free', user_id: 'anonymous' });
+    return {
+      results: result.items,
+      source: result.route_used === 'web' ? 'tianxing' : result.route_used,
+      total: result.items.length,
+    } as UnifiedSearchResult;
+  }
+
   async searchFromSource(keyword: string, source: 'local' | 'tianxing' | 'ai'): Promise<SearchResult[]> {
     const trimmedKeyword = keyword.trim();
 
@@ -85,9 +118,13 @@ export class SearchService {
     }
   }
 
-  // 切换AI供应商
   setAIProvider(provider: AIProvider): void {
     this.aiAdapter = new AISearchAdapter(provider);
+  }
+
+  private setCache(key: string, data: SearchResult[], ttlMs: number): void {
+    this.cache.set(key, { data, expiresAt: Date.now() + ttlMs });
+    metricsService.observe('onedish_cache_latency_ms', { layer: 'l2', op: 'set' }, 1);
   }
 }
 
