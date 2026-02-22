@@ -1,4 +1,4 @@
-import { db } from '../config/database';
+import { db, generateUUID } from '../config/database';
 import { isIngredientSuitable } from '../utils/recipe-pairing-engine';
 
 // 菜谱池接口 - 用于存储每个餐别的可用菜谱
@@ -23,6 +23,13 @@ interface SmartRecommendationInput {
   max_prep_time?: number;
   inventory?: string[];
   exclude_ingredients?: string[];
+}
+
+interface RecommendationFeedbackInput {
+  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'all-day';
+  selected_option: 'A' | 'B' | 'NONE';
+  reject_reason?: string;
+  event_time?: string;
 }
 
 export class MealPlanService {
@@ -625,6 +632,63 @@ export class MealPlanService {
       missing_ingredients: item.missingIngredients,
       baby_suitable: item.babySuitable,
       switch_hint: item.switchHint,
+    };
+  }
+
+  async submitRecommendationFeedback(userId: string, input: RecommendationFeedbackInput) {
+    const eventTime = input.event_time ? new Date(input.event_time) : new Date();
+    if (Number.isNaN(eventTime.getTime())) {
+      throw new Error('INVALID_EVENT_TIME');
+    }
+
+    const id = generateUUID();
+    await db('recommendation_feedbacks').insert({
+      id,
+      user_id: userId,
+      meal_type: input.meal_type,
+      selected_option: input.selected_option,
+      reject_reason: input.reject_reason || null,
+      event_time: eventTime.toISOString(),
+    });
+
+    return { accepted: true, id };
+  }
+
+  async getRecommendationFeedbackStats(userId: string, days = 7) {
+    const safeDays = Math.max(1, Math.min(30, Number(days) || 7));
+    const since = new Date(Date.now() - safeDays * 24 * 60 * 60 * 1000).toISOString();
+
+    const rows = await db('recommendation_feedbacks')
+      .where('user_id', userId)
+      .andWhere('event_time', '>=', since)
+      .select('selected_option', 'reject_reason');
+
+    const total = rows.length;
+    const accepted = rows.filter((r: any) => r.selected_option === 'A' || r.selected_option === 'B').length;
+    const rejected = rows.filter((r: any) => r.selected_option === 'NONE').length;
+    const adoptionRate = total > 0 ? Number((accepted / total).toFixed(4)) : 0;
+
+    const reasonCounter = new Map<string, number>();
+    rows
+      .filter((r: any) => r.selected_option === 'NONE' && r.reject_reason)
+      .forEach((r: any) => {
+        const key = String(r.reject_reason).trim();
+        if (!key) return;
+        reasonCounter.set(key, (reasonCounter.get(key) || 0) + 1);
+      });
+
+    const rejectReasonTop = Array.from(reasonCounter.entries())
+      .map(([reason, count]) => ({ reason, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    return {
+      window_days: safeDays,
+      total,
+      accepted,
+      rejected,
+      adoption_rate: adoptionRate,
+      reject_reason_top: rejectReasonTop,
     };
   }
 

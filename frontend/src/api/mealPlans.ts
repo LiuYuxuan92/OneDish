@@ -55,6 +55,22 @@ export interface SmartRecommendationResponse {
   recommendations: Record<string, { A: SmartRecommendationItem | null; B: SmartRecommendationItem | null }>;
 }
 
+export interface RecommendationFeedbackParams {
+  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'all-day';
+  selected_option: 'A' | 'B' | 'NONE';
+  reject_reason?: string;
+  event_time?: string;
+}
+
+export interface RecommendationFeedbackStats {
+  window_days: number;
+  total: number;
+  accepted: number;
+  rejected: number;
+  adoption_rate: number;
+  reject_reason_top: Array<{ reason: string; count: number }>;
+}
+
 export const mealPlansApi = {
   // 获取一周计划
   getWeekly: (params?: { start_date?: string; end_date?: string }) =>
@@ -89,4 +105,11 @@ export const mealPlansApi = {
   // 三餐智能推荐V1（A/B方案）
   getSmartRecommendations: (params?: SmartRecommendationParams) =>
     apiClient.post<SmartRecommendationResponse>('/meal-plans/recommendations', params),
+
+  // 推荐反馈闭环 V1
+  submitRecommendationFeedback: (params: RecommendationFeedbackParams) =>
+    apiClient.post<{ accepted: boolean; id: string }>('/meal-plans/recommendations/feedback', params),
+
+  getRecommendationFeedbackStats: (days = 7) =>
+    apiClient.get<RecommendationFeedbackStats>(`/meal-plans/recommendations/feedback/stats?days=${days}`),
 };

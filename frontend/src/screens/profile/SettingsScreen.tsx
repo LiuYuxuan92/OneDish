@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../contexts/ThemeContext';
 import { quotaApi, QuotaStatus } from '../../api/quota';
+import { useRecommendationFeedbackStats } from '../../hooks/useMealPlans';
 
 // 需要清除的缓存键列表
 const CACHE_KEYS = [
@@ -27,6 +28,7 @@ export function SettingsScreen() {
   const [notifications, setNotifications] = React.useState(true);
   const [showThemeModal, setShowThemeModal] = React.useState(false);
   const [quota, setQuota] = React.useState<QuotaStatus | null>(null);
+  const { data: feedbackStats } = useRecommendationFeedbackStats(7);
 
   const loadQuota = React.useCallback(async () => {
     const data = await quotaApi.getStatus();
@@ -80,6 +82,15 @@ export function SettingsScreen() {
         ? `AI ${quota.daily.ai_used}/${quota.daily.ai_limit} · Web ${quota.daily.web_used}/${quota.daily.web_limit}`
         : '加载中...',
       onPress: loadQuota,
+    },
+    {
+      icon: '✅',
+      title: '近7天推荐采纳率',
+      type: 'navigation',
+      value: feedbackStats
+        ? `${(feedbackStats.adoption_rate * 100).toFixed(1)}% (${feedbackStats.accepted}/${feedbackStats.total || 0})`
+        : '暂无数据',
+      onPress: () => {},
     },
     { icon: '🔄', title: '清除缓存', type: 'button', onPress: handleClearCache },
   ];

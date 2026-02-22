@@ -26,4 +26,8 @@ router.post('/generate', mealPlanController.generateWeeklyPlan);
 // 三餐智能推荐 V1（A/B 方案）
 router.post('/recommendations', mealPlanController.getSmartRecommendations);
 
+// 推荐反馈闭环 V1
+router.post('/recommendations/feedback', mealPlanController.submitRecommendationFeedback);
+router.get('/recommendations/feedback/stats', mealPlanController.getRecommendationFeedbackStats);
+
 export default router;

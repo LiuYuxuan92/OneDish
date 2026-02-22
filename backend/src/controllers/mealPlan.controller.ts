@@ -179,4 +179,47 @@ export class MealPlanController {
       });
     }
   };
+
+  submitRecommendationFeedback = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const { meal_type, selected_option, reject_reason, event_time } = req.body || {};
+      const allowedMealTypes = new Set(['breakfast', 'lunch', 'dinner', 'all-day']);
+      const allowedOptions = new Set(['A', 'B', 'NONE']);
+
+      if (!allowedMealTypes.has(String(meal_type))) {
+        return res.status(400).json({ code: 400, message: '非法 meal_type', data: null });
+      }
+      if (!allowedOptions.has(String(selected_option))) {
+        return res.status(400).json({ code: 400, message: '非法 selected_option', data: null });
+      }
+
+      const result = await this.mealPlanService.submitRecommendationFeedback(userId, {
+        meal_type,
+        selected_option,
+        reject_reason,
+        event_time,
+      });
+
+      return res.json({ code: 200, message: '记录成功', data: result });
+    } catch (error: any) {
+      if (error?.message === 'INVALID_EVENT_TIME') {
+        return res.status(400).json({ code: 400, message: 'event_time 非法', data: null });
+      }
+      logger.error('Failed to submit recommendation feedback', { error });
+      return res.status(500).json({ code: 500, message: '反馈记录失败', data: null });
+    }
+  };
+
+  getRecommendationFeedbackStats = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const days = Number(req.query.days || 7);
+      const result = await this.mealPlanService.getRecommendationFeedbackStats(userId, days);
+      return res.json({ code: 200, message: 'success', data: result });
+    } catch (error) {
+      logger.error('Failed to get recommendation feedback stats', { error });
+      return res.status(500).json({ code: 500, message: '获取反馈统计失败', data: null });
+    }
+  };
 }

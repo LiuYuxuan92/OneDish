@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
-import { useWeeklyPlan, useGenerateWeeklyPlan, useMarkMealComplete, useSmartRecommendations } from '../../hooks/useMealPlans';
+import { useWeeklyPlan, useGenerateWeeklyPlan, useMarkMealComplete, useSmartRecommendations, useSubmitRecommendationFeedback } from '../../hooks/useMealPlans';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { PlanStackParamList } from '../../types';
 import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon, ShoppingBagIcon, RefreshCwIcon, BabyIcon, CheckIcon } from '../../components/common/Icons';
@@ -58,11 +58,13 @@ export function WeeklyPlanScreen({ navigation }: Props) {
   const [genExclude, setGenExclude] = useState('');
   const [showSmartRec, setShowSmartRec] = useState(false);
   const [smartMealType, setSmartMealType] = useState<'all-day' | 'breakfast' | 'lunch' | 'dinner'>('all-day');
+  const [rejectReason, setRejectReason] = useState('');
 
   const { data: weeklyData, isLoading, error, refetch } = useWeeklyPlan();
   const generateMutation = useGenerateWeeklyPlan();
   const markCompleteMutation = useMarkMealComplete();
   const smartRecMutation = useSmartRecommendations();
+  const feedbackMutation = useSubmitRecommendationFeedback();
 
   const getWeekRange = (date: Date) => {
     const d = new Date(date);
@@ -156,6 +158,23 @@ export function WeeklyPlanScreen({ navigation }: Props) {
       setShowSmartRec(true);
     } catch (e) {
       console.error('智能推荐失败', e);
+    }
+  };
+
+  const handleSubmitFeedback = async (selectedOption: 'A' | 'B' | 'NONE') => {
+    try {
+      await feedbackMutation.mutateAsync({
+        meal_type: smartMealType,
+        selected_option: selectedOption,
+        reject_reason: selectedOption === 'NONE' ? rejectReason.trim() : undefined,
+        event_time: new Date().toISOString(),
+      });
+
+      Alert.alert('反馈已记录', '感谢反馈，推荐将持续优化');
+      setRejectReason('');
+      setShowSmartRec(false);
+    } catch (error) {
+      Alert.alert('提交失败', '请稍后重试');
     }
   };
 
@@ -463,6 +482,28 @@ export function WeeklyPlanScreen({ navigation }: Props) {
                 </TouchableOpacity>
               ))}
             </View>
+
+            <View style={{ gap: 8, marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity style={[styles.genStartButton, { flex: 1 }]} disabled={feedbackMutation.isPending} onPress={() => handleSubmitFeedback('A')}>
+                  <Text style={styles.genStartButtonText}>采纳A</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.genStartButton, { flex: 1, backgroundColor: Colors.secondary.main }]} disabled={feedbackMutation.isPending} onPress={() => handleSubmitFeedback('B')}>
+                  <Text style={styles.genStartButtonText}>采纳B</Text>
+                </TouchableOpacity>
+              </View>
+              <TextInput
+                style={styles.genExcludeInput}
+                placeholder="不采纳原因（可选）"
+                value={rejectReason}
+                onChangeText={setRejectReason}
+                placeholderTextColor={Colors.text.tertiary}
+              />
+              <TouchableOpacity style={[styles.genStartButton, { backgroundColor: Colors.neutral.gray500 }]} disabled={feedbackMutation.isPending} onPress={() => handleSubmitFeedback('NONE')}>
+                <Text style={styles.genStartButtonText}>不采纳（提交原因）</Text>
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity style={styles.genStartButton} onPress={() => setShowSmartRec(false)}>
               <Text style={styles.genStartButtonText}>关闭</Text>
             </TouchableOpacity>

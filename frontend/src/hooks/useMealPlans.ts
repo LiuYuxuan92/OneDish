@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { mealPlansApi, WeeklyPlanResponse, MealPlan, SmartRecommendationParams } from '../api/mealPlans';
+import { mealPlansApi, WeeklyPlanResponse, MealPlan, SmartRecommendationParams, RecommendationFeedbackParams } from '../api/mealPlans';
 
 /**
  * 获取一周计划
@@ -93,6 +93,21 @@ export function useSmartRecommendations() {
   return useMutation({
     mutationFn: (params?: SmartRecommendationParams) =>
       mealPlansApi.getSmartRecommendations(params).then(res => res.data),
+  });
+}
+
+export function useSubmitRecommendationFeedback() {
+  return useMutation({
+    mutationFn: (params: RecommendationFeedbackParams) =>
+      mealPlansApi.submitRecommendationFeedback(params).then(res => res.data),
+  });
+}
+
+export function useRecommendationFeedbackStats(days = 7) {
+  return useQuery({
+    queryKey: ['mealPlans', 'recommendationFeedbackStats', days],
+    queryFn: () => mealPlansApi.getRecommendationFeedbackStats(days).then(res => res.data),
+    staleTime: 60 * 1000,
   });
 }
 
