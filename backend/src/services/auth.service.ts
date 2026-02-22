@@ -1,6 +1,6 @@
 import { db } from '../config/database';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { User } from '../types';
 import { jwtConfig, isProduction } from '../config/jwt';
 
@@ -65,7 +65,7 @@ export class AuthService {
         username: user.username,
       },
       secret,
-      { expiresIn: jwtConfig.accessTokenExpiry }
+      { expiresIn: jwtConfig.accessTokenExpiry as SignOptions['expiresIn'] }
     );
   }
 
@@ -79,7 +79,7 @@ export class AuthService {
         username: user.username,
       },
       secret,
-      { expiresIn: jwtConfig.refreshTokenExpiry }
+      { expiresIn: jwtConfig.refreshTokenExpiry as SignOptions['expiresIn'] }
     );
   }
 }

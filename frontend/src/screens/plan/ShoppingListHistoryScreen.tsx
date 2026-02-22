@@ -19,14 +19,16 @@ type Props = NativeStackScreenProps<PlanStackParamList, 'ShoppingListHistory'>;
 
 // 存储区域显示标签
 const AREA_LABELS: Record<string, string> = {
-  '超市区': '🏪',
-  '蔬果区': '🥬',
-  '调料区': '🧂',
-  '其他': '📦',
+  produce: '🥬',
+  protein: '🥩',
+  staple: '🍚',
+  seasoning: '🧂',
+  snack_dairy: '🥛',
+  household: '🧻',
+  other: '📦',
 };
 
-// 存储区域排序
-const AREA_ORDER = ['超市区', '蔬果区', '调料区', '其他'];
+const AREA_ORDER = ['produce', 'protein', 'staple', 'seasoning', 'snack_dairy', 'household', 'other'];
 
 export function ShoppingListHistoryScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);

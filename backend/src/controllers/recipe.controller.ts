@@ -3,6 +3,7 @@ import { RecipeService } from '../services/recipe.service';
 import { RecipeTransformService } from '../services/recipe-transform.service';
 import { SyncTimelineService } from '../services/sync-timeline.service';
 import { logger } from '../utils/logger';
+import { Recipe } from '../types';
 
 export class RecipeController {
   private recipeService: RecipeService;
@@ -133,7 +134,7 @@ export class RecipeController {
       }
 
       // 获取成人食谱
-      const adultRecipe = await this.recipeService.getRecipeDetail(id);
+      const adultRecipe = await this.recipeService.getRecipeDetail(id) as Recipe;
 
       // 转换为宝宝版
       const result = await this.transformService.transformToBabyVersion(
@@ -270,7 +271,7 @@ export class RecipeController {
       const results = [];
       for (const recipeId of recipe_ids) {
         try {
-          const adultRecipe = await this.recipeService.getRecipeDetail(recipeId);
+          const adultRecipe = await this.recipeService.getRecipeDetail(recipeId) as Recipe;
           const result = await this.transformService.transformToBabyVersion(
             adultRecipe,
             baby_age_months,
@@ -337,7 +338,7 @@ export class RecipeController {
       }
 
       // 获取成人食谱
-      const adultRecipe = await this.recipeService.getRecipeDetail(id);
+      const adultRecipe = await this.recipeService.getRecipeDetail(id) as Recipe;
 
       // 先转换为宝宝版
       const transformResult = await this.transformService.transformToBabyVersion(

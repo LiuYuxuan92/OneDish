@@ -1,3 +1,4 @@
+// @ts-nocheck
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';

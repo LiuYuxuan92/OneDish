@@ -94,6 +94,7 @@ export interface RecipeStep {
 export interface SeasoningItem {
   name: string;
   amount: string;
+  note?: string;
 }
 
 // 食材相关类型

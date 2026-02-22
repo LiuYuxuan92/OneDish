@@ -2,6 +2,89 @@ import { db } from '../config/database';
 import { logger } from '../utils/logger';
 
 export class ShoppingListService {
+  private static readonly DEFAULT_ITEMS_STRUCTURE: Record<string, any[]> = {
+    produce: [],
+    protein: [],
+    staple: [],
+    seasoning: [],
+    snack_dairy: [],
+    household: [],
+    other: [],
+  };
+
+  private normalizeArea(area?: string): string {
+    const key = (area || '').trim().toLowerCase();
+
+    const areaAliasMap: Record<string, string> = {
+      // v2
+      produce: 'produce',
+      protein: 'protein',
+      staple: 'staple',
+      seasoning: 'seasoning',
+      snack_dairy: 'snack_dairy',
+      snackdairy: 'snack_dairy',
+      household: 'household',
+      other: 'other',
+
+      // legacy
+      '蔬果区': 'produce',
+      '调料区': 'seasoning',
+      '超市区': 'other',
+      '其他': 'other',
+      supermarket: 'other',
+      market: 'other',
+      grocery: 'other',
+      vegetable: 'produce',
+      fruit: 'produce',
+      spice: 'seasoning',
+      condiment: 'seasoning',
+      others: 'other',
+      misc: 'other',
+      miscellaneous: 'other',
+    };
+
+    return areaAliasMap[key] || areaAliasMap[area || ''] || 'other';
+  }
+
+  private normalizeShoppingItems(items: any): Record<string, any[]> {
+    const normalized: Record<string, any[]> = {
+      produce: [...ShoppingListService.DEFAULT_ITEMS_STRUCTURE.produce],
+      protein: [...ShoppingListService.DEFAULT_ITEMS_STRUCTURE.protein],
+      staple: [...ShoppingListService.DEFAULT_ITEMS_STRUCTURE.staple],
+      seasoning: [...ShoppingListService.DEFAULT_ITEMS_STRUCTURE.seasoning],
+      snack_dairy: [...ShoppingListService.DEFAULT_ITEMS_STRUCTURE.snack_dairy],
+      household: [...ShoppingListService.DEFAULT_ITEMS_STRUCTURE.household],
+      other: [...ShoppingListService.DEFAULT_ITEMS_STRUCTURE.other],
+    };
+
+    if (!items || typeof items !== 'object') {
+      return normalized;
+    }
+
+    for (const [areaKey, areaItems] of Object.entries(items)) {
+      const area = this.normalizeArea(areaKey);
+      const list = Array.isArray(areaItems) ? areaItems : [];
+      normalized[area].push(...list.map((item: any) => ({ ...item, category: area })));
+    }
+
+    return normalized;
+  }
+
+  private inferCategoryByIngredient(ingredient: any, ingredientName?: string): string {
+    const name = (ingredientName || ingredient?.name || '').toLowerCase();
+    const category = (ingredient?.category || '').toLowerCase();
+    const storageArea = (ingredient?.storage_area || '').toLowerCase();
+
+    if (storageArea.includes('蔬果') || /菜|瓜|果|葱|姜|蒜|椒|茄|豆苗|土豆|红薯|玉米|番茄/.test(name)) return 'produce';
+    if (storageArea.includes('调料') || /油|盐|酱|醋|糖|料酒|胡椒|孜然|蚝油|芝麻酱/.test(name)) return 'seasoning';
+    if (/肉|鸡|鸭|鱼|虾|牛|猪|蛋|豆腐|豆干|丸/.test(name) || /肉|蛋|豆|海鲜/.test(category)) return 'protein';
+    if (/米|面|粉|馒头|面包|饺子|馄饨|挂面|燕麦/.test(name) || /主食/.test(category)) return 'staple';
+    if (/奶|酸奶|芝士|黄油|零食|饼干|薯片|坚果|巧克力/.test(name)) return 'snack_dairy';
+    if (/纸|洗洁精|清洁|保鲜膜|垃圾袋|湿巾|手套|牙膏/.test(name)) return 'household';
+
+    return this.normalizeArea(storageArea || category || 'other');
+  }
+
   // 生成购物清单
   async generateShoppingList(data: {
     user_id: string;
@@ -171,20 +254,7 @@ export class ShoppingListService {
 
   // 按存储区域分组
   private async groupByStorageArea(ingredientMap: Map<string, any>) {
-    const grouped: Record<string, any[]> = {
-      超市区: [],
-      蔬果区: [],
-      调料区: [],
-      其他: [],
-    };
-
-    // 存储区域映射：数据库中的区域名 -> 前端使用的键名
-    const areaMapping: Record<string, string> = {
-      '超市区': '超市区',  // 数据库 "超市区" -> 前端 "超市区"
-      '蔬果区': '蔬果区',  // 数据库 "蔬果区" -> 前端 "蔬果区"
-      '调料区': '调料区',  // 数据库 "调料区" -> 前端 "调料区"
-      '其他': '其他',
-    };
+    const grouped: Record<string, any[]> = this.normalizeShoppingItems(null);
 
     for (const [name, data] of ingredientMap) {
       // 查询食材的存储区域
@@ -192,16 +262,16 @@ export class ShoppingListService {
         .where('name', name)
         .first();
 
-      const dbArea = ingredient?.storage_area || '其他';
-      const area = areaMapping[dbArea] || '其他';  // 使用映射后的区域名
+      const category = this.inferCategoryByIngredient(ingredient, name);
       const estimatedPrice = ingredient?.average_price || 0;
 
-      if (!grouped[area]) {
-        grouped[area] = [];
+      if (!grouped[category]) {
+        grouped[category] = [];
       }
 
-      grouped[area].push({
+      grouped[category].push({
         ...data,
+        category,
         ingredient_id: ingredient?.id,
         estimated_price: estimatedPrice,
       });
@@ -240,18 +310,14 @@ export class ShoppingListService {
         // 解析 JSON 字符串，使用安全解析避免corrupted data导致的崩溃
         let parsedItems;
         try {
-          parsedItems = typeof list.items === 'string'
+          const rawItems = typeof list.items === 'string'
             ? JSON.parse(list.items)
             : list.items;
+          parsedItems = this.normalizeShoppingItems(rawItems);
         } catch (e) {
           // 如果解析失败，返回空结构
           logger.error('[Backend] Failed to parse items for list:', list.id, e);
-          parsedItems = {
-            超市区: [],
-            蔬果区: [],
-            调料区: [],
-            其他: [],
-          };
+          parsedItems = this.normalizeShoppingItems(null);
         }
 
         const totalItems = Object.values(parsedItems || {}).reduce(
@@ -287,18 +353,14 @@ export class ShoppingListService {
     // 解析 JSON 字符串，使用安全解析避免corrupted data导致的崩溃
     let parsedItems;
     try {
-      parsedItems = typeof list.items === 'string'
+      const rawItems = typeof list.items === 'string'
         ? JSON.parse(list.items)
         : list.items;
+      parsedItems = this.normalizeShoppingItems(rawItems);
     } catch (e) {
       // 如果解析失败，返回空结构
       logger.error('[Backend] Failed to parse items for list:', list.id, e);
-      parsedItems = {
-        超市区: [],
-        蔬果区: [],
-        调料区: [],
-        其他: [],
-      };
+      parsedItems = this.normalizeShoppingItems(null);
     }
 
     // 计算统计信息
@@ -342,22 +404,24 @@ export class ShoppingListService {
     }
 
     // Parse items from JSON string to object
-    const items = typeof list.items === 'string'
+    const rawItems = typeof list.items === 'string'
       ? JSON.parse(list.items)
       : list.items;
+    const items = this.normalizeShoppingItems(rawItems);
+    const normalizedArea = this.normalizeArea(area);
 
     logger.debug('[Backend] Items before update:', JSON.stringify(items, null, 2));
 
-    if (items[area]) {
+    if (items[normalizedArea]) {
       // 首先尝试通过 ingredient_id 查找
-      let item = items[area].find(
+      let item = items[normalizedArea].find(
         (i) => i.ingredient_id === ingredient_id
       );
       logger.debug('[Backend] Found by ingredient_id:', item);
 
       // 如果没找到，尝试通过 name 查找（处理手动添加的项）
       if (!item) {
-        item = items[area].find(
+        item = items[normalizedArea].find(
           (i) => i.name === ingredient_id
         );
         logger.debug('[Backend] Found by name:', item);
@@ -371,7 +435,7 @@ export class ShoppingListService {
         logger.debug('[Backend] ERROR: Item not found!');
       }
     } else {
-      logger.debug('[Backend] ERROR: Area not found in items:', area);
+      logger.debug('[Backend] ERROR: Area not found in items:', normalizedArea);
     }
 
     logger.debug('[Backend] Items after update:', JSON.stringify(items, null, 2));
@@ -385,7 +449,7 @@ export class ShoppingListService {
 
     // 解析 items 字段从 JSON 字符串转换为对象
     if (updated && typeof updated.items === 'string') {
-      updated.items = JSON.parse(updated.items);
+      updated.items = this.normalizeShoppingItems(JSON.parse(updated.items));
     }
 
     logger.debug('[Backend] Final result:', updated);
@@ -406,9 +470,10 @@ export class ShoppingListService {
     // 解析清单项
     let items;
     try {
-      items = typeof list.items === 'string' ? JSON.parse(list.items) : list.items;
+      const rawItems = typeof list.items === 'string' ? JSON.parse(list.items) : list.items;
+      items = this.normalizeShoppingItems(rawItems);
     } catch {
-      items = {};
+      items = this.normalizeShoppingItems(null);
     }
 
     // 将已勾选食材添加到库存
@@ -498,7 +563,7 @@ export class ShoppingListService {
         .insert({
           user_id,
           list_date: date,
-          items: JSON.stringify({ 超市区: [], 蔬果区: [], 调料区: [], 其他: [] }),
+          items: JSON.stringify(this.normalizeShoppingItems(null)),
           total_estimated_cost: 0,
         })
         .returning('*');
@@ -508,17 +573,13 @@ export class ShoppingListService {
     // 解析现有清单项，使用安全解析避免corrupted data导致的崩溃
     let existingItems;
     try {
-      existingItems = typeof list.items === 'string'
+      const rawItems = typeof list.items === 'string'
         ? JSON.parse(list.items)
         : list.items;
+      existingItems = this.normalizeShoppingItems(rawItems);
     } catch (e) {
       logger.error('[Backend] Failed to parse items for list:', list.id, e);
-      existingItems = {
-        超市区: [],
-        蔬果区: [],
-        调料区: [],
-        其他: [],
-      };
+      existingItems = this.normalizeShoppingItems(null);
     }
 
     // 解析菜谱的 JSON 字段
@@ -594,11 +655,11 @@ export class ShoppingListService {
         .where('name', name)
         .first();
 
-      const area = ingredient?.storage_area || '其他';
+      const category = this.inferCategoryByIngredient(ingredient, name);
       const estimatedPrice = ingredient?.average_price || 0;
 
       // 检查是否已存在
-      const existingItem = existingItems[area]?.find((i: any) => i.name === name);
+      const existingItem = existingItems[category]?.find((i: any) => i.name === name);
 
       if (existingItem) {
         // 已存在，更新菜谱列表和来源标记
@@ -611,11 +672,12 @@ export class ShoppingListService {
         }
       } else {
         // 不存在，添加新项
-        if (!existingItems[area]) {
-          existingItems[area] = [];
+        if (!existingItems[category]) {
+          existingItems[category] = [];
         }
-        existingItems[area].push({
+        existingItems[category].push({
           ...data,
+          category,
           ingredient_id: ingredient?.id,
           estimated_price: estimatedPrice,
         });
@@ -750,47 +812,37 @@ export class ShoppingListService {
     // 解析清单项，使用安全解析避免corrupted data导致的崩溃
     let items;
     try {
-      items = typeof list.items === 'string'
+      const rawItems = typeof list.items === 'string'
         ? JSON.parse(list.items)
         : list.items;
+      items = this.normalizeShoppingItems(rawItems);
     } catch (e) {
       logger.error('[Backend] Failed to parse items for list:', list.id, e);
-      items = {
-        超市区: [],
-        蔬果区: [],
-        调料区: [],
-        其他: [],
-      };
+      items = this.normalizeShoppingItems(null);
     }
 
-    // 确保所有区域都存在
-    const defaultAreas = ['超市区', '蔬果区', '调料区', '其他'];
-    for (const defaultArea of defaultAreas) {
-      if (!items[defaultArea]) {
-        items[defaultArea] = [];
-      }
+    const normalizedArea = this.normalizeArea(area);
+
+    if (!items[normalizedArea]) {
+      throw new Error(`区域不存在: ${normalizedArea}`);
     }
 
-    if (!items[area]) {
-      throw new Error(`区域不存在: ${area}`);
+    if (!Array.isArray(items[normalizedArea])) {
+      throw new Error(`区域不是数组: ${normalizedArea}, type: ${typeof items[normalizedArea]}`);
     }
 
-    if (!Array.isArray(items[area])) {
-      throw new Error(`区域不是数组: ${area}, type: ${typeof items[area]}`);
-    }
-
-    logger.debug('[Backend] Area items before delete:', items[area].map(i => i.name));
+    logger.debug('[Backend] Area items before delete:', items[normalizedArea].map(i => i.name));
 
     // 删除指定项
-    const originalLength = items[area].length;
-    items[area] = items[area].filter((i: any) => i.name !== item_name);
+    const originalLength = items[normalizedArea].length;
+    items[normalizedArea] = items[normalizedArea].filter((i: any) => i.name !== item_name);
 
-    if (items[area].length === originalLength) {
-      logger.error('[Backend] Item not found:', item_name, 'in area:', area);
+    if (items[normalizedArea].length === originalLength) {
+      logger.error('[Backend] Item not found:', item_name, 'in area:', normalizedArea);
       throw new Error('项目不存在');
     }
 
-    logger.debug('[Backend] Area items after delete:', items[area].map(i => i.name));
+    logger.debug('[Backend] Area items after delete:', items[normalizedArea].map(i => i.name));
 
     // 重新计算总价
     let totalCost = 0;
@@ -852,17 +904,13 @@ export class ShoppingListService {
     // 解析清单项，使用安全解析避免corrupted data导致的崩溃
     let items;
     try {
-      items = typeof list.items === 'string'
+      const rawItems = typeof list.items === 'string'
         ? JSON.parse(list.items)
         : list.items;
+      items = this.normalizeShoppingItems(rawItems);
     } catch (e) {
       logger.error('[Backend] Failed to parse items for list:', list.id, e);
-      items = {
-        超市区: [],
-        蔬果区: [],
-        调料区: [],
-        其他: [],
-      };
+      items = this.normalizeShoppingItems(null);
     }
 
     // 查询食材信息确定区域
@@ -870,7 +918,7 @@ export class ShoppingListService {
       .where('name', item_name)
       .first();
 
-    const storageArea = area || ingredient?.storage_area || '其他';
+    const storageArea = this.normalizeArea(area || this.inferCategoryByIngredient(ingredient, item_name));
     const estimatedPrice = ingredient?.average_price || 0;
 
     // 检查是否已存在
@@ -891,6 +939,7 @@ export class ShoppingListService {
       note: '',
       recipes: ['手动添加'],
       checked: false,
+      category: storageArea,
       ingredient_id: ingredient?.id,
       estimated_price: estimatedPrice,
     });
@@ -953,17 +1002,13 @@ export class ShoppingListService {
     // 解析清单项，使用安全解析避免corrupted data导致的崩溃
     let items;
     try {
-      items = typeof list.items === 'string'
+      const rawItems = typeof list.items === 'string'
         ? JSON.parse(list.items)
         : list.items;
+      items = this.normalizeShoppingItems(rawItems);
     } catch (e) {
       logger.error('[Backend] Failed to parse items for list:', list.id, e);
-      items = {
-        超市区: [],
-        蔬果区: [],
-        调料区: [],
-        其他: [],
-      };
+      items = this.normalizeShoppingItems(null);
     }
 
     // 更新所有项的勾选状态
