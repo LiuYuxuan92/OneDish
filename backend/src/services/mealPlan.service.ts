@@ -512,8 +512,24 @@ export class MealPlanService {
   }
 
   /**
-   * 三餐智能推荐 V1（A/B方案）
+   * 三餐智能推荐 V2（反馈驱动排序，A/B方案）
    */
+  private readonly rankingWeights = {
+    time: this.readWeight('REC_RANK_V2_WEIGHT_TIME', 0.30),
+    inventory: this.readWeight('REC_RANK_V2_WEIGHT_INVENTORY', 0.25),
+    baby: this.readWeight('REC_RANK_V2_WEIGHT_BABY', 0.20),
+    feedback: this.readWeight('REC_RANK_V2_WEIGHT_FEEDBACK', 0.25),
+  };
+
+  private lastRecommendationSnapshot = new Map<string, { A?: any; B?: any; at: string }>();
+
+  private readWeight(envKey: string, fallback: number): number {
+    const raw = process.env[envKey];
+    const parsed = Number(raw);
+    if (!raw || Number.isNaN(parsed) || parsed < 0) return fallback;
+    return parsed;
+  }
+
   async getSmartRecommendations(userId: string, input: SmartRecommendationInput) {
     const mealType = input.meal_type || 'all-day';
     const maxPrepTime = input.max_prep_time || 40;
@@ -551,19 +567,33 @@ export class MealPlanService {
     const recommendations: Record<string, any> = {};
 
     for (const mt of targetMealTypes) {
+      const feedbackStats = await this.getMealFeedbackSignal(userId, mt);
       const pool = grouped[mt] || [];
       const scored = pool
-        .map((recipe) => this.buildCandidateMeta(recipe, babyAgeMonths, inventorySet, excludeIngredients))
+        .map((recipe) => this.buildCandidateMetaV2(recipe, {
+          babyAgeMonths,
+          inventorySet,
+          excludeIngredients,
+          maxPrepTime,
+          feedbackStats,
+        }))
         .filter((item) => item.score >= 0)
         .sort((a, b) => b.score - a.score || a.recipe.prep_time - b.recipe.prep_time);
 
       const pickA = scored[0] || null;
       const pickB = scored.find((x) => x.recipe.id !== pickA?.recipe.id) || null;
 
-      recommendations[mt] = {
-        A: pickA ? this.toRecommendationItem(pickA) : null,
-        B: pickB ? this.toRecommendationItem(pickB) : null,
-      };
+      const snapshotKey = `${userId}:${mt}`;
+      const lastSnapshot = this.lastRecommendationSnapshot.get(snapshotKey);
+      const nextA = pickA ? this.toRecommendationItemV2(pickA, lastSnapshot?.A) : null;
+      const nextB = pickB ? this.toRecommendationItemV2(pickB, lastSnapshot?.B || lastSnapshot?.A) : null;
+
+      recommendations[mt] = { A: nextA, B: nextB };
+      this.lastRecommendationSnapshot.set(snapshotKey, {
+        A: nextA,
+        B: nextB,
+        at: new Date().toISOString(),
+      });
     }
 
     return {
@@ -574,16 +604,57 @@ export class MealPlanService {
         inventory_count: inventorySet.size,
         exclude_ingredients: excludeIngredients,
       },
+      ranking_v2: {
+        enabled: true,
+        feedback_window_days: 7,
+        weights: this.rankingWeights,
+      },
       recommendations,
     };
   }
 
-  private buildCandidateMeta(
+  private async getMealFeedbackSignal(userId: string, mealType: 'breakfast' | 'lunch' | 'dinner') {
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const rows = await db('recommendation_feedbacks')
+      .where('user_id', userId)
+      .andWhere('meal_type', mealType)
+      .andWhere('event_time', '>=', since)
+      .select('selected_option', 'reject_reason');
+
+    const total = rows.length;
+    const accepted = rows.filter((r: any) => r.selected_option === 'A' || r.selected_option === 'B').length;
+    const adoptionRate = total > 0 ? accepted / total : 0;
+
+    const reasons = rows
+      .filter((r: any) => r.selected_option === 'NONE' && r.reject_reason)
+      .map((r: any) => String(r.reject_reason).toLowerCase());
+
+    const hasTimePressure = reasons.some((x) => /耗时|时间|来不及|太久/.test(x));
+    const hasInventoryIssue = reasons.some((x) => /没食材|缺食材|库存|买菜|食材不够/.test(x));
+    const hasBabyIssue = reasons.some((x) => /宝宝|孩子|太辣|刺激/.test(x));
+
+    return {
+      meal_type: mealType,
+      total,
+      accepted,
+      adoptionRate,
+      hasTimePressure,
+      hasInventoryIssue,
+      hasBabyIssue,
+    };
+  }
+
+  private buildCandidateMetaV2(
     recipe: any,
-    babyAgeMonths?: number,
-    inventorySet?: Set<string>,
-    excludeIngredients: string[] = []
+    opts: {
+      babyAgeMonths?: number;
+      inventorySet?: Set<string>;
+      excludeIngredients?: string[];
+      maxPrepTime: number;
+      feedbackStats: any;
+    }
   ) {
+    const { babyAgeMonths, inventorySet, excludeIngredients = [], maxPrepTime, feedbackStats } = opts;
     let ingredients: string[] = [];
     let babySuitable = true;
 
@@ -598,7 +669,7 @@ export class MealPlanService {
 
     for (const ing of ingredients) {
       if (excludeIngredients.some(ex => ing.includes(ex))) {
-        return { recipe, score: -1, missingIngredients: [], babySuitable: false, switchHint: '命中忌口食材，已过滤' };
+        return { recipe, score: -1, missingIngredients: [], babySuitable: false, switchHint: '命中忌口食材，已过滤', explain: ['命中忌口食材，已剔除'] };
       }
       if (babyAgeMonths) {
         const suitability = isIngredientSuitable(ing, babyAgeMonths);
@@ -611,20 +682,67 @@ export class MealPlanService {
       return !Array.from(inventorySet).some((x) => ing.includes(x) || x.includes(ing));
     });
 
+    const normalizedMaxPrep = Math.max(10, maxPrepTime || 40);
+    const prep = Number(recipe.prep_time) || normalizedMaxPrep;
+    const timeScore = Math.max(0, 1 - prep / normalizedMaxPrep);
+    const inventoryScore = inventorySet && inventorySet.size > 0
+      ? Math.max(0, 1 - missingIngredients.length / Math.max(1, ingredients.length || 1))
+      : 0.6;
+    const babyScore = babyAgeMonths ? (babySuitable ? 1 : 0.1) : 0.6;
+
+    const feedbackBase = feedbackStats.adoptionRate;
+    let feedbackAdjust = 0;
+    if (feedbackStats.hasTimePressure && prep <= 20) feedbackAdjust += 0.15;
+    if (feedbackStats.hasInventoryIssue && missingIngredients.length <= 1) feedbackAdjust += 0.15;
+    if (feedbackStats.hasBabyIssue && babySuitable) feedbackAdjust += 0.15;
+    const feedbackScore = Math.max(0, Math.min(1, feedbackBase + feedbackAdjust));
+
     const score =
-      (babySuitable ? 30 : 5)
-      + Math.max(0, 20 - (recipe.prep_time || 0))
-      + Math.max(0, 10 - missingIngredients.length * 2);
+      this.rankingWeights.time * timeScore
+      + this.rankingWeights.inventory * inventoryScore
+      + this.rankingWeights.baby * babyScore
+      + this.rankingWeights.feedback * feedbackScore;
+
+    const explain: string[] = [];
+    if (feedbackStats.adoptionRate >= 0.6 && feedbackStats.total >= 3) explain.push('近期同餐次采纳率高');
+    if (feedbackStats.hasTimePressure && prep <= 20) explain.push('近期该餐次反馈更偏好快手方案');
+    if (prep <= 20) explain.push('准备时间更短');
+    if (missingIngredients.length <= 1) explain.push('库存覆盖更好，缺口食材更少');
+    if (babyAgeMonths && babySuitable) explain.push('宝宝月龄适配更好');
+    if (explain.length === 0) explain.push('综合时间与库存表现稳定');
 
     const switchHint = missingIngredients.length > 0
       ? `缺少${missingIngredients.slice(0, 2).join('、')}，建议切换B方案降低采购量`
       : '库存覆盖较好，优先推荐此方案';
 
-    return { recipe, score, missingIngredients, babySuitable, switchHint };
+    return {
+      recipe,
+      score,
+      missingIngredients,
+      babySuitable,
+      switchHint,
+      explain,
+    };
   }
 
-  private toRecommendationItem(item: any) {
-    return {
+  private buildVsLast(current: any, last?: any) {
+    if (!last) return '首次推荐，暂无历史对比';
+
+    const nameChanged = current?.name && last?.name && current.name !== last.name;
+    const prepDiff = (current?.time_estimate ?? 0) - (last?.time_estimate ?? 0);
+    const missingDiff = (current?.missing_ingredients?.length ?? 0) - (last?.missing_ingredients?.length ?? 0);
+
+    const parts: string[] = [];
+    if (nameChanged) parts.push(`主推荐由「${last.name}」调整为「${current.name}」`);
+    if (prepDiff !== 0) parts.push(`预计耗时 ${prepDiff > 0 ? '+' : ''}${prepDiff} 分钟`);
+    if (missingDiff !== 0) parts.push(`库存缺口 ${missingDiff > 0 ? '+' : ''}${missingDiff}`);
+
+    if (parts.length === 0) return '与上次推荐基本一致';
+    return `相较上次，${parts.join('；')}`;
+  }
+
+  private toRecommendationItemV2(item: any, last?: any) {
+    const base = {
       id: item.recipe.id,
       name: item.recipe.name,
       image_url: item.recipe.image_url,
@@ -632,6 +750,12 @@ export class MealPlanService {
       missing_ingredients: item.missingIngredients,
       baby_suitable: item.babySuitable,
       switch_hint: item.switchHint,
+      explain: item.explain || [],
+    };
+
+    return {
+      ...base,
+      vs_last: this.buildVsLast(base, last),
     };
   }
 

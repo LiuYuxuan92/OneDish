@@ -469,6 +469,8 @@ export function WeeklyPlanScreen({ navigation }: Props) {
                         <Text style={styles.genOptionLabel}>缺口食材：{item.missing_ingredients?.join('、') || '无'}</Text>
                         <Text style={styles.genOptionLabel}>宝宝适配：{item.baby_suitable ? '是' : '否'}</Text>
                         <Text style={styles.genOptionLabel}>替换理由：{item.switch_hint}</Text>
+                        <Text style={styles.genOptionLabel}>推荐理由：{item.explain?.join('；') || '综合评分更优'}</Text>
+                        <Text style={styles.genOptionLabel}>与上次不同：{item.vs_last || '暂无'}</Text>
                       </View>
                     );
                   })}

@@ -47,6 +47,8 @@ export interface SmartRecommendationItem {
   missing_ingredients: string[];
   baby_suitable: boolean;
   switch_hint: string;
+  explain?: string[];
+  vs_last?: string;
 }
 
 export interface SmartRecommendationResponse {
