@@ -1,0 +1,68 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: default-ops
+  group_by: ["alertname", "service", "env", "severity"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 2h
+
+  routes:
+    # OneDish 告警总入口（按 service + env + severity 细分）
+    - matchers:
+        - service="onedish-backend"
+        - env="staging"
+      receiver: onedish-staging-default
+      continue: true
+
+    - matchers:
+        - service="onedish-backend"
+        - env="staging"
+        - severity="sev1"
+      receiver: onedish-staging-sev1
+
+    - matchers:
+        - service="onedish-backend"
+        - env="staging"
+        - severity="sev2"
+      receiver: onedish-staging-sev2
+
+    - matchers:
+        - service="onedish-backend"
+        - env="staging"
+        - severity="sev3"
+      receiver: onedish-staging-sev3
+
+inhibit_rules:
+  - source_matchers: [ 'severity="sev1"' ]
+    target_matchers: [ 'severity=~"sev2|sev3"' ]
+    equal: ["alertname", "service", "env"]
+
+receivers:
+  - name: default-ops
+    webhook_configs:
+      - url: http://alert-proxy.monitoring.svc.cluster.local/default
+        send_resolved: true
+
+  - name: onedish-staging-default
+    webhook_configs:
+      - url: http://alert-proxy.monitoring.svc.cluster.local/onedish-staging-default
+        send_resolved: true
+
+  - name: onedish-staging-sev1
+    webhook_configs:
+      - url: http://alert-proxy.monitoring.svc.cluster.local/onedish-staging-sev1
+        send_resolved: true
+
+  - name: onedish-staging-sev2
+    webhook_configs:
+      - url: http://alert-proxy.monitoring.svc.cluster.local/onedish-staging-sev2
+        send_resolved: true
+
+  - name: onedish-staging-sev3
+    webhook_configs:
+      - url: http://alert-proxy.monitoring.svc.cluster.local/onedish-staging-sev3
+        send_resolved: true
+
+templates: []

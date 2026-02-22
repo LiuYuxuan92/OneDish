@@ -1,0 +1,38 @@
+groups:
+  - name: onedish.recording.rules
+    interval: 1m
+    rules:
+      # 每日 AI 预算（USD），默认 50，可按环境覆盖。
+      # 说明：该 recording rule 用常量向量表达预算，便于告警表达式统一引用。
+      - record: onedish_ai_daily_budget_usd
+        expr: vector(50)
+        labels:
+          service: onedish-backend
+          env: staging
+
+      # 当日 AI 成本累计（滚动 1d）
+      - record: onedish_ai_cost_usd_1d
+        expr: sum(increase(onedish_ai_cost_usd_total{job="onedish-backend"}[1d]))
+        labels:
+          service: onedish-backend
+          env: staging
+
+      # 预算使用率（0~+∞）
+      - record: onedish_ai_budget_usage_ratio
+        expr: |
+          onedish_ai_cost_usd_1d
+          /
+          clamp_min(max(onedish_ai_daily_budget_usd{service="onedish-backend"}), 0.0001)
+        labels:
+          service: onedish-backend
+          env: staging
+
+      # 告警演练常用：10 分钟内 429 总量
+      - record: onedish_http_429_increase_10m
+        expr: |
+          sum(increase(onedish_quota_reject_total{job="onedish-backend"}[10m]))
+          +
+          sum(increase(onedish_ratelimit_reject_total{job="onedish-backend"}[10m]))
+        labels:
+          service: onedish-backend
+          env: staging
