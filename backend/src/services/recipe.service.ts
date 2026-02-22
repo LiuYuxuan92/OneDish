@@ -21,6 +21,7 @@ export class RecipeService {
   // 获取今日推荐
   async getDailyRecommendation(params: DailyRecommendationParams) {
     const { type, max_time = 30 } = params;
+    const mixUgcEnabled = process.env.RECOMMEND_MIX_UGC_ENABLED !== 'false';
 
     let query = db('recipes')
       .where('is_active', true)
@@ -30,14 +31,30 @@ export class RecipeService {
       query = query.where('type', type) as any;
     }
 
-    // 获取所有符合条件的菜谱，然后随机选择一个
     const recipes = await query.select('*');
-    const recipe = recipes.length > 0
-      ? recipes[Math.floor(Math.random() * recipes.length)]
-      : null;
+    let recipe: any = recipes.length > 0 ? recipes[Math.floor(Math.random() * recipes.length)] : null;
 
-    // 解析 JSON 字段
-    const parsedRecipe = this.parseRecipeJsonFields(recipe);
+    if (mixUgcEnabled) {
+      const ugcQuery = db('user_recipes')
+        .where({ is_active: true, status: 'published', in_recommend_pool: true })
+        .where('prep_time', '<=', max_time)
+        .orderBy('quality_score', 'desc')
+        .limit(30);
+
+      if (type) ugcQuery.andWhere('type', type);
+
+      const ugcCandidates = await ugcQuery.select('*');
+      if (ugcCandidates.length > 0 && Math.random() < 0.3) {
+        const picked = ugcCandidates[Math.floor(Math.random() * ugcCandidates.length)];
+        recipe = {
+          ...picked,
+          is_ugc: true,
+          recommendation_source: 'ugc_pool',
+        };
+      }
+    }
+
+    const parsedRecipe = this.parseRecipeJsonFields(recipe as any);
 
     return {
       date: new Date().toISOString().split('T')[0],

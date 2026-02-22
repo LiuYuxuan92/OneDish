@@ -32,6 +32,8 @@ export interface UserRecipe {
   step_branches?: any[];
   is_favorited?: boolean;
   risk_hits?: RiskHit[];
+  quality_score?: number;
+  in_recommend_pool?: boolean;
   is_active: boolean;
   created_at: string;
   updated_at: string;

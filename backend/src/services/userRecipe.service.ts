@@ -2,6 +2,7 @@ import { db } from '../config/database';
 import { RiskHit, UgcRiskService } from './ugc-risk.service';
 
 const JSON_FIELDS = ['original_data', 'adult_version', 'baby_version', 'cooking_tips', 'image_url', 'tags', 'category', 'allergens', 'step_branches'];
+const RECOMMEND_POOL_THRESHOLD = 75;
 
 export class SafetyValidationError extends Error {
   constructor(public readonly riskHits: RiskHit[]) {
@@ -21,10 +22,12 @@ export class UserRecipeService {
     const data = this.normalizePayload(payload);
 
     if (recipeId) {
+      const quality = this.computeQualityFields({ ...data, status: 'draft' });
       const [updated] = await db('user_recipes')
         .where({ id: recipeId, user_id: userId, is_active: true })
         .update({
           ...data,
+          ...quality,
           status: 'draft',
           updated_at: db.fn.now(),
         })
@@ -34,11 +37,13 @@ export class UserRecipeService {
       return this.parseRecipe(updated);
     }
 
+    const quality = this.computeQualityFields({ ...data, status: 'draft' });
     const [created] = await db('user_recipes')
       .insert({
         user_id: userId,
         source: payload?.source || 'ugc',
         ...data,
+        ...quality,
         status: 'draft',
       })
       .returning('*');
@@ -64,10 +69,11 @@ export class UserRecipeService {
       throw new SafetyValidationError(blockingHits);
     }
 
+    const quality = this.computeQualityFields({ ...existing, status: 'pending' });
     const [row] = await db('user_recipes')
       .where({ id: recipeId, user_id: userId, is_active: true })
       .whereIn('status', ['draft', 'rejected'])
-      .update({ status: 'pending', submitted_at: db.fn.now(), reject_reason: null, rejected_at: null, updated_at: db.fn.now() })
+      .update({ status: 'pending', submitted_at: db.fn.now(), reject_reason: null, rejected_at: null, ...quality, updated_at: db.fn.now() })
       .returning('*');
 
     return this.parseRecipe(row);
@@ -87,6 +93,7 @@ export class UserRecipeService {
 
     const patch: any = {
       status: action,
+      ...this.computeQualityFields({ ...current, status: action }),
       updated_at: db.fn.now(),
     };
     if (action === 'published') patch.published_at = db.fn.now();
@@ -187,6 +194,36 @@ export class UserRecipeService {
     return this.createDraft(userId, searchResult);
   }
 
+  async recomputeQualityScores(ids?: string[]) {
+    let query = db('user_recipes').where({ is_active: true });
+    if (ids?.length) query = query.whereIn('id', ids) as any;
+
+    const rows = await query.select('*');
+    let affected = 0;
+    for (const row of rows) {
+      const quality = this.computeQualityFields(row);
+      await db('user_recipes').where({ id: row.id }).update({ ...quality, updated_at: db.fn.now() });
+      affected += 1;
+    }
+    return { affected };
+  }
+
+  async listRecommendPool(page = 1, limit = 50) {
+    const offset = (page - 1) * limit;
+    const [countResult] = await db('user_recipes')
+      .where({ is_active: true, status: 'published', in_recommend_pool: true })
+      .count('id as total');
+
+    const total = Number((countResult as any)?.total || 0);
+    const rows = await db('user_recipes')
+      .where({ is_active: true, status: 'published', in_recommend_pool: true })
+      .orderBy('quality_score', 'desc')
+      .offset(offset)
+      .limit(limit);
+
+    return { total, page, limit, items: rows.map((r: any) => this.parseRecipe(r)) };
+  }
+
   async deleteUserRecipe(userId: string, recipeId: string) {
     const affected = await db('user_recipes')
       .where('id', recipeId)
@@ -194,6 +231,60 @@ export class UserRecipeService {
       .update({ is_active: false, updated_at: db.fn.now() });
 
     if (affected === 0) throw new Error('菜谱不存在');
+  }
+
+  private computeQualityFields(raw: any) {
+    const score = this.calculateQualityScore(raw);
+    const inPool = this.shouldEnterRecommendPool(raw, score);
+    return { quality_score: score, in_recommend_pool: inPool };
+  }
+
+  private calculateQualityScore(raw: any) {
+    const recipe = this.parseRecipe({ ...raw });
+    const risk = this.riskService.evaluate(recipe);
+
+    let completeness = 0;
+    if ((recipe.name || '').trim().length >= 4) completeness += 6;
+    if ((recipe.adult_version?.ingredients || []).length >= 2) completeness += 7;
+    if ((recipe.baby_version?.ingredients || []).length >= 2) completeness += 7;
+    if ((recipe.baby_age_range || '').trim().length > 0) completeness += 5;
+
+    let safety = 35;
+    const blockHits = risk.riskHits.filter((h) => h.level === 'block');
+    const warnHits = risk.riskHits.filter((h) => h.level === 'warn');
+    if (blockHits.length > 0) safety = 0;
+    else if (warnHits.length > 0) safety = Math.max(5, 35 - warnHits.length * 6);
+
+    let executable = 0;
+    const prep = Number(recipe.prep_time || 0);
+    if (prep >= 10 && prep <= 40) executable += 8;
+    if ((recipe.step_branches || []).length > 0) executable += 8;
+    if (recipe.difficulty && recipe.servings) executable += 9;
+
+    const reportCount = Number(recipe.report_count || 0);
+    const adoptionRate = Math.max(0, Math.min(1, Number(recipe.adoption_rate || 0)));
+    let feedback = 0;
+    if (reportCount === 0) feedback += 8;
+    feedback += Math.round(adoptionRate * 7);
+
+    return Math.max(0, Math.min(100, completeness + safety + executable + feedback));
+  }
+
+  private shouldEnterRecommendPool(raw: any, score: number) {
+    const recipe = this.parseRecipe({ ...raw });
+    const risk = this.riskService.evaluate(recipe);
+    const hasBlockRisk = risk.riskHits.some((h) => h.level === 'block');
+    const reportCount = Number(recipe.report_count || 0);
+    const adoptionRate = Number(recipe.adoption_rate || 0);
+
+    if (recipe.status !== 'published') return false;
+    if (!recipe.is_active && typeof recipe.is_active !== 'undefined') return false;
+    if (hasBlockRisk) return false;
+    if (reportCount >= 3) return false;
+    if (adoptionRate < 0.08) return false;
+    if (adoptionRate < 0.15) return false;
+
+    return score >= RECOMMEND_POOL_THRESHOLD;
   }
 
   private normalizePayload(payload: any) {
@@ -247,6 +338,8 @@ export class UserRecipeService {
     if (typeof recipe.baby_age_range === 'undefined') recipe.baby_age_range = null;
     if (typeof recipe.is_one_pot === 'undefined') recipe.is_one_pot = null;
     if (typeof recipe.is_favorited !== 'boolean') recipe.is_favorited = Boolean(recipe.is_favorited);
+    if (typeof recipe.quality_score !== 'number') recipe.quality_score = Number(recipe.quality_score || 0);
+    recipe.in_recommend_pool = Boolean(recipe.in_recommend_pool);
     const risk = this.riskService.evaluate(recipe);
     recipe.risk_hits = risk.riskHits;
     return recipe;

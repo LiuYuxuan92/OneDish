@@ -18,6 +18,12 @@ import { RiskHit } from '../../api/userRecipes';
 const formatRiskHits = (riskHits: RiskHit[] = []) =>
   riskHits.map((hit) => `• [${hit.level.toUpperCase()}] ${hit.keyword}：${hit.reason}${hit.suggestion ? `（建议：${hit.suggestion}）` : ''}`).join('\n');
 
+const QualityTag = ({ inPool, score }: { inPool?: boolean; score?: number }) => (
+  <View style={[styles.qualityTag, inPool ? styles.qualityGood : styles.qualityPending]}>
+    <Text style={styles.qualityTagText}>{inPool ? '推荐入池' : '待优化'}{typeof score === 'number' ? ` · ${score}` : ''}</Text>
+  </View>
+);
+
 export function MyRecipesScreen() {
   const [tab, setTab] = React.useState<'mine' | 'plaza'>('mine');
   const [name, setName] = React.useState('');
@@ -108,7 +114,7 @@ export function MyRecipesScreen() {
           {isLoading ? <ActivityIndicator /> : myItems.map((recipe: any) => (
             <View key={recipe.id} style={styles.card}>
               <Text style={styles.title}>{recipe.name}</Text>
-              <Text style={styles.meta}>状态：{recipe.status}</Text>
+              <View style={styles.qualityRow}><Text style={styles.meta}>状态：{recipe.status}</Text><QualityTag inPool={recipe.in_recommend_pool} score={recipe.quality_score} /></View>
               {recipe.reject_reason ? <Text style={styles.warn}>原因：{recipe.reject_reason}</Text> : null}
               {(recipe.risk_hits || []).length > 0 ? (
                 <View style={styles.riskBox}>
@@ -168,7 +174,7 @@ export function MyRecipesScreen() {
           {plazaLoading ? <ActivityIndicator /> : plazaItems.map((recipe: any) => (
             <View key={recipe.id} style={styles.card}>
               <Text style={styles.title}>{recipe.name}</Text>
-              <Text style={styles.meta}>一菜两吃 · 已发布</Text>
+              <View style={styles.qualityRow}><Text style={styles.meta}>一菜两吃 · 已发布</Text><QualityTag inPool={recipe.in_recommend_pool} score={recipe.quality_score} /></View>
               <TouchableOpacity style={styles.btn} onPress={() => favMutation.mutate(recipe.id)}>
                 <Text style={styles.btnText}>{recipe.is_favorited ? '取消收藏' : '收藏'}</Text>
               </TouchableOpacity>
@@ -199,6 +205,11 @@ const styles = StyleSheet.create({
   card: { backgroundColor: Colors.background.primary, borderRadius: BorderRadius.lg, padding: Spacing.md, ...Shadows.sm },
   title: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.text.primary },
   meta: { marginTop: 4, color: Colors.text.secondary },
+  qualityRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+  qualityTag: { borderRadius: BorderRadius.full, paddingHorizontal: Spacing.sm, paddingVertical: 4 },
+  qualityGood: { backgroundColor: '#E8F5E9' },
+  qualityPending: { backgroundColor: '#F5F5F5' },
+  qualityTagText: { fontSize: Typography.fontSize.xs, color: Colors.text.primary },
   warn: { color: Colors.functional.error, marginTop: 4 },
   riskBox: { marginTop: Spacing.sm, padding: Spacing.sm, backgroundColor: Colors.neutral.gray100, borderRadius: BorderRadius.md, gap: 4 },
   riskTitle: { fontWeight: Typography.fontWeight.medium, color: Colors.text.primary },

@@ -129,6 +129,36 @@ export class UserRecipeController {
 
   save = this.createDraft;
 
+  recomputeQuality = async (req: Request, res: Response) => {
+    try {
+      const role = (req as any).user?.role;
+      if (role !== 'admin') {
+        return res.status(403).json({ code: 403, message: '仅管理员可操作', data: null });
+      }
+      const ids = Array.isArray(req.body?.ids) ? req.body.ids : undefined;
+      const result = await this.service.recomputeQualityScores(ids);
+      res.json({ code: 200, message: '重算完成', data: result });
+    } catch (error) {
+      logger.error('Failed to recompute quality', { error });
+      res.status(500).json({ code: 500, message: '重算失败', data: null });
+    }
+  };
+
+  listRecommendPool = async (req: Request, res: Response) => {
+    try {
+      const role = (req as any).user?.role;
+      if (role !== 'admin') {
+        return res.status(403).json({ code: 403, message: '仅管理员可查看', data: null });
+      }
+      const { page = 1, limit = 50 } = req.query;
+      const result = await this.service.listRecommendPool(Number(page), Number(limit));
+      res.json({ code: 200, message: 'success', data: result });
+    } catch (error) {
+      logger.error('Failed to list recommend pool', { error });
+      res.status(500).json({ code: 500, message: '获取入池清单失败', data: null });
+    }
+  };
+
   delete = async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.user_id;
