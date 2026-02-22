@@ -6,8 +6,51 @@ export function useUserRecipes(page: number = 1, limit: number = 20) {
     queryKey: ['userRecipes', page, limit],
     queryFn: async () => {
       const result = await userRecipesApi.getList({ page, limit });
-      const data = (result as any)?.data ?? result;
-      return data;
+      return (result as any)?.data ?? result;
+    },
+  });
+}
+
+export function usePublishedUserRecipes(page: number = 1, limit: number = 20) {
+  return useQuery({
+    queryKey: ['publishedUserRecipes', page, limit],
+    queryFn: async () => {
+      const result = await userRecipesApi.getPublished({ page, limit });
+      return (result as any)?.data ?? result;
+    },
+  });
+}
+
+export function useCreateUserRecipe() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: any) => userRecipesApi.createDraft(payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['userRecipes'] }),
+  });
+}
+
+export function useUpdateUserRecipe() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: any }) => userRecipesApi.updateDraft(id, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['userRecipes'] }),
+  });
+}
+
+export function useSubmitUserRecipe() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => userRecipesApi.submit(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['userRecipes'] }),
+  });
+}
+
+export function useToggleUserRecipeFavorite() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => userRecipesApi.toggleFavorite(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['publishedUserRecipes'] });
     },
   });
 }

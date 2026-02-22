@@ -9,19 +9,65 @@ export class UserRecipeController {
     this.service = new UserRecipeService();
   }
 
-  // 保存搜索结果到我的菜谱
-  save = async (req: Request, res: Response) => {
+  createDraft = async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.user_id;
-      const result = await this.service.saveFromSearch(userId, req.body);
-      res.json({ code: 200, message: '保存成功', data: result });
+      const result = await this.service.createDraft(userId, req.body);
+      res.json({ code: 200, message: '草稿已创建', data: result });
     } catch (error) {
-      logger.error('Failed to save user recipe', { error });
-      res.status(500).json({ code: 500, message: '保存失败', data: null });
+      logger.error('Failed to create draft', { error });
+      res.status(500).json({ code: 500, message: '创建失败', data: null });
     }
   };
 
-  // 获取我的菜谱列表
+  updateDraft = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const { id } = req.params;
+      const result = await this.service.upsertDraft(userId, id, req.body);
+      res.json({ code: 200, message: '草稿已更新', data: result });
+    } catch (error) {
+      logger.error('Failed to update draft', { error });
+      res.status(400).json({ code: 400, message: '更新失败', data: null });
+    }
+  };
+
+  submit = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const { id } = req.params;
+      const result = await this.service.submitForReview(userId, id);
+      res.json({ code: 200, message: '已提交审核', data: result });
+    } catch (error) {
+      logger.error('Failed to submit recipe', { error });
+      res.status(400).json({ code: 400, message: '提交失败', data: null });
+    }
+  };
+
+  review = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { action, reason } = req.body;
+      const result = await this.service.reviewRecipe(id, action, reason);
+      res.json({ code: 200, message: '审核完成', data: result });
+    } catch (error) {
+      logger.error('Failed to review recipe', { error });
+      res.status(400).json({ code: 400, message: '审核失败', data: null });
+    }
+  };
+
+  listPublished = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.user_id;
+      const { page = 1, limit = 20 } = req.query;
+      const result = await this.service.getPublishedRecipes(Number(page), Number(limit), userId);
+      res.json({ code: 200, message: 'success', data: result });
+    } catch (error) {
+      logger.error('Failed to list published recipes', { error });
+      res.status(500).json({ code: 500, message: '获取发布广场失败', data: null });
+    }
+  };
+
   getList = async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.user_id;
@@ -34,10 +80,9 @@ export class UserRecipeController {
     }
   };
 
-  // 获取详情
   getDetail = async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).user.user_id;
+      const userId = (req as any).user?.user_id;
       const { id } = req.params;
       const result = await this.service.getUserRecipeDetail(userId, id);
       res.json({ code: 200, message: 'success', data: result });
@@ -47,7 +92,20 @@ export class UserRecipeController {
     }
   };
 
-  // 删除菜谱
+  favorite = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const { id } = req.params;
+      const result = await this.service.toggleFavorite(userId, id);
+      res.json({ code: 200, message: 'success', data: result });
+    } catch (error) {
+      logger.error('Failed to favorite recipe', { error });
+      res.status(400).json({ code: 400, message: '收藏操作失败', data: null });
+    }
+  };
+
+  save = this.createDraft;
+
   delete = async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.user_id;

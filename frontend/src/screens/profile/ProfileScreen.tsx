@@ -59,8 +59,8 @@ export function ProfileScreen({ navigation }: Props) {
     },
     {
       icon: <UtensilsIcon size={20} color={Colors.primary.main} />,
-      title: '我的菜谱',
-      subtitle: '搜索保存的菜谱',
+      title: '我的投稿',
+      subtitle: '创建/提交/发布一菜两吃',
       onPress: () => navigation.navigate('MyRecipes'),
       showArrow: true,
     },
