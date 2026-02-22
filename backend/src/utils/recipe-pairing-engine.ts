@@ -124,15 +124,15 @@ export const getAvoidedCookingMethods = (ageMonths: number): string[] => {
 /**
  * 检查食材是否适合某月龄
  */
-export const isIngredientSuitable = (ingredientName: string, ageMonths: number): { suitable: boolean; form?: string; allergen?: boolean; reason?: string } => {
+export const isIngredientSuitable = (ingredientName: string, ageMonths: number): { suitable: boolean; form?: string; allergen?: boolean; reason?: string; minAge?: number } => {
   const mapping = INGREDIENT_AGE_MAP[ingredientName];
   if (!mapping) {
     return { suitable: true, reason: '未知食材，请确认' };
   }
   if (ageMonths < mapping.minAge) {
-    return { suitable: false, form: mapping.form, allergen: mapping.allergen, reason: `需要${mapping.minAge}个月以上` };
+    return { suitable: false, form: mapping.form, allergen: mapping.allergen, reason: `需要${mapping.minAge}个月以上`, minAge: mapping.minAge };
   }
-  return { suitable: true, form: mapping.form, allergen: mapping.allergen };
+  return { suitable: true, form: mapping.form, allergen: mapping.allergen, minAge: mapping.minAge };
 };
 
 /**
@@ -421,7 +421,7 @@ export class RecipePairingEngine {
   /**
    * 生成营养提示
    */
-  private static generateNutritionTips(ingredients: any[]) {
+  static generateNutritionTips(ingredients: any[]) {
     const tips: string[] = [];
     
     for (const ing of ingredients) {

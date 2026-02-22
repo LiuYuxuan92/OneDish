@@ -7,7 +7,7 @@ export class IngredientInventoryController {
   // 获取用户的所有食材库存
   async getInventory(req: Request, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req.user as any)?.id;
       if (!userId) {
         return res.status(401).json({ error: '未授权' });
       }
@@ -48,7 +48,7 @@ export class IngredientInventoryController {
   // 添加食材到库存
   async addInventory(req: Request, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req.user as any)?.id;
       if (!userId) {
         return res.status(401).json({ error: '未授权' });
       }
@@ -83,7 +83,7 @@ export class IngredientInventoryController {
   // 更新食材库存
   async updateInventory(req: Request, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req.user as any)?.id;
       if (!userId) {
         return res.status(401).json({ error: '未授权' });
       }
@@ -118,7 +118,7 @@ export class IngredientInventoryController {
   // 删除食材库存（软删除）
   async deleteInventory(req: Request, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req.user as any)?.id;
       if (!userId) {
         return res.status(401).json({ error: '未授权' });
       }
@@ -144,7 +144,7 @@ export class IngredientInventoryController {
   // 批量删除食材库存
   async batchDeleteInventory(req: Request, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req.user as any)?.id;
       if (!userId) {
         return res.status(401).json({ error: '未授权' });
       }
@@ -170,7 +170,7 @@ export class IngredientInventoryController {
   // 获取即将过期的食材
   async getExpiringItems(req: Request, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req.user as any)?.id;
       if (!userId) {
         return res.status(401).json({ error: '未授权' });
       }

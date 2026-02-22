@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { searchApi, SearchResult, UnifiedSearchResult } from '../api/search';
+import { trackEvent } from '../analytics/sdk';
 
 // 统一搜索（联网搜索）
 export function useUnifiedSearch(keyword?: string) {
@@ -11,14 +12,20 @@ export function useUnifiedSearch(keyword?: string) {
 
         if (result.code && result.code !== 200) {
           console.error('[useUnifiedSearch] API error:', result.message);
-          return { results: [], source: 'local', total: 0 };
+          return { results: [], source: 'local', route_source: 'local', total: 0 };
         }
 
-        const data = result.data || { results: [], source: 'local', total: 0 };
+        const data = result.data || { results: [], source: 'local', route_source: 'local', total: 0 };
         return data;
-      } catch (error) {
+      } catch (error: any) {
         console.error('[useUnifiedSearch] Error:', error);
-        return { results: [], source: 'local', total: 0, error: String(error) };
+        trackEvent('api_request_failed', {
+          page_id: 'search',
+          api_name: 'GET /search',
+          http_status: error?.http_status,
+          error_code: error?.code,
+        });
+        return { results: [], source: 'local', route_source: 'local', total: 0, error: String(error) };
       }
     },
     enabled: !!keyword && keyword.trim().length > 0,
@@ -37,14 +44,20 @@ export function useSourceSearch(keyword?: string, source?: 'local' | 'tianxing' 
 
         if (result.code && result.code !== 200) {
           console.error('[useSourceSearch] API error:', result.message);
-          return { results: [], source: source || 'local', total: 0 };
+          return { results: [], source: source || 'local', route_source: source || 'local', total: 0 };
         }
 
-        const data = result.data || { results: [], source: source || 'local', total: 0 };
+        const data = result.data || { results: [], source: source || 'local', route_source: source || 'local', total: 0 };
         return data;
-      } catch (error) {
+      } catch (error: any) {
         console.error('[useSourceSearch] Error:', error);
-        return { results: [], source: source || 'local', total: 0, error: String(error) };
+        trackEvent('api_request_failed', {
+          page_id: 'search',
+          api_name: `GET /search/source/${source || 'unknown'}`,
+          http_status: error?.http_status,
+          error_code: error?.code,
+        });
+        return { results: [], source: source || 'local', route_source: source || 'local', total: 0, error: String(error) };
       }
     },
     enabled: !!keyword && !!source && keyword.trim().length > 0,

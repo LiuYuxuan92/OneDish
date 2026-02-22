@@ -1,8 +1,42 @@
 import { Router, Request, Response } from 'express';
 import { searchService } from '../services/search.service';
 import { logger } from '../utils/logger';
+import { createError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../config/error-codes';
 
 const router = Router();
+
+router.post('/resolve', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { query, intent_type, freshness_required, user_tier, context, force_refresh } = req.body || {};
+    if (!query || typeof query !== 'string') {
+      throw createError('query is required', 400, ErrorCodes.BAD_REQUEST);
+    }
+
+    const result = await searchService.resolve({
+      query,
+      intent_type,
+      freshness_required,
+      user_tier,
+      context,
+      force_refresh,
+      user_id: req.user?.userId || req.user?.id || `anon_${req.ip || 'unknown'}`,
+    });
+
+    res.locals.routeUsed = result.route_used;
+    res.json({
+      code: 200,
+      message: 'success',
+      data: result,
+      meta: {
+        route: result.route_used,
+      },
+    });
+  } catch (error) {
+    logger.error('Search resolve error:', error);
+    throw error;
+  }
+});
 
 // 统一搜索API
 router.get('/', async (req: Request, res: Response): Promise<void> => {
@@ -10,12 +44,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     const keyword = req.query.keyword as string;
 
     if (!keyword) {
-      res.status(400).json({
-        code: 400,
-        message: '请提供搜索关键词',
-        data: null,
-      });
-      return;
+      throw createError('请提供搜索关键词', 400, ErrorCodes.BAD_REQUEST);
     }
 
     const result = await searchService.search(keyword);
@@ -27,11 +56,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     });
   } catch (error) {
     logger.error('Search error:', error);
-    res.status(500).json({
-      code: 500,
-      message: '搜索失败，请稍后重试',
-      data: null,
-    });
+    throw error;
   }
 });
 
@@ -42,21 +67,11 @@ router.get('/source/:source', async (req: Request, res: Response): Promise<void>
     const source = req.params.source as 'local' | 'tianxing' | 'ai';
 
     if (!keyword) {
-      res.status(400).json({
-        code: 400,
-        message: '请提供搜索关键词',
-        data: null,
-      });
-      return;
+      throw createError('请提供搜索关键词', 400, ErrorCodes.BAD_REQUEST);
     }
 
     if (!['local', 'tianxing', 'ai'].includes(source)) {
-      res.status(400).json({
-        code: 400,
-        message: '无效的搜索来源',
-        data: null,
-      });
-      return;
+      throw createError('无效的搜索来源', 400, ErrorCodes.BAD_REQUEST);
     }
 
     const results = await searchService.searchFromSource(keyword, source);
@@ -72,11 +87,7 @@ router.get('/source/:source', async (req: Request, res: Response): Promise<void>
     });
   } catch (error) {
     logger.error('Search error:', error);
-    res.status(500).json({
-      code: 500,
-      message: '搜索失败，请稍后重试',
-      data: null,
-    });
+    throw error;
   }
 });
 

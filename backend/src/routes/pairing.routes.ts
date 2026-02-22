@@ -189,7 +189,7 @@ router.get('/ingredients', async (req, res) => {
     };
 
     // 根据年龄筛选
-    let result = ingredients;
+    let result: any = ingredients;
     if (age) {
       const ageNum = parseInt(age as string);
       result = Object.fromEntries(
