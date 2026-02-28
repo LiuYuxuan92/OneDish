@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/auth.controller';
+import { authenticate } from '../middleware/auth';
 
 const router = Router();
 const authController = new AuthController();
@@ -17,6 +18,6 @@ router.post('/guest', authController.guestLogin);
 router.post('/refresh', authController.refreshToken);
 
 // 退出登录（需要认证）
-router.post('/logout', authController.logout);
+router.post('/logout', authenticate, authController.logout);
 
 export default router;

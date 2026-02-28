@@ -3,8 +3,9 @@ import jwt from 'jsonwebtoken';
 import { createError } from './errorHandler';
 import { JwtPayload } from '../types';
 import { jwtConfig, isProduction } from '../config/jwt';
+import { tokenBlacklistService } from '../services/token-blacklist.service';
 
-export function authenticate(_req: Request, _res: Response, next: NextFunction) {
+export async function authenticate(_req: Request, _res: Response, next: NextFunction): Promise<void> {
   const authHeader = _req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -14,16 +15,20 @@ export function authenticate(_req: Request, _res: Response, next: NextFunction) 
   const token = authHeader.substring(7);
 
   try {
+    if (await tokenBlacklistService.isBlacklisted(token)) {
+      return next(createError('认证令牌无效或已过期', 401));
+    }
+
     const secret = isProduction ? jwtConfig.secret : (process.env.JWT_SECRET || jwtConfig.devSecret);
     const payload = jwt.verify(token, secret) as JwtPayload;
     _req.user = payload as any;
-    next();
-  } catch (error) {
-    next(createError('认证令牌无效或已过期', 401));
+    return next();
+  } catch (_error) {
+    return next(createError('认证令牌无效或已过期', 401));
   }
 }
 
-export function optionalAuth(_req: Request, _res: Response, next: NextFunction) {
+export async function optionalAuth(_req: Request, _res: Response, next: NextFunction): Promise<void> {
   const authHeader = _req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -33,12 +38,16 @@ export function optionalAuth(_req: Request, _res: Response, next: NextFunction) 
   const token = authHeader.substring(7);
 
   try {
+    if (await tokenBlacklistService.isBlacklisted(token)) {
+      return next();
+    }
+
     const secret = isProduction ? jwtConfig.secret : (process.env.JWT_SECRET || jwtConfig.devSecret);
     const payload = jwt.verify(token, secret) as JwtPayload;
     _req.user = payload as any;
   } catch {
-    // ignore
+    // ignore invalid/expired token for optional auth
   }
 
-  next();
+  return next();
 }

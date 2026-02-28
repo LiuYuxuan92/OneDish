@@ -4,50 +4,9 @@ import jwt from 'jsonwebtoken';
 import { AuthService } from '../services/auth.service';
 import { logger } from '../utils/logger';
 import { jwtConfig, isProduction } from '../config/jwt';
-import { db } from '../config/database';
+import { tokenBlacklistService } from '../services/token-blacklist.service';
 
-// Token 黑名单（使用数据库存储）
-const TOKEN_BLACKLIST_TABLE = 'token_blacklist';
-
-// 检查 token 是否在黑名单中（数据库查询）
-async function isTokenBlacklisted(token: string): Promise<boolean> {
-  try {
-    const result = await db(TOKEN_BLACKLIST_TABLE)
-      .where('token', token)
-      .first();
-    return !!result;
-  } catch {
-    return false;
-  }
-}
-
-// 将 token 加入黑名单
-async function addTokenToBlacklist(token: string, expiresAt: Date): Promise<void> {
-  try {
-    await db(TOKEN_BLACKLIST_TABLE).insert({
-      token,
-      expires_at: expiresAt.toISOString(),
-      created_at: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('Failed to add token to blacklist', { error });
-  }
-}
-
-// 清理过期token（定时任务）
-async function cleanupExpiredTokens(): Promise<void> {
-  try {
-    await db(TOKEN_BLACKLIST_TABLE)
-      .where('expires_at', '<', new Date().toISOString())
-      .delete();
-    logger.info('Expired tokens cleaned up');
-  } catch (error) {
-    logger.error('Failed to cleanup expired tokens', { error });
-  }
-}
-
-// 每小时清理一次过期token
-setInterval(cleanupExpiredTokens, 60 * 60 * 1000);
+tokenBlacklistService.startCleanupJob();
 
 export class AuthController {
   private authService: AuthService;
@@ -192,7 +151,7 @@ export class AuthController {
       }
 
       // 检查 token 是否在黑名单中
-      if (await isTokenBlacklisted(refresh_token)) {
+      if (await tokenBlacklistService.isBlacklisted(refresh_token)) {
         return res.status(401).json({
           code: 401,
           message: 'token 已失效',
@@ -202,7 +161,12 @@ export class AuthController {
 
       // 使用正确的refresh secret验证
       const secret = isProduction ? jwtConfig.refreshSecret : (process.env.JWT_REFRESH_SECRET || jwtConfig.devRefreshSecret);
-      const payload = jwt.verify(refresh_token, secret) as { user_id: string; username: string };
+      const payload = jwt.verify(refresh_token, secret) as { user_id: string; username: string; exp?: number };
+
+      // 刷新令牌轮换：已使用的 refresh token 立即作废，防止重放
+      if (payload.exp) {
+        await tokenBlacklistService.blacklistToken(refresh_token, new Date(payload.exp * 1000));
+      }
 
       const user = await this.authService.findById(payload.user_id);
       if (!user) {
@@ -241,11 +205,17 @@ export class AuthController {
 
       if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
-        // 计算token过期时间并加入黑名单
         const decoded = jwt.decode(token) as { exp?: number } | null;
         if (decoded?.exp) {
-          const expiresAt = new Date(decoded.exp * 1000);
-          await addTokenToBlacklist(token, expiresAt);
+          await tokenBlacklistService.blacklistToken(token, new Date(decoded.exp * 1000));
+        }
+      }
+
+      const refreshToken = req.body?.refresh_token as string | undefined;
+      if (refreshToken) {
+        const decodedRefresh = jwt.decode(refreshToken) as { exp?: number } | null;
+        if (decodedRefresh?.exp) {
+          await tokenBlacklistService.blacklistToken(refreshToken, new Date(decodedRefresh.exp * 1000));
         }
       }
 

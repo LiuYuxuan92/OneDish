@@ -6,8 +6,9 @@ declare global {
       requestId?: string;
       requestStartAt?: number;
       user?: {
-        userId?: string;
-        id?: string;
+        user_id: string;
+        username?: string;
+        role?: 'user' | 'admin';
         tier?: 'free' | 'pro' | 'enterprise';
       };
     }

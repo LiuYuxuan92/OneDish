@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { searchService } from '../services/search.service';
 import { logger } from '../utils/logger';
 import { createError } from '../middleware/errorHandler';
@@ -7,11 +7,11 @@ import { idempotencyService } from '../services/idempotency.service';
 
 const router = Router();
 
-router.post('/resolve', async (req: Request, res: Response): Promise<void> => {
+router.post('/resolve', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { query, intent_type, freshness_required, user_tier, context, force_refresh } = req.body || {};
     if (!query || typeof query !== 'string') {
-      throw createError('query is required', 400, ErrorCodes.BAD_REQUEST);
+      return next(createError('query is required', 400, ErrorCodes.BAD_REQUEST));
     }
 
     const idemKey = (req.header('Idempotency-Key') || '').trim();
@@ -27,7 +27,7 @@ router.post('/resolve', async (req: Request, res: Response): Promise<void> => {
         }
       }
       if (begin.state === 'conflict') {
-        throw createError('idempotency key is in-flight or payload conflict', 409, ErrorCodes.CONFLICT);
+        return next(createError('idempotency key is in-flight or payload conflict', 409, ErrorCodes.CONFLICT));
       }
     }
 
@@ -38,7 +38,7 @@ router.post('/resolve', async (req: Request, res: Response): Promise<void> => {
       user_tier,
       context,
       force_refresh,
-      user_id: req.user?.userId || req.user?.id || `anon_${req.ip || 'unknown'}`,
+      user_id: req.user?.user_id || `anon_${req.ip || 'unknown'}`,
     });
 
     res.locals.routeUsed = result.route_used;
@@ -58,17 +58,17 @@ router.post('/resolve', async (req: Request, res: Response): Promise<void> => {
     res.json(payload);
   } catch (error) {
     logger.error('Search resolve error:', error);
-    throw error;
+    return next(error);
   }
 });
 
 // 统一搜索API
-router.get('/', async (req: Request, res: Response): Promise<void> => {
+router.get('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const keyword = req.query.keyword as string;
 
     if (!keyword) {
-      throw createError('请提供搜索关键词', 400, ErrorCodes.BAD_REQUEST);
+      return next(createError('请提供搜索关键词', 400, ErrorCodes.BAD_REQUEST));
     }
 
     const result = await searchService.search(keyword);
@@ -80,22 +80,22 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     });
   } catch (error) {
     logger.error('Search error:', error);
-    throw error;
+    return next(error);
   }
 });
 
 // 指定来源搜索
-router.get('/source/:source', async (req: Request, res: Response): Promise<void> => {
+router.get('/source/:source', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const keyword = req.query.keyword as string;
     const source = req.params.source as 'local' | 'tianxing' | 'ai';
 
     if (!keyword) {
-      throw createError('请提供搜索关键词', 400, ErrorCodes.BAD_REQUEST);
+      return next(createError('请提供搜索关键词', 400, ErrorCodes.BAD_REQUEST));
     }
 
     if (!['local', 'tianxing', 'ai'].includes(source)) {
-      throw createError('无效的搜索来源', 400, ErrorCodes.BAD_REQUEST);
+      return next(createError('无效的搜索来源', 400, ErrorCodes.BAD_REQUEST));
     }
 
     const results = await searchService.searchFromSource(keyword, source);
@@ -111,7 +111,7 @@ router.get('/source/:source', async (req: Request, res: Response): Promise<void>
     });
   } catch (error) {
     logger.error('Search error:', error);
-    throw error;
+    return next(error);
   }
 });
 

@@ -4,6 +4,7 @@
  */
 
 import { Router } from 'express';
+import { randomUUID } from 'crypto';
 import { RecipePairingEngine, BatchRecipeGenerator } from '../utils/recipe-pairing-engine';
 import { db } from '../config/database';
 import { logger } from '../utils/logger';
@@ -296,8 +297,8 @@ router.post('/save', async (req, res) => {
       });
     }
 
-    // 生成ID
-    const id = `recipe_${Date.now()}`;
+    // 使用随机 UUID 避免并发写入时 ID 冲突
+    const id = `recipe_${randomUUID()}`;
     
     const recipeData = {
       id,

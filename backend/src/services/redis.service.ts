@@ -197,8 +197,15 @@ class RedisService {
       local raw = redis.call('GET', idem_key)
       if not raw then
         local pending = cjson.encode({ status = 'pending', fp = fp })
-        redis.call('SET', idem_key, pending, 'EX', ttl, 'NX')
-        return {'proceed'}
+        local ok = redis.call('SET', idem_key, pending, 'EX', ttl, 'NX')
+        if ok then
+          return {'proceed'}
+        end
+
+        raw = redis.call('GET', idem_key)
+        if not raw then
+          return {'conflict'}
+        end
       end
 
       local data = cjson.decode(raw)
