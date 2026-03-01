@@ -1,0 +1,34 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/recipe/recipe",
+    "pages/plan/plan"
+  ],
+  "window": {
+    "navigationBarTitleText": "OneDish MVP",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundTextStyle": "light"
+  },
+  "tabBar": {
+    "color": "#666",
+    "selectedColor": "#1677ff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "今日推荐"
+      },
+      {
+        "pagePath": "pages/recipe/recipe",
+        "text": "菜谱"
+      },
+      {
+        "pagePath": "pages/plan/plan",
+        "text": "清单"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

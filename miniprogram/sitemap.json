@@ -1,0 +1,4 @@
+{
+  "desc": "OneDish mini program MVP sitemap",
+  "rules": [{ "action": "allow", "page": "*" }]
+}

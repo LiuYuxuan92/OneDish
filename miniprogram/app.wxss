@@ -1,0 +1,53 @@
+page {
+  background: #f5f7fb;
+  color: #222;
+  font-size: 28rpx;
+}
+
+.container {
+  padding: 24rpx;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.04);
+}
+
+.title {
+  font-size: 34rpx;
+  font-weight: 600;
+}
+
+.sub {
+  color: #666;
+  font-size: 24rpx;
+  margin-top: 8rpx;
+}
+
+.btn-row {
+  display: flex;
+  gap: 16rpx;
+  flex-wrap: wrap;
+  margin-top: 16rpx;
+}
+
+.btn {
+  background: #1677ff;
+  color: #fff;
+  border-radius: 12rpx;
+  padding: 12rpx 20rpx;
+  font-size: 26rpx;
+}
+
+.btn.secondary {
+  background: #edf3ff;
+  color: #1677ff;
+}
+
+.placeholder {
+  color: #999;
+  font-size: 24rpx;
+}

@@ -1,0 +1,19 @@
+{
+  "description": "OneDish WeChat Mini Program MVP",
+  "packOptions": {
+    "ignore": []
+  },
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": false,
+    "urlCheck": false
+  },
+  "compileType": "miniprogram",
+  "libVersion": "2.32.3",
+  "appid": "touristappid",
+  "projectname": "OneDish-MVP",
+  "simulatorType": "wechat",
+  "condition": {}
+}

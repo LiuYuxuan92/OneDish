@@ -1,0 +1,36 @@
+<view class="container">
+  <view class="card">
+    <view class="title">购物清单（MVP）</view>
+    <view class="sub">优先读后端 /api/v1/shopping-lists；未登录时自动降级本地清单。</view>
+  </view>
+
+  <view class="card">
+    <view class="title" style="font-size:30rpx;">调试配置</view>
+    <input class="input" placeholder="baseURL，如 http://127.0.0.1:3000/api/v1" value="{{baseURL}}" bindinput="onBaseURLInput" />
+    <input class="input" placeholder="Bearer Token（可选）" value="{{token}}" bindinput="onTokenInput" />
+    <view class="btn-row">
+      <button class="btn secondary" size="mini" bindtap="saveConfig">保存配置</button>
+      <button class="btn secondary" size="mini" bindtap="loadData">刷新清单</button>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="title" style="font-size:30rpx;">添加本地清单项</view>
+    <input class="input" placeholder="例如：西红柿 2 个" value="{{newItem}}" bindinput="onNewItemInput" />
+    <button class="btn" size="mini" bindtap="addLocalItem">添加</button>
+  </view>
+
+  <block wx:for="{{items}}" wx:key="index">
+    <view class="card row">
+      <checkbox checked="{{item.checked}}" data-index="{{index}}" bindtap="toggleItem"></checkbox>
+      <view class="item-text {{item.checked ? 'done' : ''}}">{{item.name}}</view>
+      <view class="source">{{item.source}}</view>
+    </view>
+  </block>
+
+  <view class="card">
+    <view class="title" style="font-size:30rpx;">共享入口（占位）</view>
+    <view class="sub">下一步可接入：购物清单分享链接、家庭成员协作勾选。</view>
+    <button class="btn secondary" size="mini" bindtap="onSharePlaceholder">共享清单（即将上线）</button>
+  </view>
+</view>

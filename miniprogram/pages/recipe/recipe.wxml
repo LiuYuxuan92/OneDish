@@ -1,0 +1,28 @@
+<view class="container">
+  <view class="card">
+    <view class="title">菜谱列表</view>
+    <view class="sub">基于 /api/v1/recipes 接口（简版）</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="card sub">加载中...</view>
+
+  <block wx:for="{{recipes}}" wx:key="id">
+    <view class="card" bindtap="selectRecipe" data-id="{{item.id}}">
+      <view class="title" style="font-size:30rpx;">{{item.name}}</view>
+      <view class="sub">{{item.type || '-'}} · {{item.prep_time || '-'}} 分钟</view>
+    </view>
+  </block>
+
+  <view wx:if="{{detail}}" class="card">
+    <view class="title">菜谱详情（简版）</view>
+    <view class="title" style="font-size:30rpx;margin-top:12rpx;">{{detail.name}}</view>
+    <view class="sub">类型：{{detail.type || '-'}} · 难度：{{detail.difficulty || '-'}}</view>
+    <view class="sub">简介：{{detail.description || '暂无'}}</view>
+  </view>
+
+  <view class="card">
+    <view class="title" style="font-size:30rpx;">共享入口（占位）</view>
+    <view class="sub">后续可扩展：分享菜谱给家庭成员协作做饭。</view>
+    <button class="btn secondary" size="mini" bindtap="onSharePlaceholder">分享菜谱（即将上线）</button>
+  </view>
+</view>

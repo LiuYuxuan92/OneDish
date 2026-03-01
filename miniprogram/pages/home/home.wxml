@@ -1,0 +1,23 @@
+<view class="container">
+  <view class="card">
+    <view class="title">今日推荐</view>
+    <view wx:if="{{loading}}" class="sub">加载中...</view>
+    <view wx:elif="{{recommendation}}">
+      <view class="title" style="font-size:30rpx;margin-top:16rpx;">{{recommendation.name || '暂无推荐'}}</view>
+      <view class="sub">类型：{{recommendation.type || '-'}} · 耗时：{{recommendation.prep_time || '-'}} 分钟</view>
+      <view class="btn-row">
+        <button class="btn" size="mini" bindtap="onSwap">一键换菜</button>
+        <button class="btn secondary" size="mini" bindtap="goRecipe">查看菜谱列表</button>
+      </view>
+    </view>
+    <view wx:else class="sub">暂无推荐数据，请检查后端服务。</view>
+  </view>
+
+  <view class="card">
+    <view class="title" style="font-size:30rpx;">共享入口（占位）</view>
+    <view class="sub">后续可接入：分享今日推荐给家人、生成分享卡片、家庭协作烹饪。</view>
+    <view class="btn-row">
+      <button class="btn secondary" size="mini" bindtap="onSharePlaceholder">分享给家人（即将上线）</button>
+    </view>
+  </view>
+</view>
