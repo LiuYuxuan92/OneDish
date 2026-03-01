@@ -152,6 +152,43 @@ export function useShoppingListDetail(listId: string) {
     queryKey: ['shoppingLists', 'detail', listId],
     queryFn: () => shoppingListsApi.getById(listId).then(res => res.data),
     enabled: !!listId,
-    staleTime: 2 * 60 * 1000, // 2分钟
+    staleTime: 15 * 1000,
+    refetchInterval: 15 * 1000,
+  });
+}
+
+export function useCreateShoppingListShare(listId: string) {
+  return useMutation({
+    mutationFn: () => shoppingListsApi.createShare(listId).then(res => res.data),
+  });
+}
+
+export function useJoinShoppingListShare() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (inviteCode: string) => shoppingListsApi.joinShare(inviteCode).then(res => res.data),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['shoppingLists'] });
+    },
+  });
+}
+
+export function useRegenerateShoppingListShareInvite(listId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => shoppingListsApi.regenerateShareInvite(listId).then(res => res.data),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['shoppingLists', 'detail', listId] });
+    },
+  });
+}
+
+export function useRemoveShoppingListShareMember(listId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (memberId: string) => shoppingListsApi.removeShareMember(listId, memberId).then(res => res.data),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['shoppingLists', 'detail', listId] });
+    },
   });
 }

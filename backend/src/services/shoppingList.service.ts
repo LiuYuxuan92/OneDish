@@ -12,6 +12,97 @@ export class ShoppingListService {
     other: [],
   };
 
+  private genInviteCode(prefix = 'SL'): string {
+    return `${prefix}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  }
+
+  private async getAccessibleListOrThrow(listId: string, userId: string) {
+    const ownList = await db('shopping_lists')
+      .where('id', listId)
+      .where('user_id', userId)
+      .first();
+
+    if (ownList) {
+      return ownList;
+    }
+
+    const joined = await db('shopping_list_shares as s')
+      .join('shopping_list_share_members as m', 's.id', 'm.share_id')
+      .join('shopping_lists as l', 's.list_id', 'l.id')
+      .where('s.list_id', listId)
+      .where('m.user_id', userId)
+      .select('l.*')
+      .first();
+
+    if (joined) {
+      return joined;
+    }
+
+    const sharedList = await db('shopping_list_shares').where('list_id', listId).first();
+    if (sharedList) {
+      throw new Error('你已无权访问该共享清单，可能已被移除');
+    }
+
+    throw new Error('购物清单不存在');
+  }
+
+  private async getShareContextByListId(listId: string, userId: string) {
+    const share = await db('shopping_list_shares').where('list_id', listId).first();
+    if (!share) return null;
+
+    const isOwner = share.owner_id === userId;
+    const member = isOwner
+      ? null
+      : await db('shopping_list_share_members').where('share_id', share.id).where('user_id', userId).first();
+
+    if (!isOwner && !member) return null;
+
+    const members = isOwner
+      ? await db('shopping_list_share_members').where('share_id', share.id).select('user_id')
+      : [];
+
+    const memberProfiles = await this.resolveUserProfiles(members.map((m: any) => m.user_id));
+
+    return {
+      share_id: share.id,
+      role: isOwner ? 'owner' : 'member',
+      owner_id: share.owner_id,
+      invite_code: share.invite_code,
+      share_link: share.share_link,
+      members: memberProfiles,
+    };
+  }
+
+  private async resolveUserProfiles(userIds: string[]) {
+    if (!userIds.length) return [];
+
+    const users = await db('users').whereIn('id', userIds).select('id', 'username', 'avatar_url');
+    const profileMap = new Map(users.map((u: any) => [u.id, u]));
+
+    return userIds.map((userId) => {
+      const profile = profileMap.get(userId);
+      const displayName = profile?.username || userId;
+      return {
+        user_id: userId,
+        display_name: displayName,
+        avatar_url: profile?.avatar_url || null,
+      };
+    });
+  }
+
+  private async canWriteList(listId: string, userId: string) {
+    const own = await db('shopping_lists').where('id', listId).where('user_id', userId).first();
+    if (own) return true;
+
+    const member = await db('shopping_list_shares as s')
+      .join('shopping_list_share_members as m', 's.id', 'm.share_id')
+      .where('s.list_id', listId)
+      .where('m.user_id', userId)
+      .first();
+
+    return Boolean(member);
+  }
+
   private normalizeArea(area?: string): string {
     const key = (area || '').trim().toLowerCase();
 
@@ -348,14 +439,7 @@ export class ShoppingListService {
 
   // 获取单个购物清单详情
   async getShoppingListById(listId: string, userId: string) {
-    const list = await db('shopping_lists')
-      .where('id', listId)
-      .where('user_id', userId)
-      .first();
-
-    if (!list) {
-      throw new Error('购物清单不存在');
-    }
+    const list = await this.getAccessibleListOrThrow(listId, userId);
 
     // 解析 JSON 字符串，使用安全解析避免corrupted data导致的崩溃
     let parsedItems;
@@ -381,11 +465,14 @@ export class ShoppingListService {
       0
     );
 
+    const shareContext = await this.getShareContextByListId(listId, userId);
+
     return {
       ...list,
       items: parsedItems,
       total_items: totalItems,
       unchecked_items: uncheckedItems,
+      share: shareContext,
     };
   }
 
@@ -403,13 +490,10 @@ export class ShoppingListService {
 
     logger.debug('[Backend] updateListItem called:', { list_id, user_id, area, ingredient_id, checked });
 
-    const list = await db('shopping_lists')
-      .where('id', list_id)
-      .where('user_id', user_id)
-      .first();
-
-    if (!list) {
-      throw new Error('购物清单不存在');
+    const list = await this.getAccessibleListOrThrow(list_id, user_id);
+    const canWrite = await this.canWriteList(list_id, user_id);
+    if (!canWrite) {
+      throw new Error('无权限修改该购物清单');
     }
 
     // Parse items from JSON string to object
@@ -469,13 +553,10 @@ export class ShoppingListService {
 
   // 标记清单为完成，并将已勾选食材自动入库
   async markComplete(listId: string, userId: string) {
-    const list = await db('shopping_lists')
-      .where('id', listId)
-      .where('user_id', userId)
-      .first();
-
-    if (!list) {
-      throw new Error('购物清单不存在');
+    const list = await this.getAccessibleListOrThrow(listId, userId);
+    const canWrite = await this.canWriteList(listId, userId);
+    if (!canWrite) {
+      throw new Error('无权限修改该购物清单');
     }
 
     // 解析清单项
@@ -811,13 +892,10 @@ export class ShoppingListService {
 
     logger.debug('[Backend] removeListItem called:', { list_id, user_id, area, item_name });
 
-    const list = await db('shopping_lists')
-      .where('id', list_id)
-      .where('user_id', user_id)
-      .first();
-
-    if (!list) {
-      throw new Error('购物清单不存在');
+    const list = await this.getAccessibleListOrThrow(list_id, user_id);
+    const canWrite = await this.canWriteList(list_id, user_id);
+    if (!canWrite) {
+      throw new Error('无权限修改该购物清单');
     }
 
     logger.debug('[Backend] Items before delete:', JSON.stringify(list.items, null, 2).substring(0, 200));
@@ -905,13 +983,10 @@ export class ShoppingListService {
   }) {
     const { list_id, user_id, item_name, amount, area } = data;
 
-    const list = await db('shopping_lists')
-      .where('id', list_id)
-      .where('user_id', user_id)
-      .first();
-
-    if (!list) {
-      throw new Error('购物清单不存在');
+    const list = await this.getAccessibleListOrThrow(list_id, user_id);
+    const canWrite = await this.canWriteList(list_id, user_id);
+    if (!canWrite) {
+      throw new Error('无权限修改该购物清单');
     }
 
     // 解析清单项，使用安全解析避免corrupted data导致的崩溃
@@ -1005,13 +1080,10 @@ export class ShoppingListService {
   }) {
     const { list_id, user_id, checked } = data;
 
-    const list = await db('shopping_lists')
-      .where('id', list_id)
-      .where('user_id', user_id)
-      .first();
-
-    if (!list) {
-      throw new Error('购物清单不存在');
+    const list = await this.getAccessibleListOrThrow(list_id, user_id);
+    const canWrite = await this.canWriteList(list_id, user_id);
+    if (!canWrite) {
+      throw new Error('无权限修改该购物清单');
     }
 
     // 解析清单项，使用安全解析避免corrupted data导致的崩溃
@@ -1069,5 +1141,91 @@ export class ShoppingListService {
       total_items: totalItems,
       unchecked_items: uncheckedItems,
     };
+  }
+
+  async createShareLink(listId: string, ownerId: string) {
+    const list = await db('shopping_lists').where('id', listId).where('user_id', ownerId).first();
+    if (!list) {
+      throw new Error('仅清单拥有者可发起共享');
+    }
+
+    const existed = await db('shopping_list_shares').where('list_id', listId).where('owner_id', ownerId).first();
+    if (existed) {
+      return existed;
+    }
+
+    const inviteCode = this.genInviteCode('SL');
+    const shareLink = `onedish://shopping-list/share/${inviteCode}`;
+    const [share] = await db('shopping_list_shares')
+      .insert({
+        list_id: listId,
+        owner_id: ownerId,
+        invite_code: inviteCode,
+        share_link: shareLink,
+      })
+      .returning('*');
+
+    return share;
+  }
+
+  async regenerateShareInvite(listId: string, ownerId: string) {
+    const share = await db('shopping_list_shares').where('list_id', listId).where('owner_id', ownerId).first();
+    if (!share) throw new Error('仅 owner 可操作邀请码');
+
+    const oldInviteCode = share.invite_code;
+    const inviteCode = this.genInviteCode('SL');
+    const shareLink = `onedish://shopping-list/share/${inviteCode}`;
+
+    const revokedAt = new Date();
+    const ttlDays = Math.max(1, Number(process.env.SHARE_INVITE_REVOCATION_TTL_DAYS || 30));
+    const expiresAt = new Date(revokedAt.getTime() + ttlDays * 24 * 60 * 60 * 1000);
+
+    await db('share_invite_revocations').insert({
+      share_type: 'shopping_list',
+      share_id: share.id,
+      invite_code: oldInviteCode,
+      revoked_by: ownerId,
+      revoked_at: revokedAt.toISOString(),
+      expires_at: expiresAt.toISOString(),
+    });
+
+    const [updated] = await db('shopping_list_shares')
+      .where('id', share.id)
+      .update({ invite_code: inviteCode, share_link: shareLink })
+      .returning('*');
+
+    return { ...updated, old_invite_code: oldInviteCode };
+  }
+
+  async removeShareMember(listId: string, ownerId: string, targetMemberId: string) {
+    const share = await db('shopping_list_shares').where('list_id', listId).where('owner_id', ownerId).first();
+    if (!share) throw new Error('仅 owner 可移除成员');
+
+    const removed = await db('shopping_list_share_members')
+      .where('share_id', share.id)
+      .where('user_id', targetMemberId)
+      .del();
+
+    if (!removed) throw new Error('成员不存在或已移除');
+    return { share_id: share.id, removed_member_id: targetMemberId };
+  }
+
+  async joinByInviteCode(inviteCode: string, userId: string) {
+    const share = await db('shopping_list_shares').where('invite_code', inviteCode).first();
+    if (!share) {
+      const revoked = await db('share_invite_revocations').where('invite_code', inviteCode).where('share_type', 'shopping_list').first();
+      if (revoked) throw new Error('邀请码已失效，请向 owner 获取最新邀请码');
+      throw new Error('邀请码无效');
+    }
+    if (share.owner_id === userId) {
+      return { share_id: share.id, list_id: share.list_id, role: 'owner' };
+    }
+
+    await db('shopping_list_share_members')
+      .insert({ share_id: share.id, user_id: userId })
+      .onConflict(['share_id', 'user_id'])
+      .ignore();
+
+    return { share_id: share.id, list_id: share.list_id, role: 'member' };
   }
 }

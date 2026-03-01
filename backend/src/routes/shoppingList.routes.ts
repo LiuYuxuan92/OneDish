@@ -20,6 +20,18 @@ router.get('/', shoppingListController.getShoppingLists);
 // 获取单个购物清单详情
 router.get('/:listId', shoppingListController.getShoppingListById);
 
+// 生成共享链接
+router.post('/:listId/share', shoppingListController.createShareLink);
+
+// 通过邀请码加入共享清单
+router.post('/share/join', shoppingListController.joinByInviteCode);
+
+// 失效并重置邀请码
+router.post('/:listId/share/regenerate', shoppingListController.regenerateShareInvite);
+
+// owner 移除成员
+router.delete('/:listId/share/members/:memberId', shoppingListController.removeShareMember);
+
 // 更新购物清单项状态
 router.put('/:listId/items', shoppingListController.updateListItem);
 

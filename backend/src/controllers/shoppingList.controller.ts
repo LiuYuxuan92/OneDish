@@ -119,6 +119,60 @@ export class ShoppingListController {
     }
   };
 
+  createShareLink = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const { listId } = req.params;
+      const result = await this.shoppingListService.createShareLink(listId, userId);
+
+      res.json({
+        code: 200,
+        message: '生成共享链接成功',
+        data: result,
+      });
+    } catch (error) {
+      logger.error('Failed to create shopping list share link', { error });
+      res.status(500).json({ code: 500, message: (error as Error).message || '生成共享链接失败', data: null });
+    }
+  };
+
+  joinByInviteCode = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const { invite_code } = req.body || {};
+      const result = await this.shoppingListService.joinByInviteCode(String(invite_code || '').trim(), userId);
+
+      res.json({ code: 200, message: '加入共享清单成功', data: result });
+    } catch (error) {
+      logger.error('Failed to join shopping list by invite code', { error });
+      res.status(500).json({ code: 500, message: (error as Error).message || '加入共享清单失败', data: null });
+    }
+  };
+
+  regenerateShareInvite = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const { listId } = req.params;
+      const result = await this.shoppingListService.regenerateShareInvite(listId, userId);
+      res.json({ code: 200, message: '邀请码已更新', data: result });
+    } catch (error) {
+      logger.error('Failed to regenerate shopping list share invite', { error });
+      res.status(500).json({ code: 500, message: (error as Error).message || '更新邀请码失败', data: null });
+    }
+  };
+
+  removeShareMember = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const { listId, memberId } = req.params;
+      const result = await this.shoppingListService.removeShareMember(listId, userId, memberId);
+      res.json({ code: 200, message: '成员已移除', data: result });
+    } catch (error) {
+      logger.error('Failed to remove shopping list share member', { error });
+      res.status(500).json({ code: 500, message: (error as Error).message || '移除成员失败', data: null });
+    }
+  };
+
   // 标记清单为完成
   markComplete = async (req: Request, res: Response) => {
     try {

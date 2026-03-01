@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
-import { useWeeklyPlan, useGenerateWeeklyPlan, useMarkMealComplete, useSmartRecommendations, useSubmitRecommendationFeedback } from '../../hooks/useMealPlans';
+import { useWeeklyPlan, useGenerateWeeklyPlan, useMarkMealComplete, useSmartRecommendations, useSubmitRecommendationFeedback, useCreateWeeklyShare, useJoinWeeklyShare, useSharedWeeklyPlan, useMarkSharedMealComplete, useRegenerateWeeklyShareInvite, useRemoveWeeklyShareMember } from '../../hooks/useMealPlans';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { PlanStackParamList } from '../../types';
 import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon, ShoppingBagIcon, RefreshCwIcon, BabyIcon, CheckIcon } from '../../components/common/Icons';
@@ -59,12 +59,20 @@ export function WeeklyPlanScreen({ navigation }: Props) {
   const [showSmartRec, setShowSmartRec] = useState(false);
   const [smartMealType, setSmartMealType] = useState<'all-day' | 'breakfast' | 'lunch' | 'dinner'>('all-day');
   const [rejectReason, setRejectReason] = useState('');
+  const [weeklyInviteCode, setWeeklyInviteCode] = useState('');
+  const [activeShareId, setActiveShareId] = useState<string | null>(null);
 
   const { data: weeklyData, isLoading, error, refetch } = useWeeklyPlan();
   const generateMutation = useGenerateWeeklyPlan();
   const markCompleteMutation = useMarkMealComplete();
   const smartRecMutation = useSmartRecommendations();
   const feedbackMutation = useSubmitRecommendationFeedback();
+  const createWeeklyShareMutation = useCreateWeeklyShare();
+  const joinWeeklyShareMutation = useJoinWeeklyShare();
+  const { data: sharedWeeklyData } = useSharedWeeklyPlan(activeShareId || undefined);
+  const markSharedCompleteMutation = useMarkSharedMealComplete(activeShareId || undefined);
+  const regenerateInviteMutation = useRegenerateWeeklyShareInvite(activeShareId || undefined);
+  const removeMemberMutation = useRemoveWeeklyShareMember(activeShareId || undefined);
 
   const getWeekRange = (date: Date) => {
     const d = new Date(date);
@@ -78,6 +86,17 @@ export function WeeklyPlanScreen({ navigation }: Props) {
 
   const formatDate = (date: Date) => date.toISOString().split('T')[0];
   const { start, end } = getWeekRange(selectedWeek);
+
+  useEffect(() => {
+    if (!activeShareId || !sharedWeeklyData) return;
+    trackEvent('shared_plan_viewed', {
+      timestamp: new Date().toISOString(),
+      screen: 'WeeklyPlan',
+      source: 'weekly_plan',
+      shareId: activeShareId,
+      planId: null,
+    });
+  }, [activeShareId, sharedWeeklyData]);
 
   /**
    * 重新生成周计划
@@ -110,18 +129,18 @@ export function WeeklyPlanScreen({ navigation }: Props) {
 
       // 调用后端API重新生成
       const params: any = { start_date: formatDate(start) };
-      if (genBabyAge) params.baby_age_months = genBabyAge;
+      if (genBabyAge) {params.baby_age_months = genBabyAge;}
       if (genExclude.trim()) {
         params.exclude_ingredients = genExclude.split(/[,，、]/).map(s => s.trim()).filter(Boolean);
       }
       await generateMutation.mutateAsync(params);
-    } catch (error: any) {
+    } catch (genErr: any) {
       // 处理429速率限制错误
-      if (error?.response?.status === 429 || error?.statusCode === 429) {
+      if (genErr?.response?.status === 429 || genErr?.statusCode === 429) {
         console.warn('请求过于频繁，请稍后再试');
         // 这里可以添加用户提示，比如使用Toast
       } else {
-        console.error('生成计划失败:', error);
+        console.error('生成计划失败:', genErr);
       }
     } finally {
       // 清除刷新状态
@@ -173,15 +192,98 @@ export function WeeklyPlanScreen({ navigation }: Props) {
       Alert.alert('反馈已记录', '感谢反馈，推荐将持续优化');
       setRejectReason('');
       setShowSmartRec(false);
-    } catch (error) {
+    } catch (_submitErr) {
       Alert.alert('提交失败', '请稍后重试');
     }
   };
 
+  const handleCreateWeeklyShare = async () => {
+    try {
+      const share = await createWeeklyShareMutation.mutateAsync();
+      setActiveShareId(share.id);
+      await trackEvent('share_link_created', {
+        timestamp: new Date().toISOString(),
+        screen: 'WeeklyPlan',
+        source: 'weekly_plan',
+        shareId: share.id,
+      });
+      Alert.alert('共享周计划', `邀请码：${share.invite_code}\n链接：${share.share_link}`);
+    } catch {
+      Alert.alert('生成失败', '请稍后重试');
+    }
+  };
+
+  const handleJoinWeeklyShare = async () => {
+    if (!weeklyInviteCode.trim()) {
+      Alert.alert('请输入邀请码');
+      return;
+    }
+    try {
+      const joined = await joinWeeklyShareMutation.mutateAsync(weeklyInviteCode.trim());
+      setActiveShareId(joined.share_id);
+      await trackEvent('share_join_success', {
+        timestamp: new Date().toISOString(),
+        screen: 'WeeklyPlan',
+        source: 'weekly_plan',
+        shareId: joined.share_id,
+      });
+      await trackEvent('shared_plan_viewed', {
+        timestamp: new Date().toISOString(),
+        screen: 'WeeklyPlan',
+        source: 'weekly_plan',
+        shareId: joined.share_id,
+      });
+    } catch {
+      Alert.alert('加入失败', '邀请码无效或已失效');
+    }
+  };
+
+  const handleRegenerateWeeklyInvite = async () => {
+    try {
+      const share = await regenerateInviteMutation.mutateAsync();
+      await trackEvent('share_invite_revoked', {
+        timestamp: new Date().toISOString(),
+        userId: null,
+        shareId: share?.id || activeShareId,
+        targetMemberId: null,
+        screen: 'WeeklyPlan',
+        source: 'weekly_plan',
+      });
+      await trackEvent('share_invite_regenerated', {
+        timestamp: new Date().toISOString(),
+        userId: null,
+        shareId: share?.id || activeShareId,
+        targetMemberId: null,
+        screen: 'WeeklyPlan',
+        source: 'weekly_plan',
+      });
+      Alert.alert('邀请码已更新', `新邀请码：${share.invite_code}`);
+    } catch (e: any) {
+      Alert.alert('操作失败', e?.message || '请稍后重试');
+    }
+  };
+
+  const handleRemoveWeeklyMember = async (memberId: string) => {
+    try {
+      await removeMemberMutation.mutateAsync(memberId);
+      await trackEvent('share_member_removed', {
+        timestamp: new Date().toISOString(),
+        userId: null,
+        shareId: activeShareId,
+        targetMemberId: memberId,
+        screen: 'WeeklyPlan',
+        source: 'weekly_plan',
+      });
+      Alert.alert('成员已移除');
+    } catch (e: any) {
+      Alert.alert('移除失败', e?.message || '请稍后重试');
+    }
+  };
+
   const getPlanForMeal = (dateStr: string, mealType: string) => {
-    if (!weeklyData?.plans) return null;
+    if (!weeklyData?.plans) {return null;}
     const dayPlans = weeklyData.plans[dateStr];
-    if (!dayPlans) return null;
+    if (!dayPlans) {return null;}
     return dayPlans[mealType] || null;
   };
 
@@ -213,7 +315,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
     }
 
     const handleMarkComplete = () => {
-      if (!plan.plan_id) return;
+      if (!plan.plan_id) {return;}
       Alert.alert('确认', '标记为已做？库存将自动扣减', [
         { text: '取消', style: 'cancel' },
         {
@@ -311,9 +413,9 @@ export function WeeklyPlanScreen({ navigation }: Props) {
               disabled={isGenerating || generateMutation.isPending}
               accessibilityLabel="刷新计划"
             >
-              <RefreshCwIcon 
-                size={20} 
-                color={Colors.primary.main} 
+              <RefreshCwIcon
+                size={20}
+                color={Colors.primary.main}
                 style={(isGenerating || generateMutation.isPending) && styles.spinningIcon}
               />
             </TouchableOpacity>
@@ -333,7 +435,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
             </TouchableOpacity>
           </View>
         </View>
-        
+
         {/* 视图切换 Tab */}
         <View style={styles.tabContainer}>
           <TouchableOpacity
@@ -353,6 +455,21 @@ export function WeeklyPlanScreen({ navigation }: Props) {
             <Text style={[styles.tabText, activeTab === 'today' && styles.tabTextActive]}>
               今日详情
             </Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.shareActionRow}>
+          <TouchableOpacity style={styles.shareMiniBtn} onPress={handleCreateWeeklyShare}>
+            <Text style={styles.shareMiniBtnText}>共享周计划</Text>
+          </TouchableOpacity>
+          <TextInput
+            style={styles.shareCodeInput}
+            placeholder="输入邀请码"
+            value={weeklyInviteCode}
+            onChangeText={setWeeklyInviteCode}
+            placeholderTextColor={Colors.text.tertiary}
+          />
+          <TouchableOpacity style={styles.shareMiniBtn} onPress={handleJoinWeeklyShare}>
+            <Text style={styles.shareMiniBtnText}>加入</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -390,7 +507,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
               </View>
               <Text style={styles.todaySubtitle}>根据您的口味偏好智能推荐</Text>
             </View>
-      
+
             {/* 一周计划 */}
             <View style={styles.planSection}>
               <Text style={styles.sectionTitle}>一周安排</Text>
@@ -417,7 +534,64 @@ export function WeeklyPlanScreen({ navigation }: Props) {
                 );
               })}
             </View>
-      
+
+            {sharedWeeklyData?.plans && (
+              <View style={styles.planSection}>
+                <Text style={styles.sectionTitle}>共享周计划</Text>
+                <Text style={styles.shareIdentityText}>当前身份：{sharedWeeklyData.role}</Text>
+                {sharedWeeklyData.role === 'owner' && (
+                  <View style={styles.shareOwnerPanel}>
+                    <TouchableOpacity style={styles.shareOwnerBtn} onPress={handleRegenerateWeeklyInvite}>
+                      <Text style={styles.shareOwnerBtnText}>失效当前邀请码并重置</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.shareMembersTitle}>成员列表（最小可用）</Text>
+                    {(sharedWeeklyData.members || []).length === 0 ? (
+                      <Text style={styles.shareMemberItem}>暂无成员</Text>
+                    ) : (
+                      (sharedWeeklyData.members || []).map((m: any) => {
+                        const displayName = m.display_name || m.user_id;
+                        const avatarText = (displayName || '?').trim().charAt(0).toUpperCase() || '?';
+
+                        return (
+                          <View key={m.user_id} style={styles.shareMemberRow}>
+                            <View style={styles.shareMemberIdentity}>
+                              <View style={styles.shareMemberAvatar}>
+                                <Text style={styles.shareMemberAvatarText}>{avatarText}</Text>
+                              </View>
+                              <Text style={styles.shareMemberItem}>{displayName}</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => handleRemoveWeeklyMember(m.user_id)}>
+                              <Text style={styles.shareMemberRemove}>移除</Text>
+                            </TouchableOpacity>
+                          </View>
+                        );
+                      })
+                    )}
+                  </View>
+                )}
+                {Object.entries(sharedWeeklyData.plans).slice(0, 7).map(([dateStr, dayPlans]: any) => (
+                  <View key={`shared-${dateStr}`} style={styles.dayCard}>
+                    <Text style={styles.dayTitle}>{dateStr}</Text>
+                    {MEAL_TYPES.map((mealType) => {
+                      const plan = dayPlans?.[mealType];
+                      if (!plan) return null;
+                      return (
+                        <View key={`shared-${dateStr}-${mealType}`} style={styles.sharedMealRow}>
+                          <Text style={styles.mealLabelText}>{MEAL_LABELS[mealType].label}</Text>
+                          <Text style={styles.sharedMealName}>{plan.name}</Text>
+                          {!plan.is_completed && (
+                            <TouchableOpacity onPress={() => markSharedCompleteMutation.mutate(plan.id)}>
+                              <Text style={styles.sharedDoneBtn}>标记完成</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                ))}
+              </View>
+            )}
+
             {/* 重新生成按钮（重构版） */}
             <TouchableOpacity
               style={[styles.regenerateButton, (isGenerating || generateMutation.isPending) && styles.regenerateButtonDisabled]}
@@ -433,7 +607,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
                 </>
               )}
             </TouchableOpacity>
-      
+
             {/* 重构说明提示 */}
             <View style={styles.infoCard}>
               <Text style={styles.infoIcon}>💡</Text>
@@ -453,9 +627,9 @@ export function WeeklyPlanScreen({ navigation }: Props) {
         <View style={styles.genModalOverlay}>
           <View style={styles.genModalContent}>
             <Text style={styles.genModalTitle}>三餐智能推荐 V1（A/B）</Text>
-            <ScrollView style={{ maxHeight: 420 }}>
+            <ScrollView style={styles.smartRecScroll}>
               {Object.entries(smartRecMutation.data?.recommendations || {}).map(([mt, pair]: any) => (
-                <View key={mt} style={{ marginBottom: 16 }}>
+                <View key={mt} style={styles.smartRecSection}>
                   <Text style={styles.sectionTitle}>{MEAL_LABELS[mt]?.label || mt}</Text>
                   {['A', 'B'].map((k) => {
                     const item = pair?.[k];
@@ -477,7 +651,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
                 </View>
               ))}
             </ScrollView>
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+            <View style={styles.smartRecMealTypeRow}>
               {(['all-day', 'breakfast', 'lunch', 'dinner'] as const).map((t) => (
                 <TouchableOpacity key={t} style={[styles.genAgeOption, smartMealType === t && styles.genAgeOptionSelected]} onPress={() => setSmartMealType(t)}>
                   <Text style={[styles.genAgeOptionText, smartMealType === t && styles.genAgeOptionTextSelected]}>{t}</Text>
@@ -485,12 +659,12 @@ export function WeeklyPlanScreen({ navigation }: Props) {
               ))}
             </View>
 
-            <View style={{ gap: 8, marginBottom: 12 }}>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <TouchableOpacity style={[styles.genStartButton, { flex: 1 }]} disabled={feedbackMutation.isPending} onPress={() => handleSubmitFeedback('A')}>
+            <View style={styles.smartRecFeedbackBlock}>
+              <View style={styles.smartRecFeedbackRow}>
+                <TouchableOpacity style={[styles.genStartButton, styles.flex1]} disabled={feedbackMutation.isPending} onPress={() => handleSubmitFeedback('A')}>
                   <Text style={styles.genStartButtonText}>采纳A</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.genStartButton, { flex: 1, backgroundColor: Colors.secondary.main }]} disabled={feedbackMutation.isPending} onPress={() => handleSubmitFeedback('B')}>
+                <TouchableOpacity style={[styles.genStartButton, styles.flex1, styles.smartRecSelectB]} disabled={feedbackMutation.isPending} onPress={() => handleSubmitFeedback('B')}>
                   <Text style={styles.genStartButtonText}>采纳B</Text>
                 </TouchableOpacity>
               </View>
@@ -501,7 +675,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
                 onChangeText={setRejectReason}
                 placeholderTextColor={Colors.text.tertiary}
               />
-              <TouchableOpacity style={[styles.genStartButton, { backgroundColor: Colors.neutral.gray500 }]} disabled={feedbackMutation.isPending} onPress={() => handleSubmitFeedback('NONE')}>
+              <TouchableOpacity style={[styles.genStartButton, styles.smartRecReject]} disabled={feedbackMutation.isPending} onPress={() => handleSubmitFeedback('NONE')}>
                 <Text style={styles.genStartButtonText}>不采纳（提交原因）</Text>
               </TouchableOpacity>
             </View>
@@ -570,18 +744,18 @@ export function WeeklyPlanScreen({ navigation }: Props) {
  * 今日详情 Tab 组件
  * 显示今日三餐的详细信息
  */
-function TodayDetailTab({ 
-  startDate, 
-  weeklyData, 
-  navigation 
-}: { 
-  startDate: Date; 
-  weeklyData: any; 
+function TodayDetailTab({
+  startDate,
+  weeklyData,
+  navigation,
+}: {
+  startDate: Date;
+  weeklyData: any;
   navigation: any;
 }) {
   const todayStr = startDate.toISOString().split('T')[0];
   const todayPlans = weeklyData?.plans?.[todayStr];
-  
+
   if (!todayPlans || Object.keys(todayPlans).length === 0) {
     return (
       <View style={styles.emptyState}>
@@ -597,9 +771,9 @@ function TodayDetailTab({
       {MEAL_TYPES.map(mealType => {
         const plan = todayPlans[mealType];
         const mealConfig = MEAL_LABELS[mealType];
-        
-        if (!plan) return null;
-        
+
+        if (!plan) {return null;}
+
         return (
           <TouchableOpacity
             key={mealType}
@@ -617,7 +791,7 @@ function TodayDetailTab({
                 <Text style={styles.todayMealDifficulty}>{plan.difficulty}</Text>
               </View>
             </View>
-            
+
             {/* 食材预览 */}
             {plan.ingredients && plan.ingredients.length > 0 && (
               <View style={styles.todayMealIngredients}>
@@ -672,6 +846,34 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     gap: Spacing.sm,
+  },
+  shareActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  shareMiniBtn: {
+    backgroundColor: Colors.secondary.main,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  shareMiniBtnText: {
+    color: Colors.text.inverse,
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  shareCodeInput: {
+    flex: 1,
+    backgroundColor: Colors.background.secondary,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.primary,
   },
   iconButton: {
     padding: Spacing.sm,
@@ -1100,6 +1302,111 @@ const styles = StyleSheet.create({
   genStartButtonText: {
     color: Colors.text.inverse,
     fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  smartRecScroll: {
+    maxHeight: 420,
+  },
+  smartRecSection: {
+    marginBottom: Spacing.md,
+  },
+  smartRecMealTypeRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  smartRecFeedbackBlock: {
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  smartRecFeedbackRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  smartRecSelectB: {
+    backgroundColor: Colors.secondary.main,
+  },
+  smartRecReject: {
+    backgroundColor: Colors.neutral.gray500,
+  },
+  flex1: {
+    flex: 1,
+  },
+  shareIdentityText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    marginBottom: Spacing.sm,
+  },
+  shareOwnerPanel: {
+    backgroundColor: Colors.background.card,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  shareOwnerBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.functional.warning,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+  },
+  shareOwnerBtnText: {
+    color: Colors.text.inverse,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  shareMembersTitle: {
+    marginTop: Spacing.sm,
+    color: Colors.text.secondary,
+    fontSize: Typography.fontSize.sm,
+  },
+  shareMemberRow: {
+    marginTop: Spacing.xs,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  shareMemberIdentity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  shareMemberAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.background.tertiary,
+  },
+  shareMemberAvatarText: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.text.secondary,
+  },
+  shareMemberItem: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.primary,
+  },
+  shareMemberRemove: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.functional.error,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  sharedMealRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  sharedMealName: {
+    flex: 1,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.primary,
+  },
+  sharedDoneBtn: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.functional.success,
     fontWeight: Typography.fontWeight.semibold,
   },
 });

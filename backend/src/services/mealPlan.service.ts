@@ -41,6 +41,10 @@ interface RankingWeights {
 
 export class MealPlanService {
   private recipePoolCache: RecipePool | null = null;
+
+  private genInviteCode(prefix = 'MP'): string {
+    return `${prefix}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  }
   private poolCacheTime = 0;
   private readonly POOL_CACHE_TTL = 5 * 60 * 1000;
 
@@ -769,6 +773,129 @@ export class MealPlanService {
     setInterval(() => {
       service.recomputeRecommendationLearning().catch(() => null);
     }, intervalMs);
+  }
+
+  async createWeeklyShare(ownerId: string) {
+    const existed = await db('meal_plan_shares').where('owner_id', ownerId).first();
+    if (existed) return existed;
+
+    const inviteCode = this.genInviteCode('MP');
+    const shareLink = `onedish://meal-plan/share/${inviteCode}`;
+
+    const [share] = await db('meal_plan_shares')
+      .insert({
+        owner_id: ownerId,
+        invite_code: inviteCode,
+        share_link: shareLink,
+      })
+      .returning('*');
+
+    return share;
+  }
+
+  async regenerateWeeklyShareInvite(shareId: string, ownerId: string) {
+    const share = await db('meal_plan_shares').where('id', shareId).first();
+    if (!share) throw new Error('共享计划不存在');
+    if (share.owner_id !== ownerId) throw new Error('仅 owner 可操作邀请码');
+
+    const oldInviteCode = share.invite_code;
+    const inviteCode = this.genInviteCode('MP');
+    const shareLink = `onedish://meal-plan/share/${inviteCode}`;
+
+    const revokedAt = new Date();
+    const ttlDays = Math.max(1, Number(process.env.SHARE_INVITE_REVOCATION_TTL_DAYS || 30));
+    const expiresAt = new Date(revokedAt.getTime() + ttlDays * 24 * 60 * 60 * 1000);
+
+    await db('share_invite_revocations').insert({
+      share_type: 'meal_plan',
+      share_id: shareId,
+      invite_code: oldInviteCode,
+      revoked_by: ownerId,
+      revoked_at: revokedAt.toISOString(),
+      expires_at: expiresAt.toISOString(),
+    });
+
+    const [updated] = await db('meal_plan_shares')
+      .where('id', shareId)
+      .update({ invite_code: inviteCode, share_link: shareLink })
+      .returning('*');
+
+    return { ...updated, old_invite_code: oldInviteCode };
+  }
+
+  async joinWeeklyShare(inviteCode: string, userId: string) {
+    const share = await db('meal_plan_shares').where('invite_code', inviteCode).first();
+    if (!share) {
+      const revoked = await db('share_invite_revocations').where('invite_code', inviteCode).where('share_type', 'meal_plan').first();
+      if (revoked) throw new Error('邀请码已失效，请向 owner 获取最新邀请码');
+      throw new Error('邀请码无效');
+    }
+    if (share.owner_id === userId) {
+      return { share_id: share.id, owner_id: share.owner_id, role: 'owner' };
+    }
+
+    const existing = await db('meal_plan_shares').where('owner_id', share.owner_id).andWhereNot('id', share.id).first();
+    if (existing) {
+      throw new Error('该计划共享已变更，请让 owner 重新发送邀请');
+    }
+
+    await db('meal_plan_shares').where('id', share.id).update({ member_id: userId });
+    return { share_id: share.id, owner_id: share.owner_id, role: 'member' };
+  }
+
+  async removeWeeklyShareMember(shareId: string, ownerId: string, targetMemberId: string) {
+    const share = await db('meal_plan_shares').where('id', shareId).first();
+    if (!share) throw new Error('共享计划不存在');
+    if (share.owner_id !== ownerId) throw new Error('仅 owner 可移除成员');
+    if (!share.member_id || share.member_id !== targetMemberId) throw new Error('成员不存在或已移除');
+
+    await db('meal_plan_shares').where('id', shareId).update({ member_id: null });
+    return { share_id: shareId, removed_member_id: targetMemberId };
+  }
+
+  async getSharedWeeklyPlan(shareId: string, userId: string, startDate?: string, endDate?: string) {
+    const share = await db('meal_plan_shares').where('id', shareId).first();
+    if (!share) throw new Error('共享计划不存在');
+
+    const isOwner = share.owner_id === userId;
+    const isMember = share.member_id === userId;
+    if (!isOwner && !isMember) throw new Error('你已无权访问该共享周计划，可能已被移除');
+
+    const base = await this.getWeeklyPlan(share.owner_id, startDate, endDate);
+    const members = isOwner && share.member_id ? await this.resolveUserProfiles([share.member_id]) : [];
+    return { ...base, share_id: shareId, owner_id: share.owner_id, role: isOwner ? 'owner' : 'member', members };
+  }
+
+  private async resolveUserProfiles(userIds: string[]) {
+    if (!userIds.length) return [];
+
+    const users = await db('users').whereIn('id', userIds).select('id', 'username', 'avatar_url');
+    const profileMap = new Map(users.map((u: any) => [u.id, u]));
+
+    return userIds.map((userId) => {
+      const profile = profileMap.get(userId);
+      const displayName = profile?.username || userId;
+      return {
+        user_id: userId,
+        display_name: displayName,
+        avatar_url: profile?.avatar_url || null,
+      };
+    });
+  }
+
+  async markSharedMealCompleted(shareId: string, userId: string, planId: string) {
+    const share = await db('meal_plan_shares').where('id', shareId).first();
+    if (!share) throw new Error('共享计划不存在');
+
+    const isOwner = share.owner_id === userId;
+    const isMember = share.member_id === userId;
+    if (!isOwner && !isMember) throw new Error('你已无权访问该共享周计划，可能已被移除');
+
+    const plan = await db('meal_plans').where('id', planId).where('user_id', share.owner_id).first();
+    if (!plan) throw new Error('餐食计划不存在');
+
+    await db('meal_plans').where('id', planId).update({ is_completed: true });
+    return { plan_id: planId, share_id: shareId, completed: true };
   }
 
   private getMonday(date: Date) {

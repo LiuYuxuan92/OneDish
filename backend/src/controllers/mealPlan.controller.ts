@@ -88,6 +88,78 @@ export class MealPlanController {
     }
   };
 
+  createWeeklyShare = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const result = await this.mealPlanService.createWeeklyShare(userId);
+      res.json({ code: 200, message: '生成周计划共享链接成功', data: result });
+    } catch (error) {
+      logger.error('Failed to create weekly share', { error });
+      res.status(500).json({ code: 500, message: (error as Error).message || '生成周计划共享链接失败', data: null });
+    }
+  };
+
+  joinWeeklyShare = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const { invite_code } = req.body || {};
+      const result = await this.mealPlanService.joinWeeklyShare(String(invite_code || '').trim(), userId);
+      res.json({ code: 200, message: '加入共享周计划成功', data: result });
+    } catch (error) {
+      logger.error('Failed to join weekly share', { error });
+      res.status(500).json({ code: 500, message: (error as Error).message || '加入共享周计划失败', data: null });
+    }
+  };
+
+  getSharedWeeklyPlan = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const { shareId } = req.params;
+      const { start_date, end_date } = req.query;
+      const result = await this.mealPlanService.getSharedWeeklyPlan(shareId, userId, start_date as string, end_date as string);
+      res.json({ code: 200, message: 'success', data: result });
+    } catch (error) {
+      logger.error('Failed to get shared weekly plan', { error });
+      res.status(500).json({ code: 500, message: (error as Error).message || '获取共享周计划失败', data: null });
+    }
+  };
+
+  markSharedMealComplete = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const { shareId, planId } = req.params;
+      const result = await this.mealPlanService.markSharedMealCompleted(shareId, userId, planId);
+      res.json({ code: 200, message: '标记成功', data: result });
+    } catch (error) {
+      logger.error('Failed to mark shared meal complete', { error });
+      res.status(500).json({ code: 500, message: (error as Error).message || '标记失败', data: null });
+    }
+  };
+
+  regenerateWeeklyShareInvite = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const { shareId } = req.params;
+      const result = await this.mealPlanService.regenerateWeeklyShareInvite(shareId, userId);
+      res.json({ code: 200, message: '邀请码已更新', data: result });
+    } catch (error) {
+      logger.error('Failed to regenerate weekly share invite', { error });
+      res.status(500).json({ code: 500, message: (error as Error).message || '更新邀请码失败', data: null });
+    }
+  };
+
+  removeWeeklyShareMember = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const { shareId, memberId } = req.params;
+      const result = await this.mealPlanService.removeWeeklyShareMember(shareId, userId, memberId);
+      res.json({ code: 200, message: '成员已移除', data: result });
+    } catch (error) {
+      logger.error('Failed to remove weekly share member', { error });
+      res.status(500).json({ code: 500, message: (error as Error).message || '移除成员失败', data: null });
+    }
+  };
+
   // 标记餐食已完成
   markMealComplete = async (req: Request, res: Response) => {
     try {

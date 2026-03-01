@@ -71,7 +71,7 @@ export function ShoppingListScreen({ navigation }: Props) {
 
   // 提取所有菜谱名称（用于筛选）
   const allRecipes = useMemo(() => {
-    if (!shoppingList?.items) return [];
+    if (!shoppingList?.items) {return [];}
     const recipeSet = new Set<string>();
     Object.values(shoppingList.items).forEach((items: any[]) => {
       items.forEach((item: any) => {
@@ -83,7 +83,7 @@ export function ShoppingListScreen({ navigation }: Props) {
 
   // 筛选后的食材数据
   const filteredItems = useMemo(() => {
-    if (!shoppingList?.items) return {};
+    if (!shoppingList?.items) {return {};}
 
     const result: Record<string, any[]> = {};
 
@@ -98,12 +98,12 @@ export function ShoppingListScreen({ navigation }: Props) {
 
         // 按来源筛选（共用/大人/宝宝）
         if (sourceFilter !== 'all') {
-          if (item.source !== sourceFilter) return false;
+          if (item.source !== sourceFilter) {return false;}
         }
 
         // 按菜谱筛选
         if (selectedRecipe !== 'all') {
-          if (!item.recipes?.includes(selectedRecipe)) return false;
+          if (!item.recipes?.includes(selectedRecipe)) {return false;}
         }
 
         return true;
@@ -126,8 +126,8 @@ export function ShoppingListScreen({ navigation }: Props) {
         page_id: 'shopping_list',
         source: 'meal_plan',
       });
-    } catch (error) {
-      console.error('生成购物清单失败:', error);
+    } catch (err) {
+      console.error('生成购物清单失败:', err);
       Alert.alert('生成失败', '请确保今日有餐食计划');
     }
   };
@@ -137,7 +137,7 @@ export function ShoppingListScreen({ navigation }: Props) {
     setRefreshing(true);
     try {
       await refetch();
-    } catch (error) {
+    } catch (err) {
       console.error('刷新失败:', error);
     } finally {
       setRefreshing(false);
@@ -163,7 +163,7 @@ export function ShoppingListScreen({ navigation }: Props) {
 
   // 切换项目勾选状态
   const handleToggleItem = async (area: string, ingredientId: string, checked: boolean) => {
-    if (!shoppingList?.id) return;
+    if (!shoppingList?.id) {return;}
 
     try {
       await updateMutation.mutateAsync({
@@ -177,7 +177,7 @@ export function ShoppingListScreen({ navigation }: Props) {
         item_id: ingredientId,
         checked: !checked,
       });
-    } catch (error) {
+    } catch (err) {
       console.error('更新失败:', error);
       Alert.alert('更新失败', '请稍后重试');
     }
@@ -185,12 +185,12 @@ export function ShoppingListScreen({ navigation }: Props) {
 
   // 删除购物清单项
   const handleRemoveItem = async (area: string, itemName: string) => {
-    if (!shoppingList?.id) return;
+    if (!shoppingList?.id) {return;}
 
     try {
       await removeMutation.mutateAsync({ area, item_name: itemName });
-    } catch (error) {
-      console.error('删除失败:', error);
+    } catch (err) {
+      console.error('删除失败:', err);
       Alert.alert('删除失败', '请稍后重试');
     }
   };
@@ -222,7 +222,7 @@ export function ShoppingListScreen({ navigation }: Props) {
       setShowAddModal(false);
       setNewItemName('');
       setNewItemAmount('');
-    } catch (error) {
+    } catch (err) {
       console.error('添加失败:', error);
       Alert.alert('添加失败', error instanceof Error ? error.message : '请稍后重试');
     }
@@ -230,11 +230,11 @@ export function ShoppingListScreen({ navigation }: Props) {
 
   // 全选/取消全选
   const handleToggleAll = async (checked: boolean) => {
-    if (!shoppingList?.id) return;
+    if (!shoppingList?.id) {return;}
 
     try {
       await toggleAllMutation.mutateAsync(checked);
-    } catch (error) {
+    } catch (err) {
       console.error('操作失败:', error);
       Alert.alert('操作失败', '请稍后重试');
     }
@@ -311,7 +311,7 @@ export function ShoppingListScreen({ navigation }: Props) {
 
   // 渲染存储区域分组
   const AreaSection = ({ area, items }: { area: string; items: any[] }) => {
-    if (!items || items.length === 0) return null;
+    if (!items || items.length === 0) {return null;}
 
     const isExpanded = expandedAreas.has(area);
     const checkedCount = items.filter((i) => i.checked).length;
@@ -378,7 +378,7 @@ export function ShoppingListScreen({ navigation }: Props) {
 
   // 渲染筛选面板
   const FilterPanel = () => {
-    if (!showFilters) return null;
+    if (!showFilters) {return null;}
 
     return (
       <View style={styles.filterPanel}>
@@ -512,7 +512,7 @@ export function ShoppingListScreen({ navigation }: Props) {
                 {new Date(shoppingList.list_date).toLocaleDateString('zh-CN', {
                   month: 'long',
                   day: 'numeric',
-                  weekday: 'short'
+                  weekday: 'short',
                 })}
               </Text>
             )}
@@ -590,7 +590,7 @@ export function ShoppingListScreen({ navigation }: Props) {
             {(() => {
               const allItems = Object.values(shoppingList.items).flat();
               const pairedItems = allItems.filter((item: any) => item.source);
-              if (pairedItems.length === 0) return null;
+              if (pairedItems.length === 0) {return null;}
 
               const bothCount = pairedItems.filter((item: any) => item.source === 'both').length;
               const adultCount = pairedItems.filter((item: any) => item.source === 'adult').length;
@@ -654,7 +654,7 @@ export function ShoppingListScreen({ navigation }: Props) {
             {/* 按区域分组的清单项 */}
             {AREA_ORDER.map(area => {
               const items = filteredItems[area] || [];
-              if (!items || items.length === 0) return null;
+              if (!items || items.length === 0) {return null;}
               return <AreaSection key={area} area={area} items={items} />;
             }).filter(Boolean)}
 

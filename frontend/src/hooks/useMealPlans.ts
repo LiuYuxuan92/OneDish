@@ -139,3 +139,54 @@ export function useDeleteMealPlan() {
     },
   });
 }
+
+export function useCreateWeeklyShare() {
+  return useMutation({
+    mutationFn: () => mealPlansApi.createWeeklyShare().then(res => res.data),
+  });
+}
+
+export function useJoinWeeklyShare() {
+  return useMutation({
+    mutationFn: (inviteCode: string) => mealPlansApi.joinWeeklyShare(inviteCode).then(res => res.data),
+  });
+}
+
+export function useSharedWeeklyPlan(shareId?: string, params?: { start_date?: string; end_date?: string }) {
+  return useQuery({
+    queryKey: ['mealPlans', 'shared', shareId, params],
+    queryFn: () => mealPlansApi.getSharedWeekly(String(shareId), params).then(res => res.data),
+    enabled: !!shareId,
+    refetchInterval: 20 * 1000,
+  });
+}
+
+export function useMarkSharedMealComplete(shareId?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (planId: string) => mealPlansApi.markSharedMealComplete(String(shareId), planId).then(res => res.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mealPlans', 'shared', shareId] });
+    },
+  });
+}
+
+export function useRegenerateWeeklyShareInvite(shareId?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => mealPlansApi.regenerateWeeklyShareInvite(String(shareId)).then(res => res.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mealPlans', 'shared', shareId] });
+    },
+  });
+}
+
+export function useRemoveWeeklyShareMember(shareId?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (memberId: string) => mealPlansApi.removeWeeklyShareMember(String(shareId), memberId).then(res => res.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mealPlans', 'shared', shareId] });
+    },
+  });
+}

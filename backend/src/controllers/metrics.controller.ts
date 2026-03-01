@@ -15,6 +15,19 @@ const ALLOWED_EVENTS = new Set([
   'api_request_failed',
   'smart_recommendation_requested',
   'smart_recommendation_viewed',
+  'share_link_created',
+  'share_join_success',
+  'shared_list_item_toggled',
+  'shared_plan_viewed',
+  'share_invite_revoked',
+  'share_invite_regenerated',
+  'share_member_removed',
+  'home_view',
+  'recommend_swap_click',
+  'swap_success',
+  'shopping_list_generate_click',
+  'cooking_start_click',
+  'recommend_quality_scored',
 ]);
 
 const ALLOWED_PLATFORMS = new Set(['web', 'h5']);

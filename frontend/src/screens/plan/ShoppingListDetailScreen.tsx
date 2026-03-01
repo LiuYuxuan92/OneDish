@@ -12,9 +12,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '../../styles/theme';
-import { useShoppingListDetail, useUpdateShoppingListItem } from '../../hooks/useShoppingLists';
+import { useCreateShoppingListShare, useRegenerateShoppingListShareInvite, useRemoveShoppingListShareMember, useShoppingListDetail, useUpdateShoppingListItem } from '../../hooks/useShoppingLists';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { PlanStackParamList } from '../../types';
+import { trackEvent } from '../../analytics/sdk';
 
 type Props = NativeStackScreenProps<PlanStackParamList, 'ShoppingListDetail'>;
 
@@ -37,6 +38,9 @@ export function ShoppingListDetailScreen({ route, navigation }: Props) {
 
   const { data: shoppingList, isLoading, error, refetch } = useShoppingListDetail(listId);
   const updateMutation = useUpdateShoppingListItem(listId);
+  const shareMutation = useCreateShoppingListShare(listId);
+  const regenerateInviteMutation = useRegenerateShoppingListShareInvite(listId);
+  const removeMemberMutation = useRemoveShoppingListShareMember(listId);
 
   // 切换区域展开/折叠
   const toggleArea = (area: string) => {
@@ -59,9 +63,75 @@ export function ShoppingListDetailScreen({ route, navigation }: Props) {
         ingredient_id: ingredientId,
         checked: !checked,
       });
+      await trackEvent('shared_list_item_toggled', {
+        timestamp: new Date().toISOString(),
+        screen: 'ShoppingListDetail',
+        source: 'shopping_list_detail',
+        listId,
+        checked: !checked,
+        ingredient_id: ingredientId,
+      });
     } catch (error) {
       console.error('更新失败:', error);
       Alert.alert('更新失败', '请稍后重试');
+    }
+  };
+
+  const handleCreateShare = async () => {
+    try {
+      const share = await shareMutation.mutateAsync();
+      await trackEvent('share_link_created', {
+        timestamp: new Date().toISOString(),
+        screen: 'ShoppingListDetail',
+        source: 'shopping_list_detail',
+        listId,
+        shareId: share?.id,
+      });
+      Alert.alert('共享链接已生成', `邀请码：${share.invite_code}\n链接：${share.share_link}`);
+    } catch {
+      Alert.alert('生成失败', '请稍后重试');
+    }
+  };
+
+  const handleRegenerateInvite = async () => {
+    try {
+      const share = await regenerateInviteMutation.mutateAsync();
+      await trackEvent('share_invite_revoked', {
+        timestamp: new Date().toISOString(),
+        userId: null,
+        shareId: share?.id,
+        targetMemberId: null,
+        screen: 'ShoppingListDetail',
+        source: 'shopping_list_detail',
+      });
+      await trackEvent('share_invite_regenerated', {
+        timestamp: new Date().toISOString(),
+        userId: null,
+        shareId: share?.id,
+        targetMemberId: null,
+        screen: 'ShoppingListDetail',
+        source: 'shopping_list_detail',
+      });
+      Alert.alert('邀请码已更新', `新邀请码：${share.invite_code}`);
+    } catch (e: any) {
+      Alert.alert('操作失败', e?.message || '请稍后重试');
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    try {
+      await removeMemberMutation.mutateAsync(memberId);
+      await trackEvent('share_member_removed', {
+        timestamp: new Date().toISOString(),
+        userId: null,
+        shareId: shoppingList?.share?.share_id || null,
+        targetMemberId: memberId,
+        screen: 'ShoppingListDetail',
+        source: 'shopping_list_detail',
+      });
+      Alert.alert('已移除成员');
+    } catch (e: any) {
+      Alert.alert('移除失败', e?.message || '请稍后重试');
     }
   };
 
@@ -186,6 +256,14 @@ export function ShoppingListDetailScreen({ route, navigation }: Props) {
             {formatFullDate(shoppingList.list_date)}
           </Text>
         )}
+        <TouchableOpacity style={styles.shareButton} onPress={handleCreateShare}>
+          <Text style={styles.shareButtonText}>共享清单</Text>
+        </TouchableOpacity>
+        {!!shoppingList?.share?.role && (
+          <View style={styles.roleBadge}>
+            <Text style={styles.roleBadgeText}>当前身份：{shoppingList.share.role}</Text>
+          </View>
+        )}
         {shoppingList?.is_completed && (
           <View style={styles.completedBadge}>
             <Text style={styles.completedBadgeText}>✓ 已完成</Text>
@@ -194,6 +272,36 @@ export function ShoppingListDetailScreen({ route, navigation }: Props) {
       </View>
 
       <ScrollView style={styles.content}>
+        {shoppingList?.share?.role === 'owner' && (
+          <View style={styles.ownerPanel}>
+            <TouchableOpacity style={styles.ownerActionBtn} onPress={handleRegenerateInvite}>
+              <Text style={styles.ownerActionBtnText}>失效当前邀请码并重置</Text>
+            </TouchableOpacity>
+            <Text style={styles.memberTitle}>成员列表（最小可用）</Text>
+            {(shoppingList?.share?.members || []).length === 0 ? (
+              <Text style={styles.memberItem}>暂无成员</Text>
+            ) : (
+              (shoppingList?.share?.members || []).map((m: any) => {
+                const displayName = m.display_name || m.user_id;
+                const avatarText = (displayName || '?').trim().charAt(0).toUpperCase() || '?';
+
+                return (
+                  <View key={m.user_id} style={styles.memberRow}>
+                    <View style={styles.memberIdentity}>
+                      <View style={styles.memberAvatar}>
+                        <Text style={styles.memberAvatarText}>{avatarText}</Text>
+                      </View>
+                      <Text style={styles.memberItem}>{displayName}</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => handleRemoveMember(m.user_id)}>
+                      <Text style={styles.memberRemove}>移除</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })
+            )}
+          </View>
+        )}
         {!hasList ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>🛒</Text>
@@ -300,10 +408,96 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.sm,
   },
+  shareButton: {
+    alignSelf: 'flex-start',
+    marginTop: Spacing.sm,
+    backgroundColor: Colors.primary.main,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.sm,
+  },
+  shareButtonText: {
+    color: Colors.text.inverse,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+  },
   completedBadgeText: {
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.text.inverse,
+  },
+  roleBadge: {
+    alignSelf: 'flex-start',
+    marginTop: Spacing.sm,
+    backgroundColor: Colors.neutral.gray100,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.sm,
+  },
+  roleBadgeText: {
+    color: Colors.text.primary,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  ownerPanel: {
+    marginHorizontal: Spacing.md,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
+    backgroundColor: Colors.background.card,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    ...Shadows.sm,
+  },
+  ownerActionBtn: {
+    backgroundColor: Colors.functional.warning,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+    alignSelf: 'flex-start',
+  },
+  ownerActionBtnText: {
+    color: Colors.text.inverse,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  memberTitle: {
+    marginTop: Spacing.md,
+    marginBottom: Spacing.xs,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+  },
+  memberRow: {
+    marginTop: Spacing.xs,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  memberIdentity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  memberAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.background.tertiary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  memberAvatarText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  memberItem: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.primary,
+  },
+  memberRemove: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.functional.error,
+    fontWeight: Typography.fontWeight.semibold,
   },
   content: {
     flex: 1,

@@ -8,12 +8,15 @@ import {
   ActivityIndicator,
   Pressable,
   RefreshControl,
+  TextInput,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '../../styles/theme';
-import { useShoppingLists } from '../../hooks/useShoppingLists';
+import { useJoinShoppingListShare, useShoppingLists } from '../../hooks/useShoppingLists';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { PlanStackParamList } from '../../types';
+import { trackEvent } from '../../analytics/sdk';
 
 type Props = NativeStackScreenProps<PlanStackParamList, 'ShoppingListHistory'>;
 
@@ -32,6 +35,8 @@ const AREA_ORDER = ['produce', 'protein', 'staple', 'seasoning', 'snack_dairy', 
 
 export function ShoppingListHistoryScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
+  const [inviteCode, setInviteCode] = useState('');
+  const joinShareMutation = useJoinShoppingListShare();
 
   // 获取过去30天的购物清单
   const endDate = new Date().toISOString().split('T')[0];
@@ -53,6 +58,27 @@ export function ShoppingListHistoryScreen({ navigation }: Props) {
       console.error('刷新失败:', error);
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const handleJoinShare = async () => {
+    if (!inviteCode.trim()) {
+      Alert.alert('请输入邀请码');
+      return;
+    }
+
+    try {
+      const joined = await joinShareMutation.mutateAsync(inviteCode.trim());
+      await trackEvent('share_join_success', {
+        timestamp: new Date().toISOString(),
+        screen: 'ShoppingListHistory',
+        source: 'shopping_list_history',
+        shareId: joined.share_id,
+        listId: joined.list_id,
+      });
+      navigation.navigate('ShoppingListDetail', { listId: joined.list_id });
+    } catch {
+      Alert.alert('加入失败', '邀请码无效或已失效');
     }
   };
 
@@ -178,6 +204,17 @@ export function ShoppingListHistoryScreen({ navigation }: Props) {
       <View style={styles.header}>
         <Text style={styles.title}>历史清单</Text>
         <Text style={styles.subtitle}>最近30天的购物清单</Text>
+        <View style={styles.joinRow}>
+          <TextInput
+            style={styles.joinInput}
+            placeholder="输入共享邀请码"
+            value={inviteCode}
+            onChangeText={setInviteCode}
+          />
+          <TouchableOpacity style={styles.joinButton} onPress={handleJoinShare}>
+            <Text style={styles.joinButtonText}>加入共享</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -272,6 +309,31 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
     marginTop: Spacing.xs,
+  },
+  joinRow: {
+    marginTop: Spacing.sm,
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  joinInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: Colors.neutral.gray300,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    backgroundColor: Colors.background.primary,
+  },
+  joinButton: {
+    backgroundColor: Colors.primary.main,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    justifyContent: 'center',
+  },
+  joinButtonText: {
+    color: Colors.text.inverse,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
   },
   content: {
     flex: 1,

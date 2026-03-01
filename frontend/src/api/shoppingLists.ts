@@ -90,6 +90,12 @@ export interface ShoppingListItem {
   category?: ShoppingCategory;
 }
 
+export interface ShoppingListShareMember {
+  user_id: string;
+  display_name?: string;
+  avatar_url?: string | null;
+}
+
 export interface ShoppingList {
   id: string;
   user_id: string;
@@ -100,6 +106,22 @@ export interface ShoppingList {
   unchecked_items?: number;
   is_completed: boolean;
   created_at: string;
+  share?: {
+    share_id: string;
+    role: 'owner' | 'member';
+    owner_id: string;
+    invite_code: string;
+    share_link: string;
+    members: ShoppingListShareMember[];
+  } | null;
+}
+
+export interface ShoppingListShare {
+  id: string;
+  list_id: string;
+  owner_id: string;
+  invite_code: string;
+  share_link: string;
 }
 
 export interface ShoppingListsResponse {
@@ -146,4 +168,8 @@ export const shoppingListsApi = {
     return { ...res, data: normalizeShoppingList(res.data) };
   },
   markComplete: (listId: string) => apiClient.put(`/shopping-lists/${listId}/complete`),
+  createShare: (listId: string) => apiClient.post<ShoppingListShare>(`/shopping-lists/${listId}/share`),
+  joinShare: (invite_code: string) => apiClient.post<{ share_id: string; list_id: string; role: 'owner' | 'member' }>(`/shopping-lists/share/join`, { invite_code }),
+  regenerateShareInvite: (listId: string) => apiClient.post<ShoppingListShare & { old_invite_code: string }>(`/shopping-lists/${listId}/share/regenerate`),
+  removeShareMember: (listId: string, memberId: string) => apiClient.delete(`/shopping-lists/${listId}/share/members/${memberId}`),
 };

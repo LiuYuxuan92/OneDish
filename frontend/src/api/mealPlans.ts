@@ -115,4 +115,13 @@ export const mealPlansApi = {
 
   getRecommendationFeedbackStats: (days = 7) =>
     apiClient.get<RecommendationFeedbackStats>(`/meal-plans/recommendations/feedback/stats?days=${days}`),
+
+  createWeeklyShare: () => apiClient.post<{ id: string; invite_code: string; share_link: string }>('/meal-plans/share'),
+  joinWeeklyShare: (invite_code: string) => apiClient.post<{ share_id: string; owner_id: string; role: 'owner' | 'member' }>('/meal-plans/share/join', { invite_code }),
+  getSharedWeekly: (shareId: string, params?: { start_date?: string; end_date?: string }) =>
+    apiClient.get<WeeklyPlanResponse & { share_id: string; owner_id: string; role: 'owner' | 'member'; members?: Array<{ user_id: string; display_name?: string; avatar_url?: string | null }> }>(`/meal-plans/share/${shareId}/weekly`, { params }),
+  markSharedMealComplete: (shareId: string, planId: string) =>
+    apiClient.post(`/meal-plans/share/${shareId}/${planId}/complete`),
+  regenerateWeeklyShareInvite: (shareId: string) => apiClient.post<{ id: string; invite_code: string; share_link: string; old_invite_code: string }>(`/meal-plans/share/${shareId}/regenerate`),
+  removeWeeklyShareMember: (shareId: string, memberId: string) => apiClient.delete(`/meal-plans/share/${shareId}/members/${memberId}`),
 };
