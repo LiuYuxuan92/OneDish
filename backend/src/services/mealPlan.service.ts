@@ -37,6 +37,7 @@ interface RankingWeights {
   inventory: number;
   baby: number;
   feedback: number;
+  expiring_boost: number;
 }
 
 export class MealPlanService {
@@ -49,10 +50,11 @@ export class MealPlanService {
   private readonly POOL_CACHE_TTL = 5 * 60 * 1000;
 
   private readonly defaultRankingWeights: RankingWeights = {
-    time: this.readWeight('REC_RANK_V2_WEIGHT_TIME', 0.30),
-    inventory: this.readWeight('REC_RANK_V2_WEIGHT_INVENTORY', 0.25),
-    baby: this.readWeight('REC_RANK_V2_WEIGHT_BABY', 0.20),
-    feedback: this.readWeight('REC_RANK_V2_WEIGHT_FEEDBACK', 0.25),
+    time: this.readWeight('REC_RANK_V2_WEIGHT_TIME', 0.25),
+    inventory: this.readWeight('REC_RANK_V2_WEIGHT_INVENTORY', 0.20),
+    baby: this.readWeight('REC_RANK_V2_WEIGHT_BABY', 0.15),
+    feedback: this.readWeight('REC_RANK_V2_WEIGHT_FEEDBACK', 0.20),
+    expiring_boost: this.readWeight('REC_RANK_V2_WEIGHT_EXPIRING_BOOST', 0.15),
   };
 
   private readonly mealWeightConfig: Record<MealType, RankingWeights> = {
@@ -363,13 +365,14 @@ export class MealPlanService {
   }
 
   private normalizeWeights(raw: RankingWeights): RankingWeights {
-    const total = raw.time + raw.inventory + raw.baby + raw.feedback;
+    const total = raw.time + raw.inventory + raw.baby + raw.feedback + raw.expiring_boost;
     if (total <= 0) return { ...this.defaultRankingWeights };
     return {
       time: Number((raw.time / total).toFixed(4)),
       inventory: Number((raw.inventory / total).toFixed(4)),
       baby: Number((raw.baby / total).toFixed(4)),
       feedback: Number((raw.feedback / total).toFixed(4)),
+      expiring_boost: Number((raw.expiring_boost / total).toFixed(4)),
     };
   }
 
@@ -381,6 +384,7 @@ export class MealPlanService {
       inventory: this.readWeight(`${p}INVENTORY`, base.inventory),
       baby: this.readWeight(`${p}BABY`, base.baby),
       feedback: this.readWeight(`${p}FEEDBACK`, base.feedback),
+      expiring_boost: this.readWeight(`${p}EXPIRING_BOOST`, base.expiring_boost),
     });
   }
 
@@ -399,6 +403,21 @@ export class MealPlanService {
       ...(input.inventory || []),
       ...inventoryFromDb.map((row: any) => row.ingredient_name),
     ]);
+
+    // 获取即将过期的食材（3天内）
+    const today = new Date();
+    const threeDaysLater = new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000);
+    const expiringIngredientsFromDb = await db('ingredient_inventory')
+      .where('user_id', userId)
+      .where('is_active', true)
+      .where('quantity', '>', 0)
+      .whereNotNull('expiry_date')
+      .where('expiry_date', '>=', today.toISOString().split('T')[0])
+      .where('expiry_date', '<=', threeDaysLater.toISOString().split('T')[0])
+      .select('ingredient_name');
+    const expiringIngredientsSet = new Set<string>(
+      expiringIngredientsFromDb.map((row: any) => row.ingredient_name)
+    );
 
     const targetMealTypes: MealType[] = mealType === 'all-day' ? ['breakfast', 'lunch', 'dinner'] : [mealType as MealType];
 
@@ -427,6 +446,7 @@ export class MealPlanService {
           maxPrepTime,
           feedbackProfile,
           mealWeights,
+          expiringIngredientsSet,
         }))
         .filter((item) => item.score >= 0)
         .sort((a, b) => b.score - a.score || a.recipe.prep_time - b.recipe.prep_time || a.recipe.id.localeCompare(b.recipe.id));
@@ -553,9 +573,10 @@ export class MealPlanService {
       maxPrepTime: number;
       feedbackProfile: any;
       mealWeights: RankingWeights;
+      expiringIngredientsSet?: Set<string>;
     }
   ) {
-    const { babyAgeMonths, inventorySet, excludeIngredients = [], maxPrepTime, feedbackProfile, mealWeights } = opts;
+    const { babyAgeMonths, inventorySet, excludeIngredients = [], maxPrepTime, feedbackProfile, mealWeights, expiringIngredientsSet } = opts;
     let ingredients: string[] = [];
     let babySuitable = true;
 
@@ -581,6 +602,16 @@ export class MealPlanService {
       return !Array.from(inventorySet).some((x) => ing.includes(x) || x.includes(ing));
     });
 
+    // 计算即将过期食材匹配数
+    const expiringMatchCount = expiringIngredientsSet && expiringIngredientsSet.size > 0
+      ? ingredients.filter(ing => 
+          Array.from(expiringIngredientsSet).some(x => ing.includes(x) || x.includes(ing))
+        ).length
+      : 0;
+    const expiringMatchRatio = expiringIngredientsSet && expiringIngredientsSet.size > 0
+      ? Math.min(1, expiringMatchCount / Math.max(1, ingredients.length))
+      : 0;
+
     const normalizedMaxPrep = Math.max(10, maxPrepTime || 40);
     const prep = Number(recipe.prep_time) || normalizedMaxPrep;
     const timeScore = Math.max(0, 1 - prep / normalizedMaxPrep);
@@ -588,6 +619,11 @@ export class MealPlanService {
       ? Math.max(0, 1 - missingIngredients.length / Math.max(1, ingredients.length || 1))
       : 0.6;
     const babyScore = babyAgeMonths ? (babySuitable ? 1 : 0.1) : 0.6;
+
+    // 过期食材boost评分
+    const expiringBoostScore = mealWeights.expiring_boost > 0 && expiringMatchCount > 0
+      ? 0.3 + (expiringMatchRatio * 0.7)  // 最低0.3，最高1.0
+      : 0;
 
     const feedbackBase = Number(feedbackProfile.feedback_score || 0);
     const reasonScores = feedbackProfile.reason_scores || { time: 0, inventory: 0, baby: 0 };
@@ -602,23 +638,27 @@ export class MealPlanService {
       inventory: mealWeights.inventory * inventoryScore,
       baby: mealWeights.baby * babyScore,
       feedback: mealWeights.feedback * feedbackScore,
+      expiring_boost: mealWeights.expiring_boost * expiringBoostScore,
     };
 
-    const score = scoreParts.time + scoreParts.inventory + scoreParts.baby + scoreParts.feedback;
+    const score = scoreParts.time + scoreParts.inventory + scoreParts.baby + scoreParts.feedback + scoreParts.expiring_boost;
 
     const rankingReasons = [
       { code: 'time', label: prep <= 20 ? '准备时间更短' : '准备耗时可接受', contribution: scoreParts.time, detail: `约${prep}分钟` },
       { code: 'inventory', label: missingIngredients.length <= 1 ? '库存覆盖更好，缺口食材更少' : '库存缺口较大', contribution: scoreParts.inventory, detail: `缺口${missingIngredients.length}项` },
       { code: 'baby', label: babyAgeMonths ? (babySuitable ? '宝宝月龄适配更好' : '宝宝适配一般') : '未启用宝宝筛选', contribution: scoreParts.baby, detail: babyAgeMonths ? `月龄${babyAgeMonths}` : '默认' },
       { code: 'feedback', label: '历史反馈衰减学习加权', contribution: scoreParts.feedback, detail: `7天${Math.round((feedbackProfile.window_7d?.adoption_rate || 0) * 100)}%/30天${Math.round((feedbackProfile.window_30d?.adoption_rate || 0) * 100)}%` },
+      { code: 'expiring_boost', label: expiringMatchCount > 0 ? `使用${expiringMatchCount}种即将过期食材` : '无即将过期食材', contribution: scoreParts.expiring_boost, detail: expiringMatchCount > 0 ? `过期食材${expiringMatchCount}项` : '默认' },
     ].sort((a, b) => b.contribution - a.contribution || a.code.localeCompare(b.code));
 
     const explain = rankingReasons.filter(x => x.contribution > 0.03).slice(0, 3).map(x => x.label);
     if (explain.length === 0) explain.push('综合时间与库存表现稳定');
 
-    const switchHint = missingIngredients.length > 0
-      ? `缺少${missingIngredients.slice(0, 2).join('、')}，建议切换B方案降低采购量`
-      : '库存覆盖较好，优先推荐此方案';
+    const switchHint = expiringMatchCount > 0
+      ? `可使用${expiringMatchCount}种即将过期食材，减少浪费`
+      : (missingIngredients.length > 0
+          ? `缺少${missingIngredients.slice(0, 2).join('、')}，建议切换B方案降低采购量`
+          : '库存覆盖较好，优先推荐此方案');
 
     return {
       recipe,

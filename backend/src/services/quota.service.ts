@@ -17,7 +17,7 @@ interface QuotaRecord {
   reset_at: string;
 }
 
-class QuotaService {
+export class QuotaService {
   private userDaily = new Map<string, QuotaRecord>();
   private globalDaily = new Map<string, { web_used: number; ai_used: number }>();
 

@@ -1,9 +1,14 @@
 import { Router } from 'express';
 import { RecipeController } from '../controllers/recipe.controller';
-import { authenticate } from '../middleware/auth';
+import { authenticate, optionalAuth } from '../middleware/auth';
+import { SwapController } from '../controllers/swap.controller';
 
 const router = Router();
 const recipeController = new RecipeController();
+const swapController = new SwapController();
+
+// 智能换菜（可选认证，认证时自动获取用户偏好）
+router.post('/swap', optionalAuth, swapController.swapRecipe);
 
 // 根据即将过期食材推荐菜谱（需认证）
 router.get('/suggest-by-inventory', authenticate, recipeController.suggestByInventory);

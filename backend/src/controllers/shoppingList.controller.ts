@@ -14,12 +14,14 @@ export class ShoppingListController {
     try {
       const userId = (req as any).user.user_id;
       const { date, meal_types = ['breakfast', 'lunch', 'dinner'], servings = 2 } = req.body;
+      const merge = req.query.merge === 'true'; // 智能合并选项
 
       const result = await this.shoppingListService.generateShoppingList({
         user_id: userId,
         date,
         meal_types,
         servings,
+        merge,
       });
 
       res.json({

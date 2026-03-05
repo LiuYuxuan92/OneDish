@@ -12,9 +12,32 @@ function getRecipeDetail(id) {
   return request({ url: `/recipes/${id}` });
 }
 
-// 后端当前未发现“换一道”专门接口，MVP 使用前端临时逻辑：
-// 拉取菜谱列表并随机替换当前推荐。
+// 智能换菜 API - 使用后端评分推荐
 async function swapRecommendation(currentId) {
+  try {
+    const result = await request({
+      url: '/recipes/swap',
+      method: 'POST',
+      data: { current_recipe_id: currentId },
+      withAuth: true  // 尝试认证以获取个性化推荐
+    });
+    
+    if (result && result.code === 200 && result.data && result.data.recipe) {
+      return result.data.recipe;
+    }
+    
+    // 如果API失败，fallback到随机逻辑
+    console.warn('[api] swap API fallback to random');
+    return swapRecommendationFallback(currentId);
+  } catch (err) {
+    console.error('[api] swapRecommendation error:', err);
+    // Fallback to random
+    return swapRecommendationFallback(currentId);
+  }
+}
+
+// 随机换菜 fallback
+async function swapRecommendationFallback(currentId) {
   const result = await getRecipeList({ limit: 30 });
   const items = result.items || [];
   const pool = items.filter(item => item.id !== currentId);

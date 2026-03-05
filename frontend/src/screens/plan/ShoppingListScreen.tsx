@@ -58,6 +58,7 @@ export function ShoppingListScreen({ navigation }: Props) {
   // 新增筛选状态
   const [searchQuery, setSearchQuery] = useState('');
   const [sourceFilter, setSourceFilter] = useState<FilterType>('all');
+  const [mergeEnabled, setMergeEnabled] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
 
@@ -121,10 +122,12 @@ export function ShoppingListScreen({ navigation }: Props) {
         date: today,
         meal_types: ['breakfast', 'lunch', 'dinner'],
         servings: 2,
+        merge: mergeEnabled,
       });
       trackEvent('shopping_list_created', {
         page_id: 'shopping_list',
         source: 'meal_plan',
+        merge: mergeEnabled,
       });
     } catch (err) {
       console.error('生成购物清单失败:', err);
@@ -286,7 +289,13 @@ export function ShoppingListScreen({ navigation }: Props) {
               )}
             </View>
             <Text style={styles.itemAmount}>{item.amount}</Text>
-            {item.recipes && item.recipes.length > 0 && (
+            {/* 显示食材来源：合并显示"来自: 菜谱1、菜谱2"，普通显示"用于: 菜谱1" */}
+            {item.is_merged && item.from_recipes && item.from_recipes.length > 1 && (
+              <Text style={styles.itemRecipes} numberOfLines={1}>
+                来自: {item.from_recipes.join('、')}
+              </Text>
+            )}
+            {!item.is_merged && item.recipes && item.recipes.length > 0 && (
               <Text style={styles.itemRecipes} numberOfLines={1}>
                 用于: {item.recipes.join(', ')}
               </Text>
@@ -543,6 +552,29 @@ export function ShoppingListScreen({ navigation }: Props) {
             <Text style={styles.emptyIcon}>🛒</Text>
             <Text style={styles.emptyTitle}>还没有购物清单</Text>
             <Text style={styles.emptyText}>根据今日餐食计划生成清单</Text>
+            
+            {/* 智能合并开关 */}
+            <View style={styles.mergeToggle}>
+              <TouchableOpacity 
+                style={styles.mergeToggleOption}
+                onPress={() => setMergeEnabled(false)}
+              >
+                <View style={[styles.mergeRadio, !mergeEnabled && styles.mergeRadioActive]} />
+                <Text style={[styles.mergeToggleText, !mergeEnabled && styles.mergeToggleTextActive]}>
+                  保持原样
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.mergeToggleOption}
+                onPress={() => setMergeEnabled(true)}
+              >
+                <View style={[styles.mergeRadio, mergeEnabled && styles.mergeRadioActive]} />
+                <Text style={[styles.mergeToggleText, mergeEnabled && styles.mergeToggleTextActive]}>
+                  🔗 智能合并相同食材
+                </Text>
+              </TouchableOpacity>
+            </View>
+            
             <TouchableOpacity
               style={styles.emptyAction}
               onPress={handleGenerate}
@@ -551,7 +583,9 @@ export function ShoppingListScreen({ navigation }: Props) {
               {generateMutation.isPending ? (
                 <ActivityIndicator color={Colors.text.inverse} />
               ) : (
-                <Text style={styles.emptyActionText}>🛒 生成今日清单</Text>
+                <Text style={styles.emptyActionText}>
+                  {mergeEnabled ? '🧩 生成合并清单' : '🛒 生成今日清单'}
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -870,6 +904,40 @@ const styles = StyleSheet.create({
     color: Colors.text.inverse,
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
+  },
+
+  // 智能合并开关
+  mergeToggle: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+    gap: Spacing.lg,
+  },
+  mergeToggleOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+  },
+  mergeRadio: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: Colors.primary.main,
+    marginRight: Spacing.xs,
+  },
+  mergeRadioActive: {
+    backgroundColor: Colors.primary.main,
+  },
+  mergeToggleText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+  },
+  mergeToggleTextActive: {
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.medium,
   },
 
   // 统计卡片

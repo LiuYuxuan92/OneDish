@@ -20,14 +20,19 @@ import StepCard from '../../components/cooking/StepCard';
 import StepTimer from '../../components/cooking/StepTimer';
 import { CrossLineAlert } from '../../components/cooking/CrossLineAlert';
 import { BabyStepCard } from '../../components/cooking/BabyStepCard';
+import { SyncCookingTimeline } from './SyncCookingTimeline';
 
 type Props = NativeStackScreenProps<RecipeStackParamList, 'CookingMode'>;
+
+// 视图模式类型
+type ViewMode = 'step' | 'timeline';
 
 export function CookingModeScreen({ route, navigation }: Props) {
   const { recipeId, babyAgeMonths } = route.params;
 
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>('step');
 
   const { data: timeline, isLoading } = useTimeline(recipeId, babyAgeMonths, true);
 
@@ -53,6 +58,11 @@ export function CookingModeScreen({ route, navigation }: Props) {
     return () => {
       KeepAwake.deactivateKeepAwake();
     };
+  }, []);
+
+  // 切换视图模式：单步视图 <-> 时间线视图
+  const handleToggleViewMode = useCallback(() => {
+    setViewMode((prev) => (prev === 'step' ? 'timeline' : 'step'));
   }, []);
 
   const handleExit = useCallback(() => {
@@ -146,94 +156,164 @@ export function CookingModeScreen({ route, navigation }: Props) {
       ? timeline.phases[currentPhase.parallel_with]
       : undefined;
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <GestureDetector gesture={composedGesture}>
-        <View style={styles.flex1}>
-          {/* Top bar */}
-          <View style={styles.topBar}>
-            <TouchableOpacity onPress={handleExit} style={styles.topBarButton}>
-              <Text style={styles.topBarButtonText}>← 退出</Text>
+  // 处理时间线视图中的步骤点击
+  const handleTimelinePhasePress = useCallback(
+    (index: number) => {
+      // 跳转到对应步骤
+      if (index >= 0 && index < timeline.phases.length) {
+        // 使用 session 的 goToStep 功能（如果存在）
+        for (let i = 0; i < index; i++) {
+          goNext();
+        }
+      }
+    },
+    [timeline, goNext]
+  );
+
+  // 处理时间线视图中的步骤完成
+  const handleTimelinePhaseComplete = useCallback(
+    (index: number) => {
+      const phases = timeline.phases ?? [];
+      const nextPhase = phases[index + 1];
+      if (nextPhase?.target === 'baby' && phases[index]?.target !== 'baby') {
+        setAlertMessage('宝宝那锅需要你照顾了，记得检查火候和熟度');
+        setAlertVisible(true);
+      }
+      // 前进到下一步
+      if (index < totalPhases - 1) {
+        goNext();
+      } else {
+        handleFinish();
+      }
+    },
+    [timeline, totalPhases, goNext, handleFinish]
+  );
+
+  // 渲染单步视图
+  const renderStepView = () => (
+    <GestureDetector gesture={composedGesture}>
+      <View style={styles.flex1}>
+        {/* Top bar */}
+        <View style={styles.topBar}>
+          <TouchableOpacity onPress={handleExit} style={styles.topBarButton}>
+            <Text style={styles.topBarButtonText}>← 退出</Text>
+          </TouchableOpacity>
+          <Text style={styles.topBarTitle}>同步烹饪</Text>
+          <View style={styles.topBarRight}>
+            <TouchableOpacity onPress={handleToggleViewMode} style={styles.viewModeButton}>
+              <Text style={styles.viewModeButtonText}>📋 Timeline</Text>
             </TouchableOpacity>
-            <Text style={styles.topBarTitle}>同步烹饪</Text>
             <TouchableOpacity onPress={toggleVoice} style={styles.topBarButton}>
               <Text style={styles.topBarButtonText}>{voiceEnabled ? '🔊' : '🔇'}</Text>
             </TouchableOpacity>
           </View>
-
-          {/* Progress area */}
-          <View style={styles.progressArea}>
-            <Text style={styles.progressLabel}>
-              步骤 {currentIndex + 1} / {totalPhases}
-            </Text>
-            <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` as `${number}%` }]} />
-            </View>
-          </View>
-
-          {/* Content area */}
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {currentPhase.type === 'baby' ? (
-              <BabyStepCard
-                phase={currentPhase}
-                babyAgeMonths={babyAgeMonths}
-                ingredients={[]}
-              />
-            ) : (
-              <StepCard
-                phase={currentPhase}
-                parallelPhase={parallelPhase}
-                isCurrent={true}
-              />
-            )}
-
-            {currentPhase.duration > 0 && (
-              <View style={styles.timerContainer}>
-                <StepTimer
-                  stepId={`step_${currentIndex}`}
-                  stepName={currentPhase.action}
-                  durationMinutes={currentPhase.duration}
-                />
-              </View>
-            )}
-          </ScrollView>
-
-          {/* Bottom navigation */}
-          <View style={styles.bottomNav}>
-            <TouchableOpacity
-              style={[styles.navButton, styles.prevButton, isFirst && styles.navButtonDisabled]}
-              onPress={goPrev}
-              disabled={isFirst}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.navButtonText, isFirst && styles.navButtonTextDisabled]}>
-                ← 上一步
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.navButton, styles.nextButton]}
-              onPress={handleMarkComplete}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.nextButtonText}>
-                {isLast ? '🎉 完成烹饪' : '完成此步 →'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <CrossLineAlert
-            visible={alertVisible}
-            message={alertMessage}
-            onDismiss={() => setAlertVisible(false)}
-          />
         </View>
-      </GestureDetector>
-    </SafeAreaView>
+
+        {/* Progress area */}
+        <View style={styles.progressArea}>
+          <Text style={styles.progressLabel}>
+            步骤 {currentIndex + 1} / {totalPhases}
+          </Text>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` as `${number}%` }]} />
+          </View>
+        </View>
+
+        {/* Content area */}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {currentPhase.type === 'baby' ? (
+            <BabyStepCard
+              phase={currentPhase}
+              babyAgeMonths={babyAgeMonths}
+              ingredients={[]}
+            />
+          ) : (
+            <StepCard
+              phase={currentPhase}
+              parallelPhase={parallelPhase}
+              isCurrent={true}
+            />
+          )}
+
+          {currentPhase.duration > 0 && (
+            <View style={styles.timerContainer}>
+              <StepTimer
+                stepId={`step_${currentIndex}`}
+                stepName={currentPhase.action}
+                durationMinutes={currentPhase.duration}
+              />
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Bottom navigation */}
+        <View style={styles.bottomNav}>
+          <TouchableOpacity
+            style={[styles.navButton, styles.prevButton, isFirst && styles.navButtonDisabled]}
+            onPress={goPrev}
+            disabled={isFirst}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.navButtonText, isFirst && styles.navButtonTextDisabled]}>
+              ← 上一步
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.navButton, styles.nextButton]}
+            onPress={handleMarkComplete}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.nextButtonText}>
+              {isLast ? '🎉 完成烹饪' : '完成此步 →'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <CrossLineAlert
+          visible={alertVisible}
+          message={alertMessage}
+          onDismiss={() => setAlertVisible(false)}
+        />
+      </View>
+    </GestureDetector>
   );
+
+  // 渲染时间线视图
+  const renderTimelineView = () => (
+    <View style={styles.container}>
+      {/* Top bar */}
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={handleExit} style={styles.topBarButton}>
+          <Text style={styles.topBarButtonText}>← 退出</Text>
+        </TouchableOpacity>
+        <Text style={styles.topBarTitle}>同步烹饪</Text>
+        <TouchableOpacity onPress={handleToggleViewMode} style={styles.viewModeButton}>
+          <Text style={styles.viewModeButtonText}>📝 步骤</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Timeline content */}
+      <SyncCookingTimeline
+        timeline={timeline}
+        babyAgeMonths={babyAgeMonths}
+        currentPhaseIndex={currentIndex}
+        onPhasePress={handleTimelinePhasePress}
+        onPhaseComplete={handleTimelinePhaseComplete}
+      />
+
+      <CrossLineAlert
+        visible={alertVisible}
+        message={alertMessage}
+        onDismiss={() => setAlertVisible(false)}
+      />
+    </View>
+  );
+
+  return viewMode === 'timeline' ? renderTimelineView() : renderStepView();
 }
 
 const styles = StyleSheet.create({
@@ -296,6 +376,24 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: '#212121',
+  },
+  topBarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  viewModeButton: {
+    backgroundColor: '#FFF3E0',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FF9800',
+  },
+  viewModeButtonText: {
+    fontSize: 13,
+    color: '#E65100',
+    fontWeight: '600',
   },
   // Progress
   progressArea: {

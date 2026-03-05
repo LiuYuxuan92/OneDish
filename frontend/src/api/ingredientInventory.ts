@@ -31,6 +31,21 @@ export interface InventoryResponse {
   stats: InventoryStats;
 }
 
+export interface RecommendedRecipe {
+  id: string;
+  name: string;
+  image_url: string;
+  prep_time: number;
+  type: string;
+  matched_ingredients: string[];
+}
+
+export interface ExpiringItemsResponse {
+  items: IngredientInventory[];
+  count: number;
+  recommended_recipes: RecommendedRecipe[];
+}
+
 export interface AddInventoryParams {
   ingredient_id?: string;
   ingredient_name: string;
@@ -83,7 +98,7 @@ export const ingredientInventoryApi = {
 
   // 获取即将过期的食材
   getExpiringItems: (days: number = 3) => {
-    return apiClient.get<IngredientInventory[]>('/ingredient-inventory/expiring', {
+    return apiClient.get<ExpiringItemsResponse>('/ingredient-inventory/expiring', {
       params: { days },
     });
   },

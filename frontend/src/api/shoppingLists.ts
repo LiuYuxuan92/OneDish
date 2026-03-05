@@ -88,6 +88,8 @@ export interface ShoppingListItem {
   amount_adult?: string;
   amount_baby?: string;
   category?: ShoppingCategory;
+  is_merged?: boolean;
+  from_recipes?: string[];
 }
 
 export interface ShoppingListShareMember {
@@ -132,11 +134,20 @@ export interface GenerateShoppingListParams {
   date: string;
   meal_types?: string[];
   servings?: number;
+  merge?: boolean;
 }
 
 export const shoppingListsApi = {
   generate: async (data: GenerateShoppingListParams) => {
-    const res = await apiClient.post<ShoppingList>('/shopping-lists/generate', data);
+    const params = new URLSearchParams();
+    if (data.merge) {
+      params.append('merge', 'true');
+    }
+    const queryString = params.toString();
+    const url = queryString 
+      ? `/shopping-lists/generate?${queryString}` 
+      : '/shopping-lists/generate';
+    const res = await apiClient.post<ShoppingList>(url, data);
     return { ...res, data: normalizeShoppingList(res.data) };
   },
   addRecipe: async (data: { recipe_id: string; list_date?: string; servings?: number }) => {
