@@ -217,6 +217,41 @@ export class MealPlanController {
     }
   };
 
+  // 从自然语言提示词生成一周计划
+  generateFromPrompt = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const { prompt, baby_age_months } = req.body;
+
+      if (!prompt || typeof prompt !== 'string') {
+        return res.status(400).json({
+          code: 400,
+          message: '请提供自然语言描述',
+          data: null,
+        });
+      }
+
+      const result = await this.mealPlanService.generateFromPrompt(
+        userId,
+        prompt,
+        baby_age_months
+      );
+
+      res.json({
+        code: 200,
+        message: '生成成功',
+        data: result,
+      });
+    } catch (error) {
+      logger.error('Failed to generate weekly plan from prompt', { error });
+      res.status(500).json({
+        code: 500,
+        message: '从自然语言生成一周计划失败',
+        data: null,
+      });
+    }
+  };
+
   // 三餐智能推荐 V1（A/B 方案）
   getSmartRecommendations = async (req: Request, res: Response) => {
     try {

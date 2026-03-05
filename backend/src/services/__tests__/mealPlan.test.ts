@@ -49,6 +49,24 @@ jest.mock('../redis.service', () => ({
   },
 }));
 
+// Mock AI adapter for generateFromPrompt tests
+jest.mock('../../adapters/ai.adapter', () => ({
+  AISearchAdapter: jest.fn().mockImplementation(() => ({
+    search: jest.fn().mockResolvedValue([
+      {
+        id: 'ai_0',
+        name: 'AI Test Recipe',
+        description: JSON.stringify({
+          prefer_ingredients: ['鱼'],
+          exclude_ingredients: ['胡萝卜'],
+          max_prep_time: 30,
+        }),
+        source: 'ai',
+      },
+    ]),
+  })),
+}));
+
 // Mock environment variables needed by MealPlanService
 const originalEnv = process.env;
 beforeAll(() => {
@@ -136,6 +154,40 @@ describe('MealPlanService', () => {
         '2025-01-06'
       );
 
+      expect(result).toHaveProperty('plans');
+    });
+  });
+
+  describe('generateFromPrompt', () => {
+    it('should generate weekly plan from natural language prompt', async () => {
+      const result = await mealPlanService.generateFromPrompt(
+        'user-prompt-test',
+        '这周想做鱼类的菜，宝宝不爱吃胡萝卜'
+      );
+
+      expect(result).toHaveProperty('start_date');
+      expect(result).toHaveProperty('end_date');
+      expect(result).toHaveProperty('plans');
+      expect(result).toHaveProperty('parsed_constraints');
+      
+      const days = Object.keys(result.plans);
+      expect(days.length).toBe(7);
+    });
+
+    it('should parse constraints from prompt and apply baby_age_months', async () => {
+      const result = await mealPlanService.generateFromPrompt(
+        'user-prompt-baby',
+        '这周多做牛肉类的菜',
+        12
+      );
+
+      expect(result).toHaveProperty('plans');
+      expect(result).toHaveProperty('parsed_constraints');
+    });
+
+    it('should handle empty prompt gracefully', async () => {
+      // Empty prompt should still work but with default constraints
+      const result = await mealPlanService.generateFromPrompt('user-empty', '');
       expect(result).toHaveProperty('plans');
     });
   });

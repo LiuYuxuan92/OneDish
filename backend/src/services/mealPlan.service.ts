@@ -1,6 +1,8 @@
 import { db, generateUUID } from '../config/database';
 import { isIngredientSuitable } from '../utils/recipe-pairing-engine';
 import { RecipeCalibrationService } from './recipe-calibration.service';
+import { AISearchAdapter } from '../adapters/ai.adapter';
+import { logger } from '../utils/logger';
 
 interface RecipePool {
   breakfast: any[];
@@ -202,6 +204,104 @@ export class MealPlanService {
       end_date: end.toISOString().split('T')[0],
       plans,
     };
+  }
+
+  /**
+   * 从自然语言提示词解析出结构化约束，并生成周计划
+   */
+  async generateFromPrompt(userId: string, prompt: string, babyAgeMonths?: number) {
+    // 1. 使用 AI 从 prompt 中提取结构化约束
+    const constraints = await this.extractConstraintsFromPrompt(prompt);
+    
+    logger.info('Parsed constraints from prompt', { prompt, constraints });
+
+    // 2. 合并约束与用户提供的 babyAgeMonths
+    const preferences = {
+      ...constraints,
+      baby_age_months: babyAgeMonths || constraints.baby_age_months,
+    };
+
+    // 3. 使用现有 generateWeeklyPlan 生成计划
+    // 默认从周一开始
+    const startDate = this.getMonday(new Date());
+    const result = await this.generateWeeklyPlan(userId, startDate, preferences);
+
+    // 4. 返回结果时带上解析出的约束（供前端展示）
+    return {
+      ...result,
+      parsed_constraints: constraints,
+    };
+  }
+
+  /**
+   * 使用 AI 从自然语言中提取结构化约束
+   */
+  private async extractConstraintsFromPrompt(prompt: string): Promise<{
+    prefer_ingredients?: string[];
+    exclude_ingredients?: string[];
+    max_prep_time?: number;
+    mood?: string;
+    baby_age_months?: number;
+  }> {
+    const aiAdapter = new AISearchAdapter();
+    
+    const extractionPrompt = `请从以下用户输入中提取周计划生成的约束条件。
+
+用户输入: "${prompt}"
+
+请根据以下JSON格式返回提取的约束（只返回JSON，不要其他文字）：
+{
+  "prefer_ingredients": ["想吃的食材，如鱼、鸡肉等"],
+  "exclude_ingredients": ["不想吃或不吃的食材，如胡萝卜、辣椒等"],
+  "max_prep_time": 30,
+  "mood": "轻松/忙碌/想挑战等烹饪心情"
+}
+
+规则：
+- prefer_ingredients: 用户明确想吃或想多做的食材
+- exclude_ingredients: 用户明确不想吃、不爱吃、或要避免的食材
+- max_prep_time: 用户提到的时间限制（分钟），如果没有提到则不返回此字段
+- mood: 用户的烹饪心情或风格偏好，如果没有提到则不返回此字段
+
+如果某项没有提取到，请返回空数组[]（对于数组字段）或不要该字段（对于其他字段）。
+
+只返回JSON对象，不要其他文字。`;
+
+    try {
+      // 使用 AI 搜索来提取约束（复用一个 adapter）
+      const results = await aiAdapter.search(extractionPrompt);
+      
+      // 尝试解析 AI 返回的内容
+      if (results && results.length > 0) {
+        const content = results[0].description || '';
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[0]);
+            // 清理和规范化数据
+            return {
+              prefer_ingredients: Array.isArray(parsed.prefer_ingredients) 
+                ? parsed.prefer_ingredients.filter(Boolean) 
+                : undefined,
+              exclude_ingredients: Array.isArray(parsed.exclude_ingredients) 
+                ? parsed.exclude_ingredients.filter(Boolean) 
+                : undefined,
+              max_prep_time: typeof parsed.max_prep_time === 'number' 
+                ? parsed.max_prep_time 
+                : undefined,
+              mood: typeof parsed.mood === 'string' ? parsed.mood : undefined,
+            };
+          } catch (e) {
+            logger.warn('Failed to parse AI constraint extraction result', { error: e });
+          }
+        }
+      }
+    } catch (error) {
+      logger.error('Error extracting constraints from prompt', { error, prompt });
+    }
+
+    // 如果解析失败，返回空约束（让 generateWeeklyPlan 使用默认值）
+    return {};
   }
 
   private scoreRecipeForBaby(recipe: any, babyAgeMonths: number, excludeIngredients: string[]): number {

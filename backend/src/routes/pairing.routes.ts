@@ -6,18 +6,26 @@
 import { Router } from 'express';
 import { randomUUID } from 'crypto';
 import { RecipePairingEngine, BatchRecipeGenerator } from '../utils/recipe-pairing-engine';
+import { RecipeTransformService } from '../services/recipe-transform.service';
+import { AITransformService } from '../services/ai-transform.service';
+import { quotaService } from '../services/quota.service';
+import { metricsService } from '../services/metrics.service';
 import { db } from '../config/database';
 import { logger } from '../utils/logger';
+import { createError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../config/error-codes';
 
 const router = Router();
 
 /**
  * POST /api/v1/pairing/generate
  * 根据成人菜谱生成宝宝版
+ * @query ai=true - 使用AI生成，否则使用规则引擎
  */
-router.post('/generate', async (req, res) => {
+router.post('/generate', async (req, res, next) => {
   try {
-    const { adultRecipe, targetAge = '1-2岁' } = req.body;
+    const { adultRecipe, targetAge = '1-2岁', babyAgeMonths } = req.body;
+    const useAI = req.query.ai === 'true' || req.body.useAI === true;
 
     if (!adultRecipe) {
       return res.status(400).json({
@@ -27,22 +35,116 @@ router.post('/generate', async (req, res) => {
       });
     }
 
-    // 使用配对引擎生成宝宝版
-    const babyVersion = RecipePairingEngine.generateBabyVersion(adultRecipe, targetAge);
+    // 解析宝宝月龄
+    const ageMonths = babyAgeMonths || parseAgeRange(targetAge);
 
-    // 生成同步烹饪建议
-    const syncCooking = RecipePairingEngine.generateSyncCookingTips(
-      adultRecipe.steps || [],
-      babyVersion.steps
-    );
+    // 如果请求使用 AI
+    if (useAI) {
+      try {
+        // 获取用户配额（如果有用户信息）
+        const userId = req.body.userId || 'anonymous';
+        const tier = req.body.tier || 'free';
+
+        // 检查 AI 配额
+        const quotaCheck = await quotaService.consume(userId, tier, 'ai');
+        
+        if (!quotaCheck.allowed) {
+          logger.warn('AI quota exceeded', { userId, reason: quotaCheck.reason });
+          
+          // AI 配额不足，回退到规则引擎
+          logger.info('Falling back to rule-based transformation due to quota limit');
+          const fallbackResult = await fallbackToRuleEngine(adultRecipe, ageMonths);
+          
+          return res.json({
+            code: 200,
+            message: 'AI配额已用完，使用规则引擎生成',
+            data: {
+              ...fallbackResult,
+              fallback_reason: 'ai_quota_exceeded',
+            },
+          });
+        }
+
+        // 使用 AI 转换服务
+        const aiService = new AITransformService();
+        const aiResult = await aiService.generateBabyVersionWithAI(adultRecipe, ageMonths, {
+          babyAgeMonths: ageMonths,
+          familySize: req.body.familySize || 2,
+          includeNutrition: true,
+          includeSyncCooking: true,
+        });
+
+        if (aiResult.success && aiResult.baby_version) {
+          // 记录指标
+          metricsService.inc('onedish_ai_cost_usd_total', { provider: 'minimax' }, aiResult.costUsd || 0.002);
+
+          logger.info('AI transformation successful', { 
+            recipeId: adultRecipe.id, 
+            babyAgeMonths: ageMonths 
+          });
+
+          return res.json({
+            code: 200,
+            message: 'AI生成成功',
+            data: {
+              adult_version: adultRecipe,
+              baby_version: aiResult.baby_version,
+              sync_cooking: aiResult.sync_cooking,
+              nutrition_info: aiResult.nutrition_info,
+              ai_generated: true,
+            },
+          });
+        }
+
+        // AI 生成失败，回退到规则引擎
+        logger.warn('AI transformation failed, falling back to rule engine', { 
+          recipeId: adultRecipe.id, 
+          error: aiResult.error 
+        });
+
+        const fallbackResult = await fallbackToRuleEngine(adultRecipe, ageMonths);
+        
+        return res.json({
+          code: 200,
+          message: 'AI生成失败，已使用规则引擎',
+          data: {
+            ...fallbackResult,
+            fallback_reason: 'ai_generation_failed',
+          },
+        });
+
+      } catch (aiError) {
+        // AI 出错，回退到规则引擎
+        logger.error('AI transformation error, falling back', { 
+          recipeId: adultRecipe.id, 
+          error: aiError instanceof Error ? aiError.message : 'Unknown' 
+        });
+
+        const fallbackResult = await fallbackToRuleEngine(adultRecipe, ageMonths);
+        
+        return res.json({
+          code: 200,
+          message: 'AI生成出错，已使用规则引擎',
+          data: {
+            ...fallbackResult,
+            fallback_reason: 'ai_error',
+          },
+        });
+      }
+    }
+
+    // 默认使用规则引擎
+    const ruleResult = await fallbackToRuleEngine(adultRecipe, ageMonths);
 
     res.json({
       code: 200,
       message: '生成成功',
       data: {
         adult_version: adultRecipe,
-        baby_version: babyVersion,
-        sync_cooking: syncCooking,
+        baby_version: ruleResult.baby_version,
+        sync_cooking: ruleResult.sync_cooking,
+        nutrition_info: ruleResult.nutrition_info,
+        ai_generated: false,
       },
     });
   } catch (error) {
@@ -54,6 +156,65 @@ router.post('/generate', async (req, res) => {
     });
   }
 });
+
+/**
+ * 回退到规则引擎转换
+ */
+async function fallbackToRuleEngine(adultRecipe: any, babyAgeMonths: number) {
+  const transformService = new RecipeTransformService();
+  
+  // 构建 Recipe 对象 (使用类型断言)
+  const recipe = {
+    id: adultRecipe.id || `temp_${Date.now()}`,
+    name: adultRecipe.name,
+    type: (adultRecipe.type || 'dinner') as any,
+    prep_time: adultRecipe.prep_time || 30,
+    difficulty: (adultRecipe.difficulty || '简单') as any,
+    servings: adultRecipe.servings || '2人份',
+    adult_version: {
+      ingredients: adultRecipe.ingredients || [],
+      steps: adultRecipe.steps || [],
+      seasonings: adultRecipe.seasonings || [],
+    },
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date(),
+  } as any;
+
+  const result = await transformService.transformToBabyVersion(recipe, babyAgeMonths, {
+    familySize: 2,
+    includeNutrition: true,
+    includeSyncCooking: true,
+  });
+
+  return {
+    baby_version: result.baby_version,
+    sync_cooking: result.sync_cooking,
+    nutrition_info: result.nutrition_info,
+    cached: result.cached,
+  };
+}
+
+/**
+ * 解析年龄范围字符串
+ */
+function parseAgeRange(ageRange: string): number {
+  // 尝试从 "1-2岁" 这样的格式中提取月龄
+  const match = ageRange.match(/(\d+)-?(\d*)?岁/);
+  if (match) {
+    const years = parseInt(match[1], 10);
+    return years * 12;
+  }
+  
+  // 尝试直接提取数字
+  const numMatch = ageRange.match(/(\d+)/);
+  if (numMatch) {
+    return parseInt(numMatch[1], 10) * 12;
+  }
+
+  // 默认返回12个月
+  return 12;
+}
 
 /**
  * GET /api/v1/pairing/batch-generate

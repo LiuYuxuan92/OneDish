@@ -41,6 +41,9 @@ router.post('/:planId/complete', mealPlanController.markMealComplete);
 // 生成一周智能计划
 router.post('/generate', mealPlanController.generateWeeklyPlan);
 
+// 从自然语言提示词生成一周计划
+router.post('/generate-from-prompt', mealPlanController.generateFromPrompt);
+
 // 三餐智能推荐 V1（A/B 方案）
 router.post('/recommendations', mealPlanController.getSmartRecommendations);
 
