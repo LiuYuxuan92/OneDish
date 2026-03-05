@@ -1,7 +1,14 @@
 <view class="container">
   <view class="card">
-    <view class="title">购物清单（MVP）</view>
+    <view class="title">购物清单</view>
     <view class="sub">优先读后端 /api/v1/shopping-lists；未登录时自动降级本地清单。</view>
+  </view>
+
+  <view class="card" wx:if="{{!token && !items.length}}">
+    <view class="empty-state">
+      <text>登录后可同步购物清单到服务器</text>
+      <button class="btn-login" bindtap="goToLogin">去登录</button>
+    </view>
   </view>
 
   <view class="card">
@@ -10,14 +17,19 @@
     <input class="input" placeholder="Bearer Token（可选）" value="{{token}}" bindinput="onTokenInput" />
     <view class="btn-row">
       <button class="btn secondary" size="mini" bindtap="saveConfig">保存配置</button>
-      <button class="btn secondary" size="mini" bindtap="loadData">刷新清单</button>
     </view>
   </view>
 
   <view class="card">
-    <view class="title" style="font-size:30rpx;">添加本地清单项</view>
-    <input class="input" placeholder="例如：西红柿 2 个" value="{{newItem}}" bindinput="onNewItemInput" />
-    <button class="btn" size="mini" bindtap="addLocalItem">添加</button>
+    <view class="title" style="font-size:30rpx;">添加清单项</view>
+    <view class="add-row">
+      <input class="input" placeholder="例如：西红柿 2 个" value="{{newItem}}" bindinput="onNewItemInput" />
+      <button class="btn" size="mini" bindtap="addLocalItem">添加</button>
+    </view>
+  </view>
+
+  <view class="list-header">
+    <text>清单列表 ({{items.length}})</text>
   </view>
 
   <block wx:for="{{items}}" wx:key="index">
@@ -28,9 +40,29 @@
     </view>
   </block>
 
-  <view class="card">
-    <view class="title" style="font-size:30rpx;">共享入口（占位）</view>
-    <view class="sub">下一步可接入：购物清单分享链接、家庭成员协作勾选。</view>
-    <button class="btn secondary" size="mini" bindtap="onSharePlaceholder">共享清单（即将上线）</button>
+  <view wx:if="{{!items.length}}" class="no-items">
+    <text>清单为空，快去添加吧～</text>
   </view>
+
+  <view class="card">
+    <view class="title" style="font-size:30rpx;">家庭共享</view>
+    <view class="sub">分享购物清单给家人，一起采购</view>
+    <button class="btn primary" size="mini" bindtap="onShare">分享清单</button>
+  </view>
+</view>
+
+<!-- 分享弹窗 -->
+<view class="modal-mask" wx:if="{{showShareModal}}" bindtap="closeShareModal"></view>
+<view class="modal" wx:if="{{showShareModal}}">
+  <view class="modal-title">分享购物清单</view>
+  <view class="modal-content">
+    <view class="invite-code-box">
+      <text class="label">邀请码</text>
+      <text class="code">{{inviteCode}}</text>
+      <button class="btn-copy" bindtap="copyInviteCode">复制</button>
+    </view>
+    <view class="divider-text">或</view>
+    <button class="btn-wechat-share" open-type="share">发送给微信好友</button>
+  </view>
+  <button class="modal-close" bindtap="closeShareModal">关闭</button>
 </view>

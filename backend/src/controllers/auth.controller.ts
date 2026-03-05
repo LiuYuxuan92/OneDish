@@ -234,6 +234,74 @@ export class AuthController {
     }
   };
 
+  // 微信小程序登录
+  wechatLogin = async (req: Request, res: Response) => {
+    try {
+      const { code, userInfo } = req.body;
+
+      if (!code) {
+        return res.status(400).json({
+          code: 400,
+          message: 'code 不能为空',
+          data: null,
+        });
+      }
+
+      // TODO: 生产环境需要用微信服务器验证 code 换取 openid
+      // const wechatAppId = process.env.WECHAT_APP_ID;
+      // const wechatSecret = process.env.WECHAT_APP_SECRET;
+      // const wxRes = await axios.get(`https://api.weixin.qq.com/sns/jscode2session?appid=${wechatAppId}&secret=${wechatSecret}&js_code=${code}&grant_type=authorization_code`);
+      // const { openid, session_key } = wxRes.data;
+
+      // 开发环境：直接用 code 作为用户标识（仅用于测试）
+      const openid = `wechat_${code}`;
+      const session_key = `session_${code}`;
+
+      // 查找或创建微信用户
+      let wechatUser = await this.authService.findByWechatOpenid(openid);
+
+      if (!wechatUser) {
+        // 创建新用户
+        const username = userInfo?.nickName || `微信用户_${openid.slice(-6)}`;
+        const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+
+        wechatUser = await this.authService.createWechatUser({
+          username,
+          openid,
+          avatar_url: userInfo?.avatarUrl || null,
+          password: randomPassword,
+        });
+        logger.info('Wechat user created', { userId: wechatUser.id, openid });
+      }
+
+      // 生成 Token
+      const token = this.authService.generateToken(wechatUser);
+      const refreshToken = this.authService.generateRefreshToken(wechatUser);
+
+      res.json({
+        code: 200,
+        message: '微信登录成功',
+        data: {
+          user: {
+            id: wechatUser.id,
+            username: wechatUser.username,
+            avatar_url: wechatUser.avatar_url,
+            role: (wechatUser as any).role || 'user',
+          },
+          token,
+          refresh_token: refreshToken,
+        },
+      });
+    } catch (error) {
+      logger.error('Failed to login via wechat', { error });
+      res.status(500).json({
+        code: 500,
+        message: '微信登录失败',
+        data: null,
+      });
+    }
+  };
+
   // 游客登录（用于Web开发测试）
   guestLogin = async (req: Request, res: Response) => {
     try {

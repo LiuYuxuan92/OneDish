@@ -29,6 +29,11 @@ export class AuthService {
     return db('users').where('id', userId).first();
   }
 
+  // 根据微信openid查找用户
+  async findByWechatOpenid(openid: string) {
+    return db('users').where('wechat_openid', openid).first();
+  }
+
   // 创建用户
   async createUser(data: {
     username: string;
@@ -51,6 +56,32 @@ export class AuthService {
         preferences: {},
       })
       .returning(['id', 'username', 'email', 'phone', 'created_at']);
+
+    return user;
+  }
+
+  // 创建微信用户
+  async createWechatUser(data: {
+    username: string;
+    openid: string;
+    avatar_url?: string;
+    password: string;
+  }) {
+    const { username, openid, avatar_url, password } = data;
+
+    // 生成密码哈希
+    const password_hash = await bcrypt.hash(password, 10);
+
+    const [user] = await db('users')
+      .insert({
+        username,
+        wechat_openid: openid,
+        avatar_url,
+        password_hash,
+        family_size: 2,
+        preferences: {},
+      })
+      .returning(['id', 'username', 'email', 'wechat_openid', 'avatar_url', 'created_at']);
 
     return user;
   }

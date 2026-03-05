@@ -1,9 +1,22 @@
+.container {
+  padding: 24rpx;
+}
+
 .input {
   border: 1rpx solid #e5e7eb;
   border-radius: 12rpx;
   padding: 12rpx 16rpx;
   margin: 12rpx 0;
   background: #fff;
+}
+
+.add-row {
+  display: flex;
+  gap: 12rpx;
+}
+
+.add-row .input {
+  flex: 1;
 }
 
 .row {
@@ -24,4 +37,151 @@
 .source {
   color: #999;
   font-size: 22rpx;
+}
+
+.list-header {
+  padding: 16rpx 0;
+  font-size: 28rpx;
+  color: #666;
+  font-weight: 600;
+}
+
+.no-items {
+  text-align: center;
+  padding: 60rpx;
+  color: #999;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40rpx;
+}
+
+.empty-state text {
+  color: #999;
+  margin-bottom: 24rpx;
+}
+
+.btn-login {
+  background: #1677ff;
+  color: #fff;
+  border-radius: 44rpx;
+  padding: 16rpx 40rpx;
+  font-size: 28rpx;
+}
+
+.btn-row {
+  display: flex;
+  gap: 16rpx;
+  flex-wrap: wrap;
+  margin-top: 16rpx;
+}
+
+.btn {
+  background: #1677ff;
+  color: #fff;
+  border-radius: 12rpx;
+  padding: 12rpx 20rpx;
+  font-size: 26rpx;
+}
+
+.btn.secondary {
+  background: #edf3ff;
+  color: #1677ff;
+}
+
+.btn.primary {
+  background: #07c160;
+  color: #fff;
+  margin-top: 16rpx;
+}
+
+/* 弹窗样式 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 40rpx;
+  width: 600rpx;
+  z-index: 101;
+}
+
+.modal-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 32rpx;
+}
+
+.modal-content {
+  margin-bottom: 32rpx;
+}
+
+.invite-code-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f5f7fb;
+  border-radius: 16rpx;
+  padding: 32rpx;
+}
+
+.invite-code-box .label {
+  font-size: 26rpx;
+  color: #999;
+  margin-bottom: 12rpx;
+}
+
+.invite-code-box .code {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #1677ff;
+  letter-spacing: 4rpx;
+  margin-bottom: 24rpx;
+}
+
+.btn-copy {
+  background: #1677ff;
+  color: #fff;
+  border-radius: 32rpx;
+  padding: 12rpx 40rpx;
+  font-size: 26rpx;
+}
+
+.divider-text {
+  text-align: center;
+  color: #999;
+  margin: 32rpx 0;
+  font-size: 26rpx;
+}
+
+.btn-wechat-share {
+  background: #07c160;
+  color: #fff;
+  border-radius: 44rpx;
+  padding: 24rpx;
+  font-size: 30rpx;
+}
+
+.modal-close {
+  background: #f5f7fb;
+  color: #666;
+  border-radius: 44rpx;
+  padding: 24rpx;
+  font-size: 30rpx;
 }

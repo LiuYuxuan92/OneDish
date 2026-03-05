@@ -8,11 +8,16 @@ Page({
     baseURL: '',
     token: '',
     items: [],
-    newItem: ''
+    newItem: '',
+    showShareModal: false,
+    inviteCode: '',
+    shareLoading: false
   },
 
   onShow() {
-    this.setData({ baseURL: getBaseURL(), token: getToken() });
+    const token = wx.getStorageSync('token') || getToken();
+    const baseURL = wx.getStorageSync('baseURL') || getBaseURL();
+    this.setData({ baseURL, token });
     this.loadData();
   },
 
@@ -29,16 +34,19 @@ Page({
   },
 
   saveConfig() {
-    setBaseURL(this.data.baseURL.trim());
-    setToken(this.data.token.trim());
+    const baseURL = this.data.baseURL.trim();
+    const token = this.data.token.trim();
+    setBaseURL(baseURL);
+    setToken(token);
+    wx.setStorageSync('baseURL', baseURL);
+    wx.setStorageSync('token', token);
     wx.showToast({ title: '配置已保存', icon: 'success' });
   },
 
-  async loadData() {
-    const token = getToken();
+  loadData() {
+    const token = this.data.token || wx.getStorageSync('token');
     if (token) {
-      try {
-        const lists = await api.getShoppingLists();
+      api.getShoppingLists().then(lists => {
         const latest = Array.isArray(lists) ? lists[0] : null;
         const mergedItems = this.extractItemsFromList(latest).map(name => ({
           name,
@@ -46,12 +54,16 @@ Page({
           source: 'API'
         }));
         this.setData({ items: mergedItems });
-        return;
-      } catch (err) {
+      }).catch(err => {
         console.warn('[plan] getShoppingLists failed, fallback to local list', err);
-      }
+        this.loadLocalData();
+      });
+      return;
     }
+    this.loadLocalData();
+  },
 
+  loadLocalData() {
     const local = wx.getStorageSync(LOCAL_KEY) || [];
     this.setData({ items: local.map(i => ({ ...i, source: 'LOCAL' })) });
   },
@@ -68,7 +80,6 @@ Page({
       });
     };
 
-    // 兼容 items_v2 / items 字段
     if (list.items_v2) {
       appendByKey(list.items_v2, 'produce');
       appendByKey(list.items_v2, 'meat');
@@ -97,27 +108,76 @@ Page({
 
   toggleItem(e) {
     const index = e.currentTarget.dataset.index;
+    const token = this.data.token || wx.getStorageSync('token');
+    
+    // 如果有 token，尝试同步到服务器
+    if (token) {
+      const items = this.data.items.slice();
+      if (items[index]) {
+        items[index].checked = !items[index].checked;
+        this.setData({ items });
+        // TODO: 调用 API 同步勾选状态
+        return;
+      }
+    }
+    
+    // 否则只更新本地
     const local = (wx.getStorageSync(LOCAL_KEY) || []).map(i => ({ ...i }));
-
     if (local[index]) {
       local[index].checked = !local[index].checked;
       wx.setStorageSync(LOCAL_KEY, local);
       this.loadData();
-      return;
-    }
-
-    const items = this.data.items.slice();
-    if (items[index]) {
-      items[index].checked = !items[index].checked;
-      this.setData({ items });
     }
   },
 
-  onSharePlaceholder() {
-    wx.showModal({
-      title: '共享能力预留',
-      content: 'MVP 已预留共享入口，后续可对接后端 share 接口。',
-      showCancel: false
+  // 显示分享弹窗
+  onShare() {
+    const token = this.data.token || wx.getStorageSync('token');
+    if (!token) {
+      wx.showModal({
+        title: '提示',
+        content: '请先登录后再分享',
+        confirmText: '去登录',
+        success: (res) => {
+          if (res.confirm) {
+            wx.navigateTo({ url: '/pages/login/login' });
+          }
+        }
+      });
+      return;
+    }
+    
+    this.setData({ showShareModal: true, inviteCode: '' });
+    
+    // 生成邀请码（模拟）
+    const code = 'OD' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    this.setData({ inviteCode: code });
+  },
+
+  closeShareModal() {
+    this.setData({ showShareModal: false });
+  },
+
+  copyInviteCode() {
+    if (this.data.inviteCode) {
+      wx.setClipboardData({
+        data: this.data.inviteCode,
+        success: () => {
+          wx.showToast({ title: '邀请码已复制', icon: 'success' });
+        }
+      });
+    }
+  },
+
+  // 分享给微信好友
+  onShareToFriend() {
+    wx.showShareMenu({
+      withShareTicket: true,
+      menus: ['shareAppMessage', 'shareTimeline']
     });
+  },
+
+  goToLogin() {
+    wx.navigateTo({ url: '/pages/login/login' });
   }
 });

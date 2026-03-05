@@ -31,10 +31,27 @@ function getShoppingLists() {
   return request({ url: '/shopping-lists', withAuth: true });
 }
 
+function wechatLogin(code, userInfo) {
+  return request({
+    url: '/auth/wechat',
+    method: 'POST',
+    data: { code, userInfo }
+  });
+}
+
+function guestLogin() {
+  return request({
+    url: '/auth/guest',
+    method: 'POST'
+  });
+}
+
 module.exports = {
   getTodayRecommendation,
   getRecipeList,
   getRecipeDetail,
   swapRecommendation,
-  getShoppingLists
+  getShoppingLists,
+  wechatLogin,
+  guestLogin
 };

@@ -1,0 +1,47 @@
+<view class="container">
+  <view class="logo-area">
+    <image class="logo" src="/assets/logo.png" mode="aspectFit" />
+    <view class="app-name">简家厨</view>
+    <view class="slogan">一道菜，大人宝宝都能吃</view>
+  </view>
+
+  <view class="login-area" wx:if="{{!loggedIn}}">
+    <button 
+      class="btn-wechat" 
+      bindtap="wechatLogin" 
+      loading="{{loading}}"
+    >
+      {{loading ? '登录中...' : '微信一键登录'}}
+    </button>
+    
+    <view class="divider">
+      <view class="line"></view>
+      <text class="text">或</text>
+      <view class="line"></view>
+    </view>
+    
+    <button 
+      class="btn-guest" 
+      bindtap="guestLogin"
+      loading="{{loading}}"
+    >
+      游客体验
+    </button>
+    
+    <view class="tips">
+      登录后可享受：收藏菜谱、生成购物清单、家庭共享
+    </view>
+  </view>
+
+  <view class="user-area" wx:else>
+    <image 
+      class="avatar" 
+      src="{{userInfo.avatar_url || '/assets/default-avatar.png'}}" 
+      mode="aspectFill" 
+    />
+    <view class="username">{{userInfo.username}}</view>
+    <view class="role">已登录</view>
+    
+    <button class="btn-logout" bindtap="logout">退出登录</button>
+  </view>
+</view>

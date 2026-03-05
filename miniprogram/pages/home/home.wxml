@@ -1,23 +1,62 @@
 <view class="container">
-  <view class="card">
-    <view class="title">今日推荐</view>
-    <view wx:if="{{loading}}" class="sub">加载中...</view>
-    <view wx:elif="{{recommendation}}">
-      <view class="title" style="font-size:30rpx;margin-top:16rpx;">{{recommendation.name || '暂无推荐'}}</view>
-      <view class="sub">类型：{{recommendation.type || '-'}} · 耗时：{{recommendation.prep_time || '-'}} 分钟</view>
-      <view class="btn-row">
-        <button class="btn" size="mini" bindtap="onSwap">一键换菜</button>
-        <button class="btn secondary" size="mini" bindtap="goRecipe">查看菜谱列表</button>
-      </view>
-    </view>
-    <view wx:else class="sub">暂无推荐数据，请检查后端服务。</view>
+  <!-- 加载态 -->
+  <view class="loading" wx:if="{{loading}}">
+    <view class="spinner"></view>
+    <text>正在获取今日推荐...</text>
   </view>
 
-  <view class="card">
-    <view class="title" style="font-size:30rpx;">共享入口（占位）</view>
-    <view class="sub">后续可接入：分享今日推荐给家人、生成分享卡片、家庭协作烹饪。</view>
-    <view class="btn-row">
-      <button class="btn secondary" size="mini" bindtap="onSharePlaceholder">分享给家人（即将上线）</button>
+  <!-- 错误态 -->
+  <view class="error" wx:elif="{{error}}">
+    <image class="error-icon" src="/assets/error.png" mode="aspectFit" />
+    <text class="error-text">{{error}}</text>
+    <button class="btn-retry" bindtap="loadTodayRecommendation">重新加载</button>
+  </view>
+
+  <!-- 空态 -->
+  <view class="empty" wx:elif="{{!recommendation}}">
+    <image class="empty-icon" src="/assets/empty.png" mode="aspectFit" />
+    <text class="empty-text">暂无推荐菜谱</text>
+    <text class="empty-hint">去菜谱页看看有什么好吃的吧</text>
+    <button class="btn-go" bindtap="goRecipe">浏览菜谱</button>
+  </view>
+
+  <!-- 正常内容 -->
+  <view class="content" wx:else>
+    <view class="card">
+      <image 
+        class="cover" 
+        src="{{recommendation.cover_url || '/assets/placeholder-food.png'}}" 
+        mode="aspectFill"
+        bindtap="goRecipe"
+      />
+      <view class="info">
+        <view class="title">{{recommendation.title}}</view>
+        <view class="tags">
+          <text class="tag" wx:if="{{recommendation.difficulty}}">{{recommendation.difficulty}}</text>
+          <text class="tag" wx:if="{{recommendation.cook_time}}">{{recommendation.cook_time}}分钟</text>
+          <text class="tag" wx:if="{{recommendation.calories}}">{{recommendation.calories}}千卡</text>
+        </view>
+        <view class="desc" wx:if="{{recommendation.description}}">
+          {{recommendation.description}}
+        </view>
+        
+        <!-- 宝宝版 -->
+        <view class="baby-version" wx:if="{{recommendation.baby_version}}">
+          <view class="baby-title">宝宝版</view>
+          <view class="baby-desc">{{recommendation.baby_version.description}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="actions">
+      <button class="btn-swap" bindtap="onSwap" loading="{{swapping}}">
+        {{swapping ? '换菜中...' : '换一道'}}
+      </button>
+      <button class="btn-favorite" bindtap="onFavorite">收藏</button>
+    </view>
+
+    <view class="share">
+      <button class="btn-share" bindtap="onShare">分享给家人</button>
     </view>
   </view>
 </view>
