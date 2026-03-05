@@ -1,6 +1,7 @@
 import { db } from '../config/database';
 import { Recipe, RecipeSummary, PaginationResult } from '../types';
 import { logger } from '../utils/logger';
+import { RecipeCalibrationService } from './recipe-calibration.service';
 
 interface DailyRecommendationParams {
   type?: string;
@@ -107,9 +108,24 @@ export class RecipeService {
     // 解析 JSON 字段
     const parsedRecipe = this.parseRecipeJsonFields(recipe);
 
+    // 获取校准后的难度（如果有）
+    const calibrationService = new RecipeCalibrationService();
+    const effectiveDifficulty = await calibrationService.getEffectiveDifficulty(recipeId);
+
     return {
       ...parsedRecipe,
       is_favorited: isFavorited,
+      // 返回实际使用的难度（校准后的难度，如果没有则用原始难度）
+      difficulty: effectiveDifficulty,
+      // 同时返回原始难度和校准难度，方便前端区分
+      original_difficulty: recipe.difficulty,
+      calibrated_difficulty: recipe.calibrated_difficulty,
+      // 返回校准统计信息
+      calibration_info: {
+        completion_count: recipe.completion_count || 0,
+        completion_rate: recipe.completion_rate,
+        last_calibrated_at: recipe.last_calibrated_at,
+      },
     };
   }
 
@@ -158,7 +174,7 @@ export class RecipeService {
 
     let query = db('recipes')
       .where('is_active', 1)  // SQLite boolean: 1 = true
-      .select('id', 'name', 'type', 'prep_time', 'image_url');
+      .select('id', 'name', 'type', 'prep_time', 'image_url', 'difficulty', 'calibrated_difficulty');
 
     console.log('[searchRecipes] base query built');
 
@@ -199,11 +215,18 @@ export class RecipeService {
       .limit(limit)
       .offset((page - 1) * limit);
 
+    // 转换结果，将校准难度加入
+    const transformedItems = (items as any[]).map((item) => ({
+      ...item,
+      // 使用校准后的难度（如果有）
+      difficulty: item.calibrated_difficulty || item.difficulty,
+    }));
+
     return {
       total,
       page,
       limit,
-      items,
+      items: transformedItems,
     };
   }
 

@@ -5,6 +5,7 @@ import { WeeklyPlanScreen } from '../screens/plan/WeeklyPlanScreen';
 import { ShoppingListScreen } from '../screens/plan/ShoppingListScreen';
 import { ShoppingListHistoryScreen } from '../screens/plan/ShoppingListHistoryScreen';
 import { ShoppingListDetailScreen } from '../screens/plan/ShoppingListDetailScreen';
+import { TemplateDiscoveryScreen } from '../screens/plan/TemplateDiscoveryScreen';
 import { RecipeDetailScreen } from '../screens/recipe/RecipeDetailScreen';
 import { useTheme } from '../contexts/ThemeContext';
 import { buildHeaderOptions } from './headerOptions';
@@ -47,6 +48,11 @@ export function PlanNavigator() {
         name="CookingMode"
         component={CookingModeScreen}
         options={{ headerShown: false, gestureEnabled: false }}
+      />
+      <Stack.Screen
+        name="TemplateDiscovery"
+        component={TemplateDiscoveryScreen}
+        options={{ title: '发现模板' }}
       />
     </Stack.Navigator>
   );

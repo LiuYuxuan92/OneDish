@@ -1,5 +1,6 @@
 import { db, generateUUID } from '../config/database';
 import { isIngredientSuitable } from '../utils/recipe-pairing-engine';
+import { RecipeCalibrationService } from './recipe-calibration.service';
 
 interface RecipePool {
   breakfast: any[];
@@ -355,6 +356,10 @@ export class MealPlanService {
         await db('ingredient_inventory').where('id', item.id).update({ quantity: newQty });
       }
     }
+
+    // 更新食谱完成统计（用于难度校准）
+    const calibrationService = new RecipeCalibrationService();
+    await calibrationService.updateCompletionStats(plan.recipe_id);
   }
 
   private readWeight(envKey: string, fallback: number): number {
@@ -935,6 +940,11 @@ export class MealPlanService {
     if (!plan) throw new Error('餐食计划不存在');
 
     await db('meal_plans').where('id', planId).update({ is_completed: true });
+    
+    // 更新食谱完成统计（用于难度校准）
+    const calibrationService = new RecipeCalibrationService();
+    await calibrationService.updateCompletionStats(plan.recipe_id);
+    
     return { plan_id: planId, share_id: shareId, completed: true };
   }
 

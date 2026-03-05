@@ -256,6 +256,8 @@ export type PlanStackParamList = {
   ShoppingListHistory: undefined;
   RecipeDetail: { recipeId: string };
   CookingMode: { recipeId: string; babyAgeMonths: number };
+  TemplateDiscovery: undefined;
+  TemplateDetail: { templateId: string };
 };
 
 export type ProfileStackParamList = {

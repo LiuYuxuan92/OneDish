@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../styles/theme';
@@ -12,6 +12,7 @@ import { WeekDayCard } from '../../components/plan/WeekDayCard';
 import { SmartRecommendationModal } from '../../components/plan/SmartRecommendationModal';
 import { GenerateOptionsModal } from '../../components/plan/GenerateOptionsModal';
 import { WeeklyShareModal } from '../../components/plan/WeeklyShareModal';
+import { ShareTemplateModal } from '../../components/plan/ShareTemplateModal';
 import { TodayDetailTab } from '../../components/plan/TodayDetailTab';
 import { weeklyPlanStyles as styles } from './weeklyPlanStyles';
 
@@ -32,6 +33,8 @@ export function WeeklyPlanScreen({ navigation }: Props) {
     activeShareId, setActiveShareId,
     formatDate,
   } = useWeeklyPlanState();
+
+  const [showShareTemplate, setShowShareTemplate] = useState(false);
 
   const { data: weeklyData, isLoading, error, refetch } = useWeeklyPlan();
   const generateMutation = useGenerateWeeklyPlan();
@@ -126,6 +129,10 @@ export function WeeklyPlanScreen({ navigation }: Props) {
   const handleMealPress = (recipeId: string) => { navigation.navigate('RecipeDetail', { recipeId }); };
   const handleAddMeal = (dateStr: string, mealType: string) => { console.log('Add meal:', dateStr, mealType); };
   const handleMarkSharedMealComplete = (planId: string) => { markSharedCompleteMutation.mutate(planId); };
+  const handleOpenShareTemplate = () => {
+    trackEvent('share_template_modal_opened', { timestamp: new Date().toISOString(), screen: 'WeeklyPlan', source: 'weekly_plan' });
+    setShowShareTemplate(true);
+  };
 
   if (isLoading) return <SafeAreaView style={styles.container} edges={['bottom']}><View style={styles.centerContent}><ActivityIndicator size="large" color={Colors.primary.main} /><Text style={styles.loadingText}>加载计划中...</Text></View></SafeAreaView>;
   if (error) return <SafeAreaView style={styles.container} edges={['bottom']}><View style={styles.centerContent}><Text style={styles.errorIcon}>⚠️</Text><Text style={styles.errorTitle}>加载失败</Text><TouchableOpacity style={styles.retryButton} onPress={() => refetch()}><Text style={styles.retryButtonText}>重试</Text></TouchableOpacity></View></SafeAreaView>;
@@ -141,6 +148,8 @@ export function WeeklyPlanScreen({ navigation }: Props) {
             <TouchableOpacity style={styles.iconButton} onPress={handleGenerate} disabled={isGenerating || generateMutation.isPending} accessibilityLabel="刷新计划"><RefreshCwIcon size={20} color={Colors.primary.main} /></TouchableOpacity>
             <TouchableOpacity style={styles.iconButton} onPress={handleSmartRecommendation} accessibilityLabel="三餐智能推荐"><Text style={{ color: Colors.primary.main, fontWeight: '700' }}>A/B</Text></TouchableOpacity>
             <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('ShoppingList')} accessibilityLabel="查看购物清单"><ShoppingBagIcon size={20} color={Colors.primary.main} /></TouchableOpacity>
+            <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('TemplateDiscovery')} accessibilityLabel="浏览模板"><Text style={{ fontSize: 16 }}>📚</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.iconButton} onPress={handleOpenShareTemplate} disabled={!hasPlans} accessibilityLabel="分享为模板"><Text style={{ fontSize: 16 }}>📤</Text></TouchableOpacity>
           </View>
         </View>
         <View style={styles.tabContainer}>
@@ -175,6 +184,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
       </ScrollView>
       <SmartRecommendationModal visible={showSmartRec} onClose={() => setShowSmartRec(false)} data={smartRecMutation.data as Parameters<typeof SmartRecommendationModal>[0]['data']} mealType={smartMealType} onMealTypeChange={setSmartMealType} isPending={smartRecMutation.isPending} rejectReason={rejectReason} onRejectReasonChange={setRejectReason} onSubmitFeedback={handleSubmitFeedback} />
       <GenerateOptionsModal visible={showGenOptions} onClose={() => setShowGenOptions(false)} babyAge={genBabyAge} onBabyAgeChange={setGenBabyAge} exclude={genExclude} onExcludeChange={setGenExclude} onGenerate={handleGenerate} />
+      <ShareTemplateModal visible={showShareTemplate} onClose={() => setShowShareTemplate(false)} weeklyData={weeklyData} />
     </SafeAreaView>
   );
 }

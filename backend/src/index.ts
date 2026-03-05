@@ -17,6 +17,7 @@ import authRoutes from './routes/auth.routes';
 import recipeRoutes from './routes/recipe.routes';
 import favoriteRoutes from './routes/favorite.routes';
 import mealPlanRoutes from './routes/mealPlan.routes';
+import mealPlanTemplateRoutes from './routes/mealPlanTemplate.routes';
 import shoppingListRoutes from './routes/shoppingList.routes';
 import userRoutes from './routes/user.routes';
 import ingredientRoutes from './routes/ingredient.routes';
@@ -31,6 +32,7 @@ import metricsRoutes from './routes/metrics.routes';
 import wechatRoutes from './routes/wechat.routes';
 import { RecipeTransformService } from './services/recipe-transform.service';
 import { MealPlanService } from './services/mealPlan.service';
+import { RecipeCalibrationService } from './services/recipe-calibration.service';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -58,6 +60,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/recipes', recipeRoutes);
 app.use('/api/v1/favorites', favoriteRoutes);
 app.use('/api/v1/meal-plans', mealPlanRoutes);
+app.use('/api/v1/meal-plan-templates', mealPlanTemplateRoutes);
 app.use('/api/v1/shopping-lists', shoppingListRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/ingredients', ingredientRoutes);
@@ -90,6 +93,9 @@ app.listen(PORT, () => {
   }, 24 * 60 * 60 * 1000);
 
   MealPlanService.startRecommendationLearningScheduler();
+  
+  // 启动食谱难度校准定时任务
+  RecipeCalibrationService.startCalibrationScheduler();
 });
 
 export default app;

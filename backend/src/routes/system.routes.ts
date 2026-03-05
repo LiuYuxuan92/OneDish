@@ -7,6 +7,7 @@ import { db } from '../config/database';
 import { logger } from '../utils/logger';
 import { metricsService } from '../services/metrics.service';
 import { authenticate } from '../middleware/auth';
+import { RecipeCalibrationService } from '../services/recipe-calibration.service';
 
 function requireAdmin(req: Request, res: Response, next: NextFunction): void {
   if (req.user?.role !== 'admin') {
@@ -183,6 +184,63 @@ router.post('/metrics/ai-cost/drill', authenticate, requireAdmin, (req, res) => 
     message: 'success',
     data: { metric: 'onedish_ai_cost_usd_total', amount },
   });
+});
+
+/**
+ * POST /api/v1/system/calibration/run
+ * 手动触发食谱难度校准（仅管理员）
+ */
+router.post('/calibration/run', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const calibrationService = new RecipeCalibrationService();
+    const result = await calibrationService.calibrateAllRecipes();
+    res.json({
+      code: 200,
+      message: 'success',
+      data: result,
+    });
+  } catch (error) {
+    logger.error('校准失败', { error });
+    res.status(500).json({
+      code: 500,
+      message: '校准失败',
+      data: null,
+    });
+  }
+});
+
+/**
+ * GET /api/v1/system/calibration/:recipeId
+ * 获取食谱校准信息（仅管理员）
+ */
+router.get('/calibration/:recipeId', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { recipeId } = req.params;
+    const calibrationService = new RecipeCalibrationService();
+    const info = await calibrationService.getCalibrationInfo(recipeId);
+    
+    if (!info) {
+      res.status(404).json({
+        code: 404,
+        message: '食谱不存在',
+        data: null,
+      });
+      return;
+    }
+    
+    res.json({
+      code: 200,
+      message: 'success',
+      data: info,
+    });
+  } catch (error) {
+    logger.error('获取校准信息失败', { error });
+    res.status(500).json({
+      code: 500,
+      message: '获取校准信息失败',
+      data: null,
+    });
+  }
 });
 
 export default router;
