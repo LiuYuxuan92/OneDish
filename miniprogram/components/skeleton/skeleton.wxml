@@ -1,0 +1,36 @@
+<!-- 骨架屏组件 -->
+<view class="skeleton {{type}}">
+  <!-- 列表骨架 -->
+  <view wx:if="{{type === 'list'}}" class="skeleton-list">
+    <view class="skeleton-item" wx:for="{{count || 5}}" wx:key="*this">
+      <view class="skeleton-img"></view>
+      <view class="skeleton-content">
+        <view class="skeleton-title"></view>
+        <view class="skeleton-desc"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 详情骨架 -->
+  <view wx:elif="{{type === 'detail'}}" class="skeleton-detail">
+    <view class="skeleton-cover"></view>
+    <view class="skeleton-info">
+      <view class="skeleton-title-lg"></view>
+      <view class="skeleton-tags">
+        <view class="skeleton-tag"></view>
+        <view class="skeleton-tag"></view>
+      </view>
+      <view class="skeleton-text"></view>
+      <view class="skeleton-text short"></view>
+    </view>
+  </view>
+
+  <!-- 卡片骨架 -->
+  <view wx:else class="skeleton-card">
+    <view class="skeleton-card-cover"></view>
+    <view class="skeleton-card-info">
+      <view class="skeleton-card-title"></view>
+      <view class="skeleton-card-desc"></view>
+    </view>
+  </view>
+</view>

@@ -1,6 +1,6 @@
+<!-- 组件配置 -->
 {
-  "navigationBarTitleText": "菜谱",
-  "enablePullDownRefresh": true,
+  "component": true,
   "usingComponents": {
     "skeleton": "/components/skeleton/skeleton"
   }
