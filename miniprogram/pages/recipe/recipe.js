@@ -156,5 +156,13 @@ Page({
       content: 'MVP 阶段仅提供入口占位。',
       showCancel: false
     });
+  },
+
+  onShareTimeline() {
+    const { detail } = this.data;
+    return {
+      title: detail?.title ? `${detail.title} - 简家厨` : '简家厨 - 一鱼两吃宝宝辅食',
+      query: detail ? `id=${detail.id}` : ''
+    };
   }
 });

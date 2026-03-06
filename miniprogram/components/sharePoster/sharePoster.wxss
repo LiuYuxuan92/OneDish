@@ -1,0 +1,92 @@
+.poster-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.poster-content {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 32rpx;
+  width: 650rpx;
+  position: relative;
+}
+
+.poster-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 24rpx;
+}
+
+.canvas-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24rpx;
+}
+
+.poster-canvas {
+  width: 300px;
+  height: 450px;
+  background: #f5f7fb;
+}
+
+.poster-preview {
+  width: 300px;
+  height: 450px;
+  margin: 0 auto 24rpx;
+  display: block;
+}
+
+.poster-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.btn-group {
+  display: flex;
+  gap: 16rpx;
+}
+
+.btn {
+  flex: 1;
+  padding: 24rpx;
+  border-radius: 44rpx;
+  font-size: 28rpx;
+  text-align: center;
+}
+
+.btn-generate {
+  background: #1677ff;
+  color: #fff;
+}
+
+.btn-save {
+  background: #07c160;
+  color: #fff;
+}
+
+.btn-share {
+  background: #1677ff;
+  color: #fff;
+}
+
+.close-btn {
+  position: absolute;
+  top: 16rpx;
+  right: 16rpx;
+  font-size: 48rpx;
+  color: #999;
+  width: 60rpx;
+  height: 60rpx;
+  text-align: center;
+  line-height: 1;
+}

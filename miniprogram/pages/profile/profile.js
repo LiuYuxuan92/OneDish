@@ -90,6 +90,10 @@ Page({
     wx.navigateTo({ url: '/pages/login/login' });
   },
 
+  goToMembership() {
+    wx.navigateTo({ url: '/pages/membership/membership' });
+  },
+
   onShareAppMessage() {
     return {
       title: '简家厨 - 一鱼两吃',

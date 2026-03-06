@@ -131,5 +131,19 @@ Page({
     }
     
     wx.showToast({ title: '分享功能开发中', icon: 'none' });
+  },
+
+  onShareAppMessage() {
+    const { recommendation } = this.data;
+    return {
+      title: recommendation?.title ? `${recommendation.title} - 简家厨` : '简家厨 - 一鱼两吃',
+      path: '/pages/home/home'
+    };
+  },
+
+  onShareTimeline() {
+    return {
+      title: '简家厨 - 一鱼两吃宝宝辅食'
+    };
   }
 });

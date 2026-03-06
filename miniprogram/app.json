@@ -6,7 +6,8 @@
     "pages/plan/plan",
     "pages/search/search",
     "pages/favorites/favorites",
-    "pages/profile/profile"
+    "pages/profile/profile",
+    "pages/membership/membership"
   ],
   "window": {
     "navigationBarTitleText": "简家厨",

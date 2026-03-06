@@ -230,5 +230,11 @@ Page({
 
   goToLogin() {
     wx.navigateTo({ url: '/pages/login/login' });
+  },
+
+  onShareTimeline() {
+    return {
+      title: '简家厨购物清单 - 一键分享'
+    };
   }
 });

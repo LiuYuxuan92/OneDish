@@ -1,0 +1,57 @@
+<view class="container">
+  <!-- 会员状态卡 -->
+  <view class="member-card {{isMember ? 'active' : ''}}">
+    <view class="member-icon">{{isMember ? '👑' : '🥚'}}</view>
+    <view class="member-title">{{isMember ? '简家厨会员' : '开通会员'}}</view>
+    <view class="member-subtitle" wx:if="{{isMember}}">
+      有效期至 {{expireDate}}
+    </view>
+    <view class="member-subtitle" wx:else>
+      享受 AI 推荐 + 专属菜谱 + 无广告
+    </view>
+    
+    <button class="btn-member" bindtap="openMember" wx:if="{{!isMember}}">
+      ¥9.9/月
+    </button>
+    <button class="btn-member" bindtap="renewMember" wx:else>
+      续费会员
+    </button>
+  </view>
+
+  <!-- 会员权益 -->
+  <view class="benefits-section">
+    <view class="section-title">会员权益</view>
+    <view class="benefits-grid">
+      <block wx:for="{{benefits}}" wx:key="index">
+        <view class="benefit-item {{item.isVip ? 'vip' : 'free'}}">
+          <view class="benefit-icon">{{item.icon}}</view>
+          <view class="benefit-title">{{item.title}}</view>
+          <view class="benefit-desc">{{item.desc}}</view>
+          <view class="benefit-tag" wx:if="{{item.isVip}}">VIP</view>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <!-- 常见问题 -->
+  <view class="faq-section">
+    <view class="section-title">常见问题</view>
+    <view class="faq-item">
+      <view class="faq-q">Q: 会员可以退款吗？</view>
+      <view class="faq-a">A: 未使用的会员时长可申请退款</view>
+    </view>
+    <view class="faq-item">
+      <view class="faq-q">Q: 会员到期后收藏的菜谱还在吗？</view>
+      <view class="faq-a">A: 在的，收藏内容不会丢失</view>
+    </view>
+    <view class="faq-item">
+      <view class="faq-q">Q: 怎么取消自动续费？</view>
+      <view class="faq-a">A: 在微信支付管理中取消</view>
+    </view>
+  </view>
+
+  <!-- 分享 -->
+  <view class="share-section">
+    <button class="btn-share" open-type="share">分享给朋友</button>
+  </view>
+</view>
