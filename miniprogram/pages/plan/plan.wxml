@@ -19,14 +19,14 @@
   <view wx:if="{{activeTab === 'current'}}">
     <!-- 添加区域 -->
     <view class="add-section">
-      <input 
-        class="input" 
-        placeholder="添加食材..." 
-        value="{{newItem}}" 
-        bindinput="onNewItemInput" 
-        bindconfirm="addItem"
+      <van-field
+        value="{{ newItem }}"
+        placeholder="添加食材..."
+        bind:input="onNewItemInput"
+        border="{{ false }}"
+        clearable
       />
-      <button class="btn-add" bindtap="addItem">添加</button>
+      <van-button type="primary" size="small" round bind:click="addItem">添加</van-button>
     </view>
 
     <!-- 清单列表 -->
@@ -37,17 +37,12 @@
 
     <block wx:for="{{items}}" wx:key="index">
       <view class="list-item">
-        <checkbox 
-          checked="{{item.checked}}" 
-          data-index="{{index}}" 
-          bindtap="toggleItem"
-          color="#1677ff"
-        />
+        <van-checkbox value="{{ item.checked }}" bind:change="toggleItem" data-index="{{index}}"/>
         <view class="item-text {{item.checked ? 'done' : ''}}">
           {{item.name}}
           <text class="item-quantity" wx:if="{{item.quantity}}">{{item.quantity}}{{item.unit}}</text>
         </view>
-        <view class="delete-btn" data-index="{{index}}" bindtap="deleteItem">×</view>
+        <van-icon name="delete-o" bindtap="deleteItem" data-index="{{index}}" color="#ff4d4f"/>
       </view>
     </block>
 
@@ -57,7 +52,7 @@
 
     <!-- 分享按钮 -->
     <view class="share-section">
-      <button class="btn-share" bindtap="onShare">分享清单给家人</button>
+      <van-button type="success" size="large" round open-type="share">📤 分享清单给家人</van-button>
     </view>
   </view>
 

@@ -146,6 +146,18 @@ Page({
     }
   },
 
+  // For van-checkbox change event
+  onCheckboxChange(e) {
+    const { checked } = e.detail;
+    const index = e.currentTarget.dataset.index;
+    const local = (wx.getStorageSync(LOCAL_KEY) || []).map(i => ({ ...i }));
+    if (local[index]) {
+      local[index].checked = checked;
+      wx.setStorageSync(LOCAL_KEY, local);
+      this.loadData();
+    }
+  },
+
   deleteItem(e) {
     const index = e.currentTarget.dataset.index;
     wx.showModal({

@@ -52,6 +52,6 @@
 
   <!-- 分享 -->
   <view class="share-section">
-    <button class="btn-share" open-type="share">分享给朋友</button>
+    <van-button type="success" size="large" round open-type="share">📤 分享给朋友</van-button>
   </view>
 </view>

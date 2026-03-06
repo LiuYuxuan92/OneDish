@@ -2,10 +2,12 @@
   <!-- 顶部导航 -->
   <view class="header-bar">
     <view class="search-btn" bindtap="goToSearch">
-      <icon type="search" size="14" color="#999"/>
+      <van-icon name="search" size="14" color="#969799"/>
       <text>搜索菜谱</text>
     </view>
-    <view class="profile-btn" bindtap="goToProfile">⚙️</view>
+    <view class="profile-btn" bindtap="goToProfile">
+      <van-icon name="user-o" size="20"/>
+    </view>
   </view>
 
   <!-- 加载态 -->
@@ -60,9 +62,9 @@
           <text class="version-badge" wx:if="{{currentVersion === 'baby'}}">宝宝版</text>
         </view>
         <view class="tags">
-          <text class="tag" wx:if="{{recommendation.difficulty}}">{{recommendation.difficulty}}</text>
-          <text class="tag" wx:if="{{recommendation.cook_time}}">{{recommendation.cook_time}}分钟</text>
-          <text class="tag" wx:if="{{recommendation.calories}}">{{recommendation.calories}}千卡</text>
+          <van-tag type="primary" wx:if="{{recommendation.difficulty}}">{{recommendation.difficulty}}</van-tag>
+          <van-tag type="primary" wx:if="{{recommendation.cook_time}}">{{recommendation.cook_time}}分钟</van-tag>
+          <van-tag type="warning" wx:if="{{recommendation.calories}}">{{recommendation.calories}}千卡</van-tag>
         </view>
         <view class="desc" wx:if="{{currentVersion === 'baby' ? recommendation.baby_version?.description : recommendation.description}}">
           {{currentVersion === 'baby' ? recommendation.baby_version?.description : recommendation.description}}
@@ -81,14 +83,18 @@
     </view>
 
     <view class="actions">
-      <button class="btn-swap" bindtap="onSwap" loading="{{swapping}}">
-        {{swapping ? '换菜中...' : '换一道'}}
-      </button>
-      <button class="btn-add-list" bindtap="addToShoppingList">加入清单</button>
+      <van-button type="primary" size="large" round bind:click="onSwap" loading="{{swapping}}">
+        {{swapping ? '换菜中...' : '🔄 换一道'}}
+      </van-button>
+      <van-button type="success" size="large" round bind:click="addToShoppingList">
+        🛒 加入清单
+      </van-button>
     </view>
 
     <view class="share">
-      <button class="btn-share" bindtap="onShare">分享给家人</button>
+      <van-button type="default" size="large" round open-type="share">
+        📤 分享给家人
+      </van-button>
     </view>
   </view>
 </view>
