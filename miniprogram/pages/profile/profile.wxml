@@ -1,0 +1,58 @@
+<view class="container">
+  <!-- 宝宝月龄设置 -->
+  <view class="section">
+    <view class="section-title">宝宝信息</view>
+    <view class="setting-item" bindtap="showAgePicker">
+      <view class="setting-label">宝宝月龄</view>
+      <view class="setting-value">
+        <text>{{babyAgeText}}</text>
+        <text class="arrow">›</text>
+      </view>
+    </view>
+    <view class="tips">
+      设置宝宝月龄后，推荐会更精准匹配适合的宝宝版本菜谱
+    </view>
+  </view>
+
+  <!-- 其他设置 -->
+  <view class="section">
+    <view class="section-title">其他</view>
+    <view class="setting-item" bindtap="goToLogin">
+      <view class="setting-label">账号</view>
+      <view class="setting-value">
+        <text class="arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 关于 -->
+  <view class="section">
+    <view class="section-title">关于</view>
+    <view class="setting-item">
+      <view class="setting-label">版本</view>
+      <view class="setting-value">
+        <text>1.0.0</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 月龄选择器 -->
+  <view class="picker-mask" wx:if="{{showPicker}}" bindtap="hidePicker"></view>
+  <view class="picker-panel" wx:if="{{showPicker}}">
+    <view class="picker-header">
+      <text class="picker-cancel" bindtap="hidePicker">取消</text>
+      <text class="picker-title">选择宝宝月龄</text>
+      <text class="picker-done"></text>
+    </view>
+    <scroll-view class="picker-list" scroll-y>
+      <view 
+        class="picker-item {{babyAge === item.value ? 'active' : ''}}"
+        wx:for="{{ageOptions}}"
+        wx:key="value"
+        bindtap="onAgeSelect"
+        data-age="{{item.value}}">
+        {{item.label}}
+      </view>
+    </scroll-view>
+  </view>
+</view>

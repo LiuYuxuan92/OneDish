@@ -105,6 +105,9 @@
 
     <!-- 底部按钮 -->
     <view class="bottom-actions">
+      <button class="btn-favorite {{isFavorited ? 'active' : ''}}" bindtap="toggleFavorite">
+        {{isFavorited ? '❤️ 已收藏' : '🤍 收藏'}}
+      </button>
       <button class="btn-add" bindtap="addToList">加入购物清单</button>
     </view>
   </view>

@@ -1,0 +1,70 @@
+<view class="container">
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <icon type="search" size="16" color="#999"/>
+    <input 
+      class="search-input" 
+      placeholder="搜索菜谱、食材..." 
+      value="{{keyword}}"
+      bindinput="onInput"
+      bindconfirm="onSearch"
+      confirm-type="search"
+    />
+    <icon type="clear" size="16" color="#999" wx:if="{{keyword}}" bindtap="onClear"/>
+  </view>
+
+  <!-- 搜索历史 -->
+  <view class="history-section" wx:if="{{showHistory && history.length}}">
+    <view class="history-header">
+      <text class="title">搜索历史</text>
+      <text class="clear" bindtap="clearHistory">清空</text>
+    </view>
+    <view class="history-list">
+      <view 
+        class="history-item" 
+        wx:for="{{history}}" 
+        wx:key="*this"
+        bindtap="onHistoryTap"
+        data-keyword="{{item}}">
+        {{item}}
+      </view>
+    </view>
+  </view>
+
+  <!-- 搜索结果 -->
+  <view class="results" wx:if="{{!showHistory}}">
+    <view class="results-header" wx:if="{{results.length}}">
+      找到 {{results.length}} 个结果
+    </view>
+    
+    <block wx:for="{{results}}" wx:key="id">
+      <view class="result-item" bindtap="goToRecipe" data-id="{{item.id}}">
+        <image 
+          class="result-cover" 
+          src="{{item.cover_url || '/assets/placeholder-food.png'}}" 
+          mode="aspectFill"
+        />
+        <view class="result-info">
+          <view class="result-title">{{item.title || item.name}}</view>
+          <view class="result-meta">
+            <text wx:if="{{item.difficulty}}">{{item.difficulty}}</text>
+            <text wx:if="{{item.cook_time}}">{{item.cook_time}}分钟</text>
+          </view>
+          <view class="result-desc" wx:if="{{item.description}}">
+            {{item.description}}
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <view class="no-result" wx:if="{{!loading && !results.length}}">
+      <text>未找到相关菜谱</text>
+    </view>
+  </view>
+
+  <!-- Loading -->
+  <view class="loading" wx:if="{{loading}}">
+    <view class="spinner"></view>
+    <text>搜索中...</text>
+  </view>
+</view>

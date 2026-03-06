@@ -3,7 +3,10 @@
     "pages/login/login",
     "pages/home/home",
     "pages/recipe/recipe",
-    "pages/plan/plan"
+    "pages/plan/plan",
+    "pages/search/search",
+    "pages/favorites/favorites",
+    "pages/profile/profile"
   ],
   "window": {
     "navigationBarTitleText": "简家厨",

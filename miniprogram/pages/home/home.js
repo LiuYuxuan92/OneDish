@@ -78,6 +78,14 @@ Page({
     }
   },
 
+  goToSearch() {
+    wx.navigateTo({ url: '/pages/search/search' });
+  },
+
+  goToProfile() {
+    wx.navigateTo({ url: '/pages/profile/profile' });
+  },
+
   // 加入购物清单
   addToShoppingList() {
     const recipe = this.data.recommendation;

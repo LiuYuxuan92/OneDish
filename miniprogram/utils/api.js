@@ -69,6 +69,35 @@ function guestLogin() {
   });
 }
 
+// 搜索菜谱
+function searchRecipes(keyword) {
+  return request({ url: '/recipes', data: { keyword } });
+}
+
+// 获取收藏列表
+function getFavorites() {
+  return request({ url: '/favorites', withAuth: true });
+}
+
+// 取消收藏
+function removeFavorite(recipeId) {
+  return request({
+    url: `/favorites/${recipeId}`,
+    method: 'DELETE',
+    withAuth: true
+  });
+}
+
+// 添加收藏
+function addFavorite(recipeId) {
+  return request({
+    url: '/favorites',
+    method: 'POST',
+    data: { recipe_id: recipeId },
+    withAuth: true
+  });
+}
+
 module.exports = {
   getTodayRecommendation,
   getRecipeList,
@@ -76,5 +105,9 @@ module.exports = {
   swapRecommendation,
   getShoppingLists,
   wechatLogin,
-  guestLogin
+  guestLogin,
+  searchRecipes,
+  getFavorites,
+  removeFavorite,
+  addFavorite
 };

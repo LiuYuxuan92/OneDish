@@ -226,13 +226,30 @@
   background: #fff;
   padding: 24rpx;
   box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
+  display: flex;
+  gap: 16rpx;
 }
 
 .btn-add {
+  flex: 2;
   background: #1677ff;
   color: #fff;
   border-radius: 44rpx;
   padding: 24rpx;
   font-size: 30rpx;
-  width: 100%;
+}
+
+.btn-favorite {
+  flex: 1;
+  background: #fff;
+  color: #666;
+  border: 2rpx solid #ddd;
+  border-radius: 44rpx;
+  padding: 24rpx;
+  font-size: 28rpx;
+}
+
+.btn-favorite.active {
+  color: #ff4d4f;
+  border-color: #ff4d4f;
 }

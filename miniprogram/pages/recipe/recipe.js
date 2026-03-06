@@ -5,7 +5,8 @@ Page({
     loading: false,
     detail: null,
     currentVersion: 'adult', // adult | baby
-    activeTab: 'ingredients' // ingredients | steps
+    activeTab: 'ingredients', // ingredients | steps
+    isFavorited: false
   },
 
   onLoad(options) {
@@ -66,6 +67,43 @@ Page({
     wx.setStorageSync('pending_import', items);
     wx.switchTab({ url: '/pages/plan/plan' });
     wx.showToast({ title: '已添加到清单', icon: 'success' });
+  },
+
+  // 收藏/取消收藏
+  toggleFavorite() {
+    const { detail, isFavorited } = this.data;
+    if (!detail) return;
+
+    const token = wx.getStorageSync('token');
+    if (!token) {
+      wx.showModal({
+        title: '提示',
+        content: '请先登录后收藏',
+        confirmText: '去登录',
+        success: (res) => {
+          if (res.confirm) {
+            wx.navigateTo({ url: '/pages/login/login' });
+          }
+        }
+      });
+      return;
+    }
+
+    if (isFavorited) {
+      api.removeFavorite(detail.id).then(() => {
+        this.setData({ isFavorited: false });
+        wx.showToast({ title: '已取消', icon: 'success' });
+      }).catch(() => {
+        wx.showToast({ title: '操作失败', icon: 'none' });
+      });
+    } else {
+      api.addFavorite(detail.id).then(() => {
+        this.setData({ isFavorited: true });
+        wx.showToast({ title: '已收藏', icon: 'success' });
+      }).catch(() => {
+        wx.showToast({ title: '操作失败', icon: 'none' });
+      });
+    }
   },
 
   // 分享

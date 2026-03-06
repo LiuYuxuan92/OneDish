@@ -1,4 +1,13 @@
 <view class="container">
+  <!-- 顶部导航 -->
+  <view class="header-bar">
+    <view class="search-btn" bindtap="goToSearch">
+      <icon type="search" size="14" color="#999"/>
+      <text>搜索菜谱</text>
+    </view>
+    <view class="profile-btn" bindtap="goToProfile">⚙️</view>
+  </view>
+
   <!-- 加载态 -->
   <view class="loading" wx:if="{{loading}}">
     <view class="spinner"></view>
