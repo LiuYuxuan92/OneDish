@@ -2,23 +2,53 @@ const api = require('../../utils/api');
 const { getBaseURL, getToken, setBaseURL, setToken } = require('../../utils/config');
 
 const LOCAL_KEY = 'plan_local_items';
+const HISTORY_KEY = 'plan_history';
 
 Page({
   data: {
     baseURL: '',
     token: '',
     items: [],
+    history: [],
     newItem: '',
+    activeTab: 'current', // current | history
     showShareModal: false,
-    inviteCode: '',
-    shareLoading: false
+    showDebug: false,
+    inviteCode: ''
   },
 
   onShow() {
+    // 检查是否有待导入的食材
+    const pending = wx.getStorageSync('pending_import');
+    if (pending && pending.length > 0) {
+      this.importItems(pending);
+      wx.removeStorageSync('pending_import');
+    }
+
     const token = wx.getStorageSync('token') || getToken();
     const baseURL = wx.getStorageSync('baseURL') || getBaseURL();
     this.setData({ baseURL, token });
     this.loadData();
+    
+    // 加载历史
+    const history = wx.getStorageSync(HISTORY_KEY) || [];
+    this.setData({ history });
+  },
+
+  toggleDebug() {
+    this.setData({ showDebug: !this.data.showDebug });
+  },
+
+  importItems(items) {
+    const local = wx.getStorageSync(LOCAL_KEY) || [];
+    const merged = [...items, ...local];
+    wx.setStorageSync(LOCAL_KEY, merged);
+    wx.showToast({ title: `已导入${items.length}项`, icon: 'success' });
+  },
+
+  onTabSwitch(e) {
+    const tab = e.currentTarget.dataset.tab;
+    this.setData({ activeTab: tab });
   },
 
   onBaseURLInput(e) {
@@ -54,8 +84,7 @@ Page({
           source: 'API'
         }));
         this.setData({ items: mergedItems });
-      }).catch(err => {
-        console.warn('[plan] getShoppingLists failed, fallback to local list', err);
+      }).catch(() => {
         this.loadLocalData();
       });
       return;
@@ -68,10 +97,14 @@ Page({
     this.setData({ items: local.map(i => ({ ...i, source: 'LOCAL' })) });
   },
 
+  loadHistory() {
+    const history = wx.getStorageSync(HISTORY_KEY) || [];
+    this.setData({ history });
+  },
+
   extractItemsFromList(list) {
     if (!list) return [];
     const results = [];
-
     const appendByKey = (obj, key) => {
       if (!obj || !Array.isArray(obj[key])) return;
       obj[key].forEach(it => {
@@ -79,23 +112,20 @@ Page({
         else if (it?.name) results.push(it.name);
       });
     };
-
     if (list.items_v2) {
       appendByKey(list.items_v2, 'produce');
       appendByKey(list.items_v2, 'meat');
       appendByKey(list.items_v2, 'other');
     }
-
     if (list.items) {
       appendByKey(list.items, 'produce');
       appendByKey(list.items, 'meat');
       appendByKey(list.items, 'other');
     }
-
     return [...new Set(results)];
   },
 
-  addLocalItem() {
+  addItem() {
     const name = this.data.newItem.trim();
     if (!name) return;
 
@@ -108,20 +138,6 @@ Page({
 
   toggleItem(e) {
     const index = e.currentTarget.dataset.index;
-    const token = this.data.token || wx.getStorageSync('token');
-    
-    // 如果有 token，尝试同步到服务器
-    if (token) {
-      const items = this.data.items.slice();
-      if (items[index]) {
-        items[index].checked = !items[index].checked;
-        this.setData({ items });
-        // TODO: 调用 API 同步勾选状态
-        return;
-      }
-    }
-    
-    // 否则只更新本地
     const local = (wx.getStorageSync(LOCAL_KEY) || []).map(i => ({ ...i }));
     if (local[index]) {
       local[index].checked = !local[index].checked;
@@ -130,7 +146,43 @@ Page({
     }
   },
 
-  // 显示分享弹窗
+  deleteItem(e) {
+    const index = e.currentTarget.dataset.index;
+    wx.showModal({
+      title: '确认删除',
+      content: '确定要删除这项吗？',
+      success: (res) => {
+        if (res.confirm) {
+          const local = (wx.getStorageSync(LOCAL_KEY) || []).map(i => ({ ...i }));
+          local.splice(index, 1);
+          wx.setStorageSync(LOCAL_KEY, local);
+          this.loadData();
+        }
+      }
+    });
+  },
+
+  clearChecked() {
+    const local = (wx.getStorageSync(LOCAL_KEY) || []).filter(i => !i.checked);
+    if (local.length === wx.getStorageSync(LOCAL_KEY).length) {
+      wx.showToast({ title: '没有已勾选项', icon: 'none' });
+      return;
+    }
+    
+    // 保存到历史
+    const checked = (wx.getStorageSync(LOCAL_KEY) || []).filter(i => i.checked);
+    const history = wx.getStorageSync(HISTORY_KEY) || [];
+    history.unshift({
+      date: new Date().toLocaleDateString(),
+      items: checked
+    });
+    wx.setStorageSync(HISTORY_KEY, history.slice(0, 10));
+    
+    wx.setStorageSync(LOCAL_KEY, local);
+    this.loadData();
+    wx.showToast({ title: '已清除已购项', icon: 'success' });
+  },
+
   onShare() {
     const token = this.data.token || wx.getStorageSync('token');
     if (!token) {
@@ -147,11 +199,8 @@ Page({
       return;
     }
     
-    this.setData({ showShareModal: true, inviteCode: '' });
-    
-    // 生成邀请码（模拟）
     const code = 'OD' + Math.random().toString(36).substring(2, 8).toUpperCase();
-    this.setData({ inviteCode: code });
+    this.setData({ showShareModal: true, inviteCode: code });
   },
 
   closeShareModal() {
@@ -159,22 +208,24 @@ Page({
   },
 
   copyInviteCode() {
-    if (this.data.inviteCode) {
+    if (this.data.invoteCode) {
       wx.setClipboardData({
         data: this.data.inviteCode,
         success: () => {
-          wx.showToast({ title: '邀请码已复制', icon: 'success' });
+          wx.showToast({ title: '已复制', icon: 'success' });
         }
       });
     }
   },
 
-  // 分享给微信好友
-  onShareToFriend() {
-    wx.showShareMenu({
-      withShareTicket: true,
-      menus: ['shareAppMessage', 'shareTimeline']
-    });
+  onShareAppMessage() {
+    const { items } = this.data;
+    const unchecked = items.filter(i => !i.checked).map(i => i.name);
+    return {
+      title: `简家厨购物清单（${unchecked.length}项）`,
+      path: '/pages/plan/plan',
+      query: 'fromShare=1'
+    };
   },
 
   goToLogin() {

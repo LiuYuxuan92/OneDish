@@ -101,6 +101,30 @@
   margin-bottom: 32rpx;
 }
 
+/* 版本切换 Tab */
+.version-tabs {
+  display: flex;
+  background: #fff;
+  border-radius: 16rpx;
+  overflow: hidden;
+  margin-bottom: 24rpx;
+}
+
+.version-tabs .tab {
+  flex: 1;
+  text-align: center;
+  padding: 20rpx 0;
+  font-size: 28rpx;
+  color: #666;
+  background: #f5f7fb;
+}
+
+.version-tabs .tab.active {
+  background: #1677ff;
+  color: #fff;
+  font-weight: 600;
+}
+
 .cover {
   width: 100%;
   height: 400rpx;
@@ -116,6 +140,16 @@
   font-weight: bold;
   color: #222;
   margin-bottom: 16rpx;
+}
+
+.version-badge {
+  font-size: 22rpx;
+  color: #07c160;
+  background: #e6f7f0;
+  padding: 4rpx 12rpx;
+  border-radius: 20rpx;
+  margin-left: 12rpx;
+  font-weight: normal;
 }
 
 .tags {
@@ -159,6 +193,19 @@
   line-height: 1.5;
 }
 
+.baby-info {
+  background: #fef3e2;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-top: 16rpx;
+}
+
+.baby-age, .baby-tips {
+  font-size: 26rpx;
+  color: #f5a623;
+  margin-bottom: 8rpx;
+}
+
 /* 操作按钮 */
 .actions {
   display: flex;
@@ -185,6 +232,18 @@
   background: #fff;
   color: #1677ff;
   border: 2rpx solid #1677ff;
+}
+
+.btn-add-list {
+  flex: 1;
+  height: 96rpx;
+  border-radius: 48rpx;
+  font-size: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #07c160;
+  color: #fff;
 }
 
 .share {

@@ -1,28 +1,111 @@
 <view class="container">
-  <view class="card">
-    <view class="title">菜谱列表</view>
-    <view class="sub">基于 /api/v1/recipes 接口（简版）</view>
+  <!-- 加载态 -->
+  <view class="loading" wx:if="{{loading}}">
+    <view class="spinner"></view>
+    <text>加载中...</text>
   </view>
 
-  <view wx:if="{{loading}}" class="card sub">加载中...</view>
+  <!-- 无详情 -->
+  <view class="empty" wx:elif="{{!detail}}">
+    <text class="empty-text">请从菜谱列表选择</text>
+  </view>
 
-  <block wx:for="{{recipes}}" wx:key="id">
-    <view class="card" bindtap="selectRecipe" data-id="{{item.id}}">
-      <view class="title" style="font-size:30rpx;">{{item.name}}</view>
-      <view class="sub">{{item.type || '-'}} · {{item.prep_time || '-'}} 分钟</view>
+  <!-- 详情内容 -->
+  <view class="detail" wx:else>
+    <!-- 封面图 -->
+    <image 
+      class="cover" 
+      src="{{currentVersion === 'baby' && detail.baby_version?.cover_url ? detail.baby_version.cover_url : detail.cover_url || '/assets/placeholder-food.png'}}" 
+      mode="aspectFill"
+    />
+
+    <!-- 版本切换 -->
+    <view class="version-tabs" wx:if="{{detail.baby_version}}">
+      <view 
+        class="tab {{currentVersion === 'adult' ? 'active' : ''}}" 
+        bindtap="switchVersion" 
+        data-version="adult">
+        成人版
+      </view>
+      <view 
+        class="tab {{currentVersion === 'baby' ? 'active' : ''}}" 
+        bindtap="switchVersion" 
+        data-version="baby">
+        宝宝版
+      </view>
     </view>
-  </block>
 
-  <view wx:if="{{detail}}" class="card">
-    <view class="title">菜谱详情（简版）</view>
-    <view class="title" style="font-size:30rpx;margin-top:12rpx;">{{detail.name}}</view>
-    <view class="sub">类型：{{detail.type || '-'}} · 难度：{{detail.difficulty || '-'}}</view>
-    <view class="sub">简介：{{detail.description || '暂无'}}</view>
-  </view>
+    <!-- 标题 -->
+    <view class="header">
+      <view class="title">
+        {{currentVersion === 'baby' ? detail.baby_version?.title || detail.title : detail.title}}
+        <text class="badge" wx:if="{{currentVersion === 'baby'}}">宝宝版</text>
+      </view>
+      <view class="meta">
+        <text wx:if="{{detail.difficulty}}">{{detail.difficulty}}</text>
+        <text wx:if="{{detail.cook_time}}">{{detail.cook_time}}分钟</text>
+        <text wx:if="{{detail.calories}}">{{detail.calories}}千卡</text>
+      </view>
+      <view class="desc" wx:if="{{currentVersion === 'baby' ? detail.baby_version?.description : detail.description}}">
+        {{currentVersion === 'baby' ? detail.baby_version?.description : detail.description}}
+      </view>
+      <!-- 宝宝月龄 -->
+      <view class="baby-age" wx:if="{{currentVersion === 'baby' && detail.baby_version?.age_range}}">
+        适合月龄：{{detail.baby_version.age_range}}
+      </view>
+    </view>
 
-  <view class="card">
-    <view class="title" style="font-size:30rpx;">共享入口（占位）</view>
-    <view class="sub">后续可扩展：分享菜谱给家庭成员协作做饭。</view>
-    <button class="btn secondary" size="mini" bindtap="onSharePlaceholder">分享菜谱（即将上线）</button>
+    <!-- Tab 切换 -->
+    <view class="tab-bar">
+      <view 
+        class="tab-item {{activeTab === 'ingredients' ? 'active' : ''}}" 
+        bindtap="switchTab" 
+        data-tab="ingredients">
+        食材
+      </view>
+      <view 
+        class="tab-item {{activeTab === 'steps' ? 'active' : ''}}" 
+        bindtap="switchTab" 
+        data-tab="steps">
+        步骤
+      </view>
+    </view>
+
+    <!-- 食材列表 -->
+    <view class="section" wx:if="{{activeTab === 'ingredients'}}">
+      <view class="section-title">所需食材</view>
+      <view class="ingredients-list">
+        <block wx:for="{{currentVersion === 'baby' ? detail.baby_version?.ingredients : detail.ingredients}}" wx:key="index">
+          <view class="ingredient-item">
+            <text class="name">{{item.name || item}}</text>
+            <text class="quantity" wx:if="{{item.quantity}}">{{item.quantity}}{{item.unit || ''}}</text>
+          </view>
+        </block>
+        <view wx:if="{{!(currentVersion === 'baby' ? detail.baby_version?.ingredients : detail.ingredients)?.length}}" class="empty-tip">
+          暂无食材信息
+        </view>
+      </view>
+    </view>
+
+    <!-- 步骤列表 -->
+    <view class="section" wx:if="{{activeTab === 'steps'}}">
+      <view class="section-title">烹饪步骤</view>
+      <view class="steps-list">
+        <block wx:for="{{currentVersion === 'baby' ? detail.baby_version?.steps : detail.steps}}" wx:key="index">
+          <view class="step-item">
+            <view class="step-num">{{index + 1}}</view>
+            <view class="step-content">{{item}}</view>
+          </view>
+        </block>
+        <view wx:if="{{!(currentVersion === 'baby' ? detail.baby_version?.steps : detail.steps)?.length}}" class="empty-tip">
+          暂无步骤信息
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部按钮 -->
+    <view class="bottom-actions">
+      <button class="btn-add" bindtap="addToList">加入购物清单</button>
+    </view>
   </view>
 </view>

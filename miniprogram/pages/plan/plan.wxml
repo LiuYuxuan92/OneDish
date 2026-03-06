@@ -1,53 +1,99 @@
 <view class="container">
-  <view class="card">
-    <view class="title">购物清单</view>
-    <view class="sub">优先读后端 /api/v1/shopping-lists；未登录时自动降级本地清单。</view>
-  </view>
-
-  <view class="card" wx:if="{{!token && !items.length}}">
-    <view class="empty-state">
-      <text>登录后可同步购物清单到服务器</text>
-      <button class="btn-login" bindtap="goToLogin">去登录</button>
+  <!-- Tab 切换 -->
+  <view class="tab-bar">
+    <view 
+      class="tab {{activeTab === 'current' ? 'active' : ''}}" 
+      bindtap="onTabSwitch" 
+      data-tab="current">
+      当前清单
+    </view>
+    <view 
+      class="tab {{activeTab === 'history' ? 'active' : ''}}" 
+      bindtap="onTabSwitch" 
+      data-tab="history">
+      历史清单
     </view>
   </view>
 
-  <view class="card">
-    <view class="title" style="font-size:30rpx;">调试配置</view>
-    <input class="input" placeholder="baseURL，如 http://127.0.0.1:3000/api/v1" value="{{baseURL}}" bindinput="onBaseURLInput" />
-    <input class="input" placeholder="Bearer Token（可选）" value="{{token}}" bindinput="onTokenInput" />
-    <view class="btn-row">
-      <button class="btn secondary" size="mini" bindtap="saveConfig">保存配置</button>
+  <!-- 当前清单 -->
+  <view wx:if="{{activeTab === 'current'}}">
+    <!-- 添加区域 -->
+    <view class="add-section">
+      <input 
+        class="input" 
+        placeholder="添加食材..." 
+        value="{{newItem}}" 
+        bindinput="onNewItemInput" 
+        bindconfirm="addItem"
+      />
+      <button class="btn-add" bindtap="addItem">添加</button>
+    </view>
+
+    <!-- 清单列表 -->
+    <view class="list-header">
+      <text>清单 ({{items.length}})</text>
+      <text class="clear-btn" bindtap="clearChecked">清除已购</text>
+    </view>
+
+    <block wx:for="{{items}}" wx:key="index">
+      <view class="list-item">
+        <checkbox 
+          checked="{{item.checked}}" 
+          data-index="{{index}}" 
+          bindtap="toggleItem"
+          color="#1677ff"
+        />
+        <view class="item-text {{item.checked ? 'done' : ''}}">
+          {{item.name}}
+          <text class="item-quantity" wx:if="{{item.quantity}}">{{item.quantity}}{{item.unit}}</text>
+        </view>
+        <view class="delete-btn" data-index="{{index}}" bindtap="deleteItem">×</view>
+      </view>
+    </block>
+
+    <view wx:if="{{!items.length}}" class="empty-tip">
+      <text>清单为空，快去添加吧～</text>
+    </view>
+
+    <!-- 分享按钮 -->
+    <view class="share-section">
+      <button class="btn-share" bindtap="onShare">分享清单给家人</button>
     </view>
   </view>
 
-  <view class="card">
-    <view class="title" style="font-size:30rpx;">添加清单项</view>
-    <view class="add-row">
-      <input class="input" placeholder="例如：西红柿 2 个" value="{{newItem}}" bindinput="onNewItemInput" />
-      <button class="btn" size="mini" bindtap="addLocalItem">添加</button>
+  <!-- 历史清单 -->
+  <view wx:if="{{activeTab === 'history'}}">
+    <block wx:for="{{history}}" wx:key="index">
+      <view class="history-item">
+        <view class="history-date">{{item.date}}</view>
+        <view class="history-items">
+          <text wx:for="{{item.items}}" wx:for-item="i" wx:key="*this">{{i.name}}{{index < item.items.length - 1 ? '、' : ''}}</text>
+        </view>
+      </view>
+    </block>
+    <view wx:if="{{!history.length}}" class="empty-tip">
+      <text>暂无历史记录</text>
     </view>
   </view>
 
-  <view class="list-header">
-    <text>清单列表 ({{items.length}})</text>
-  </view>
-
-  <block wx:for="{{items}}" wx:key="index">
-    <view class="card row">
-      <checkbox checked="{{item.checked}}" data-index="{{index}}" bindtap="toggleItem"></checkbox>
-      <view class="item-text {{item.checked ? 'done' : ''}}">{{item.name}}</view>
-      <view class="source">{{item.source}}</view>
+  <!-- 调试配置（可折叠） -->
+  <view class="debug-section">
+    <view class="debug-toggle" bindtap="toggleDebug">⚙️ 调试配置</view>
+    <view class="debug-content" wx:if="{{showDebug}}">
+      <input 
+        class="input" 
+        placeholder="baseURL" 
+        value="{{baseURL}}" 
+        bindinput="onBaseURLInput" 
+      />
+      <input 
+        class="input" 
+        placeholder="Bearer Token" 
+        value="{{token}}" 
+        bindinput="onTokenInput" 
+      />
+      <button class="btn secondary" size="mini" bindtap="saveConfig">保存</button>
     </view>
-  </block>
-
-  <view wx:if="{{!items.length}}" class="no-items">
-    <text>清单为空，快去添加吧～</text>
-  </view>
-
-  <view class="card">
-    <view class="title" style="font-size:30rpx;">家庭共享</view>
-    <view class="sub">分享购物清单给家人，一起采购</view>
-    <button class="btn primary" size="mini" bindtap="onShare">分享清单</button>
   </view>
 </view>
 

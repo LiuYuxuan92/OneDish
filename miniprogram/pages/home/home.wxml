@@ -22,28 +22,51 @@
 
   <!-- 正常内容 -->
   <view class="content" wx:else>
+    <!-- 版本切换 Tab -->
+    <view class="version-tabs" wx:if="{{recommendation.baby_version}}">
+      <view 
+        class="tab {{currentVersion === 'adult' ? 'active' : ''}}" 
+        bindtap="switchVersion" 
+        data-version="adult">
+        成人版
+      </view>
+      <view 
+        class="tab {{currentVersion === 'baby' ? 'active' : ''}}" 
+        bindtap="switchVersion" 
+        data-version="baby">
+        宝宝版
+      </view>
+    </view>
+
     <view class="card">
       <image 
         class="cover" 
-        src="{{recommendation.cover_url || '/assets/placeholder-food.png'}}" 
+        src="{{currentVersion === 'baby' && recommendation.baby_version?.cover_url ? recommendation.baby_version.cover_url : recommendation.cover_url || '/assets/placeholder-food.png'}}" 
         mode="aspectFill"
         bindtap="goRecipe"
       />
       <view class="info">
-        <view class="title">{{recommendation.title}}</view>
+        <view class="title">
+          {{currentVersion === 'baby' ? recommendation.baby_version?.title || recommendation.title : recommendation.title}}
+          <text class="version-badge" wx:if="{{currentVersion === 'baby'}}">宝宝版</text>
+        </view>
         <view class="tags">
           <text class="tag" wx:if="{{recommendation.difficulty}}">{{recommendation.difficulty}}</text>
           <text class="tag" wx:if="{{recommendation.cook_time}}">{{recommendation.cook_time}}分钟</text>
           <text class="tag" wx:if="{{recommendation.calories}}">{{recommendation.calories}}千卡</text>
         </view>
-        <view class="desc" wx:if="{{recommendation.description}}">
-          {{recommendation.description}}
+        <view class="desc" wx:if="{{currentVersion === 'baby' ? recommendation.baby_version?.description : recommendation.description}}">
+          {{currentVersion === 'baby' ? recommendation.baby_version?.description : recommendation.description}}
         </view>
         
-        <!-- 宝宝版 -->
-        <view class="baby-version" wx:if="{{recommendation.baby_version}}">
-          <view class="baby-title">宝宝版</view>
-          <view class="baby-desc">{{recommendation.baby_version.description}}</view>
+        <!-- 宝宝版额外信息 -->
+        <view class="baby-info" wx:if="{{currentVersion === 'baby' && recommendation.baby_version}}">
+          <view class="baby-age" wx:if="{{recommendation.baby_version.age_range}}">
+            适合月龄：{{recommendation.baby_version.age_range}}
+          </view>
+          <view class="baby-tips" wx:if="{{recommendation.baby_version.tips}}">
+            喂养提示：{{recommendation.baby_version.tips}}
+          </view>
         </view>
       </view>
     </view>
@@ -52,7 +75,7 @@
       <button class="btn-swap" bindtap="onSwap" loading="{{swapping}}">
         {{swapping ? '换菜中...' : '换一道'}}
       </button>
-      <button class="btn-favorite" bindtap="onFavorite">收藏</button>
+      <button class="btn-add-list" bindtap="addToShoppingList">加入清单</button>
     </view>
 
     <view class="share">
