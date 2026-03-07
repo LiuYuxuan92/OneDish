@@ -4,6 +4,38 @@ const cache = require('../../utils/cache');
 
 const CACHE_KEY_RECIPES = 'recipes_list';
 
+// 后端数据适配器
+function adaptRecipeData(recipe) {
+  if (!recipe) return null;
+  
+  const adapted = {
+    ...recipe,
+    title: recipe.name || recipe.title,
+    cover_url: recipe.image_url || recipe.cover_url,
+    cook_time: recipe.cook_time || recipe.total_time,
+    ingredients: recipe.adult_version?.ingredients || recipe.ingredients || [],
+    description: recipe.description || '',
+  };
+  
+  if (recipe.baby_version) {
+    adapted.baby_version = {
+      ...recipe.baby_version,
+      title: recipe.baby_version.name || (recipe.name ? `${recipe.name}（宝宝版）` : ''),
+      description: recipe.baby_version.description || '',
+      age_range: recipe.baby_version.age_range || recipe.baby_version.ageRange || '',
+      tips: recipe.baby_version.tips || recipe.baby_version.nutrition_tips || '',
+      ingredients: recipe.baby_version.ingredients || [],
+    };
+  }
+  
+  return adapted;
+}
+
+function adaptListData(items) {
+  if (!items || !items.length) return [];
+  return items.map(item => adaptRecipeData(item));
+}
+
 Page({
   data: {
     loading: true,
@@ -41,13 +73,15 @@ Page({
     try {
       const result = await api.getRecipeList({ page, limit: 20 });
       const newRecipes = result.items || [];
+      // 使用适配器转换列表数据
+      const adaptedRecipes = adaptListData(newRecipes);
       
       // 缓存第一页
       if (page === 1) {
-        cache.setCache(CACHE_KEY_RECIPES, newRecipes);
+        cache.setCache(CACHE_KEY_RECIPES, adaptedRecipes);
       }
 
-      const recipes = page === 1 ? newRecipes : [...this.data.recipes, ...newRecipes];
+      const recipes = page === 1 ? adaptedRecipes : [...this.data.recipes, ...adaptedRecipes];
       
       this.setData({
         recipes,
@@ -102,7 +136,9 @@ Page({
     // 尝试加载详情
     try {
       const detail = await api.getRecipeDetail(id);
-      this.setData({ detail });
+      // 使用适配器转换详情数据
+      const adaptedDetail = adaptRecipeData(detail);
+      this.setData({ detail: adaptedDetail });
     } catch (err) {
       // 尝试从缓存加载
       const cached = cache.getCache(`recipe_${id}`);

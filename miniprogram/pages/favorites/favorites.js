@@ -1,5 +1,21 @@
 const api = require('../../utils/api');
 
+// 后端数据适配器
+function adaptRecipeData(recipe) {
+  if (!recipe) return null;
+  return {
+    ...recipe,
+    title: recipe.name || recipe.title,
+    cover_url: recipe.image_url || recipe.cover_url,
+    cook_time: recipe.cook_time || recipe.total_time,
+  };
+}
+
+function adaptListData(items) {
+  if (!items || !items.length) return [];
+  return items.map(item => adaptRecipeData(item));
+}
+
 Page({
   data: {
     loading: false,
@@ -18,8 +34,10 @@ Page({
     if (token) {
       this.setData({ loading: true });
       api.getFavorites().then(res => {
+        // 使用适配器转换数据
+        const adaptedFavorites = adaptListData(res.items || []);
         this.setData({ 
-          favorites: res.items || [],
+          favorites: adaptedFavorites,
           loading: false 
         });
       }).catch(() => {

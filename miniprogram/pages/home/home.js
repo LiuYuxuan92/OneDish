@@ -1,5 +1,36 @@
 const api = require('../../utils/api');
 
+// 后端数据适配器 - 将后端返回的数据转成前端期望的格式
+function adaptRecipeData(recipe) {
+  if (!recipe) return null;
+  
+  const adapted = {
+    ...recipe,
+    // 字段名映射
+    title: recipe.name || recipe.title,
+    cover_url: recipe.image_url || recipe.cover_url,
+    cook_time: recipe.cook_time || recipe.total_time,
+    
+    // 成人版数据
+    ingredients: recipe.adult_version?.ingredients || recipe.ingredients || [],
+    description: recipe.description || '',
+  };
+  
+  // 处理宝宝版数据
+  if (recipe.baby_version) {
+    adapted.baby_version = {
+      ...recipe.baby_version,
+      title: recipe.baby_version.name || (recipe.name ? `${recipe.name}（宝宝版）` : ''),
+      description: recipe.baby_version.description || '',
+      age_range: recipe.baby_version.age_range || recipe.baby_version.ageRange || '',
+      tips: recipe.baby_version.tips || recipe.baby_version.nutrition_tips || '',
+      ingredients: recipe.baby_version.ingredients || [],
+    };
+  }
+  
+  return adapted;
+}
+
 Page({
   data: {
     loading: false,
@@ -18,9 +49,11 @@ Page({
     try {
       const data = await api.getTodayRecommendation();
       const recipe = data?.recipe || null;
+      // 使用适配器转换数据格式
+      const adaptedRecipe = adaptRecipeData(recipe);
       this.setData({ 
-        recommendation: recipe,
-        currentVersion: recipe?.baby_version ? 'adult' : 'adult',
+        recommendation: adaptedRecipe,
+        currentVersion: adaptedRecipe?.baby_version ? 'adult' : 'adult',
         loading: false 
       });
     } catch (err) {
@@ -50,9 +83,11 @@ Page({
         wx.showToast({ title: '暂无可替换菜谱', icon: 'none' });
         return;
       }
+      // 使用适配器转换数据格式
+      const adaptedNext = adaptRecipeData(next);
       this.setData({ 
-        recommendation: next,
-        currentVersion: next?.baby_version ? 'adult' : 'adult'
+        recommendation: adaptedNext,
+        currentVersion: adaptedNext?.baby_version ? 'adult' : 'adult'
       });
       wx.showToast({ title: '已为你换一道', icon: 'success' });
     } catch (err) {
