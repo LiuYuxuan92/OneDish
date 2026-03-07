@@ -2,6 +2,7 @@
  * 智能换菜服务 - 从 frontend/src/screens/home/swapStrategy.ts 移植
  */
 import { db } from '../config/database';
+import { logger } from '../utils/logger';
 import { BabyStageService } from './baby-stage.service';
 import { FavoriteService } from './favorite.service';
 
@@ -135,7 +136,7 @@ export class SwapService {
       // 去重并返回前3个
       return [...new Set(categories)].slice(0, 3);
     } catch (error) {
-      console.error('[SwapService] buildPreferredCategories error:', error);
+      logger.error('[SwapService] buildPreferredCategories error:', error);
       return [];
     }
   }
@@ -149,7 +150,7 @@ export class SwapService {
     // 获取当前菜谱
     const currentRecipe = await db('recipes').where('id', current_recipe_id).first();
     if (!currentRecipe) {
-      console.error('[SwapService] Current recipe not found:', current_recipe_id);
+      logger.error('[SwapService] Current recipe not found:', current_recipe_id);
       return null;
     }
 

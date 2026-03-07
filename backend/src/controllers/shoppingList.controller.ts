@@ -204,7 +204,7 @@ export class ShoppingListController {
       const userId = (req as any).user.user_id;
       const { recipe_id, list_date, servings = 2 } = req.body;
 
-      console.log('[Backend] addRecipeToShoppingList called:', { userId, recipe_id, list_date, servings });
+      logger.info('[Backend] addRecipeToShoppingList called:', { userId, recipe_id, list_date, servings });
 
       const result = await this.shoppingListService.addRecipeToShoppingList({
         user_id: userId,
@@ -213,7 +213,7 @@ export class ShoppingListController {
         servings,
       });
 
-      console.log('[Backend] addRecipeToShoppingList success, result:', JSON.stringify(result, null, 2));
+      logger.info('[Backend] addRecipeToShoppingList success, result:', JSON.stringify(result, null, 2));
 
       res.json({
         code: 200,
@@ -221,7 +221,7 @@ export class ShoppingListController {
         data: result,
       });
     } catch (error) {
-      console.error('[Backend] addRecipeToShoppingList failed:', error);
+      logger.error('[Backend] addRecipeToShoppingList failed:', error);
       logger.error('Failed to add recipe to shopping list', { error });
       res.status(500).json({
         code: 500,

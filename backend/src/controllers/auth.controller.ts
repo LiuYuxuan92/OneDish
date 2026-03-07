@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import axios from 'axios';
 import { AuthService } from '../services/auth.service';
 import { logger } from '../utils/logger';
 import { jwtConfig, isProduction } from '../config/jwt';
@@ -247,15 +248,53 @@ export class AuthController {
         });
       }
 
-      // TODO: 生产环境需要用微信服务器验证 code 换取 openid
-      // const wechatAppId = process.env.WECHAT_APP_ID;
-      // const wechatSecret = process.env.WECHAT_APP_SECRET;
-      // const wxRes = await axios.get(`https://api.weixin.qq.com/sns/jscode2session?appid=${wechatAppId}&secret=${wechatSecret}&js_code=${code}&grant_type=authorization_code`);
-      // const { openid, session_key } = wxRes.data;
+      // 微信登录：生产环境调用微信 API 验证 code
+      let openid: string;
+      let session_key: string;
 
-      // 开发环境：直接用 code 作为用户标识（仅用于测试）
-      const openid = `wechat_${code}`;
-      const session_key = `session_${code}`;
+      if (isProduction && process.env.WECHAT_APP_ID && process.env.WECHAT_APP_SECRET) {
+        // 生产环境：调用微信服务器验证 code
+        try {
+          const wxRes = await axios.get<{
+            errcode?: number;
+            errmsg?: string;
+            openid?: string;
+            session_key?: string;
+          }>('https://api.weixin.qq.com/sns/jscode2session', {
+            params: {
+              appid: process.env.WECHAT_APP_ID,
+              secret: process.env.WECHAT_APP_SECRET,
+              js_code: code,
+              grant_type: 'authorization_code',
+            },
+          });
+
+          if (wxRes.data.errcode) {
+            logger.error('WeChat API error', { errcode: wxRes.data.errcode, errmsg: wxRes.data.errmsg });
+            return res.status(400).json({
+              code: 400,
+              message: '微信登录验证失败',
+              data: null,
+            });
+          }
+
+          openid = wxRes.data.openid || '';
+          session_key = wxRes.data.session_key || '';
+          logger.info('WeChat code verified', { openid });
+        } catch (error) {
+          logger.error('WeChat API request failed', { error });
+          return res.status(500).json({
+            code: 500,
+            message: '微信登录验证失败',
+            data: null,
+          });
+        }
+      } else {
+        // 开发环境：直接用 code 作为用户标识（仅用于测试）
+        openid = `wechat_${code}`;
+        session_key = `session_${code}`;
+        logger.info('WeChat login (dev mode)', { openid });
+      }
 
       // 查找或创建微信用户
       let wechatUser = await this.authService.findByWechatOpenid(openid);

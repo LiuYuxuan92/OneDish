@@ -170,22 +170,22 @@ export class RecipeService {
       limit = 20,
     } = params;
 
-    console.log('[searchRecipes] params:', params);
+    logger.info('[searchRecipes] params:', params);
 
     let query = db('recipes')
       .where('is_active', 1)  // SQLite boolean: 1 = true
       .select('id', 'name', 'type', 'prep_time', 'image_url', 'difficulty', 'calibrated_difficulty');
 
-    console.log('[searchRecipes] base query built');
+    logger.info('[searchRecipes] base query built');
 
     if (keyword && keyword.trim()) {
       // 使用 LIKE 进行中文搜索（SQLite 对中文支持良好）
       const searchPattern = `%${keyword.trim()}%`;
-      console.log('[searchRecipes] keyword:', keyword, 'pattern:', searchPattern);
+      logger.info('[searchRecipes] keyword:', keyword, 'pattern:', searchPattern);
       query = query.andWhere(function() {
         this.where('name', 'like', searchPattern);
       });
-      console.log('[searchRecipes] keyword filter applied');
+      logger.info('[searchRecipes] keyword filter applied');
     }
 
     if (type) {
@@ -207,7 +207,7 @@ export class RecipeService {
     // 获取总数
     const totalResult = await query.clone().count('* as count').first();
     const total = Number(totalResult?.count || 0);
-    console.log('[searchRecipes] total count:', total);
+    logger.info('[searchRecipes] total count:', total);
 
     // 获取分页数据
     const items = await query

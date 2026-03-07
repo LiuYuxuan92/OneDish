@@ -1,55 +1,21 @@
-// @ts-nocheck
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { recipesApi } from '../api/recipes';
-import { searchApi, UnifiedSearchResult } from '../api/search';
-import { Recipe } from '../types';
+import { searchApi } from '../api/search';
+import type { Recipe, RecipeSummary, PaginationResult } from '../types';
 
 // 获取所有菜谱
 export function useAllRecipes() {
   return useQuery({
     queryKey: ['recipes', 'all'],
     queryFn: async () => {
-      try {
-        const result = await recipesApi.getAll();
-
-        // 检查API响应格式
-        if (!result) {
-          console.error('[useAllRecipes] No result returned');
-          return { total: 0, page: 1, limit: 20, items: [] };
-        }
-
-        // 处理不同的响应格式
-        let data;
-        if (result.data) {
-          // 标准格式: { code, message, data: {...} }
-          data = result.data;
-        } else if (result.items) {
-          // 直接返回分页结果
-          data = result;
-        } else {
-          console.error('[useAllRecipes] Unexpected result format:', result);
-          return { total: 0, page: 1, limit: 20, items: [] };
-        }
-
-        if (!data) {
-          return { total: 0, page: 1, limit: 20, items: [] };
-        }
-
-        // 如果后端返回的数据 items 是 undefined，设置为空数组
-        const items = Array.isArray(data.items) ? data.items : (data.items ? [data.items] : []);
-        return {
-          total: data.total || 0,
-          page: data.page || 1,
-          limit: data.limit || 20,
-          items,
-        };
-      } catch (error) {
-        console.error('[useAllRecipes] API error:', error);
-        throw error;
+      const result = await recipesApi.getAll() as unknown as PaginationResult<RecipeSummary>;
+      if (!result || !result.items) {
+        return { total: 0, page: 1, limit: 20, items: [] };
       }
+      return result;
     },
-    staleTime: 30 * 1000, // 30秒，避免缓存旧数据
-    cacheTime: 24 * 60 * 60 * 1000, // 24h 离线缓存
+    staleTime: 30 * 1000,
+    cacheTime: 24 * 60 * 60 * 1000,
     retry: 2,
   });
 }
@@ -60,17 +26,12 @@ export function useDailyRecipe(params?: { type?: string; max_time?: number }) {
     queryKey: ['recipes', 'daily', params],
     queryFn: async () => {
       const result = await recipesApi.getDaily(params);
-      // 确保返回正确的数据结构
-      const data = result?.data;
-      if (!data) {
+      if (!result) {
         return { date: '', recipe: null };
       }
-      return {
-        date: data.date || '',
-        recipe: data.recipe || null,
-      };
+      return result;
     },
-    staleTime: 30 * 1000, // 30秒，避免缓存旧数据
+    staleTime: 30 * 1000,
   });
 }
 
@@ -97,18 +58,11 @@ export function useSearchRecipes(params: {
   return useQuery({
     queryKey: ['recipes', 'search', params],
     queryFn: async () => {
-      const result = await recipesApi.search(params);
-      // 确保返回正确的数据结构
-      const data = result?.data;
-      if (!data) {
+      const result = await recipesApi.search(params) as unknown as PaginationResult<RecipeSummary>;
+      if (!result || !result.items) {
         return { total: 0, page: 1, limit: 20, items: [] };
       }
-      return {
-        total: data.total || 0,
-        page: data.page || 1,
-        limit: data.limit || 20,
-        items: data.items || [],
-      };
+      return result;
     },
     enabled: !!(params.keyword || params.type || params.category || params.difficulty),
   });
@@ -118,9 +72,11 @@ export function useSearchRecipes(params: {
 export function useCategories() {
   return useQuery({
     queryKey: ['recipes', 'categories'],
-    queryFn: () =>
-      recipesApi.getCategories().then(res => res.data),
-    staleTime: 7 * 24 * 60 * 60 * 1000, // 7天
+    queryFn: async () => {
+      const result = await recipesApi.getCategories();
+      return result || [];
+    },
+    staleTime: 7 * 24 * 60 * 60 * 1000,
   });
 }
 
@@ -130,19 +86,13 @@ export function useUnifiedSearch(keyword: string) {
     queryKey: ['search', 'unified', keyword],
     queryFn: async () => {
       const result = await searchApi.search(keyword);
-      // 确保返回正确的数据结构
-      const data = result?.data;
-      if (!data) {
+      if (!result) {
         return { results: [], source: 'local', total: 0 };
       }
-      return {
-        results: data.results || [],
-        source: data.source || 'local',
-        total: data.total || 0,
-      };
+      return result;
     },
     enabled: !!keyword && keyword.trim().length > 0,
-    staleTime: 30 * 1000, // 30秒，避免缓存旧数据
+    staleTime: 30 * 1000,
   });
 }
 
@@ -150,7 +100,10 @@ export function useUnifiedSearch(keyword: string) {
 export function useSuggestByInventory(enabled: boolean = true) {
   return useQuery({
     queryKey: ['recipes', 'suggest-by-inventory'],
-    queryFn: () => recipesApi.suggestByInventory().then(res => res.data),
+    queryFn: async () => {
+      const result = await recipesApi.suggestByInventory();
+      return result || [];
+    },
     enabled,
     staleTime: 5 * 60 * 1000,
   });
@@ -160,9 +113,11 @@ export function useSuggestByInventory(enabled: boolean = true) {
 export function useSearchFromSource(keyword: string, source: 'local' | 'tianxing' | 'ai') {
   return useQuery({
     queryKey: ['search', source, keyword],
-    queryFn: () =>
-      searchApi.searchFromSource(keyword, source).then(res => res.data),
+    queryFn: async () => {
+      const result = await searchApi.searchFromSource(keyword, source);
+      return result || null;
+    },
     enabled: !!keyword && keyword.trim().length > 0,
-    staleTime: 30 * 1000, // 30秒，避免缓存旧数据
+    staleTime: 30 * 1000,
   });
 }

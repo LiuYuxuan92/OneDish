@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Knex } from 'knex';
+import { logger } from '../utils/logger';
 
 export class IngredientInventoryController {
   constructor(private knex: Knex) {}
@@ -40,7 +41,7 @@ export class IngredientInventoryController {
         },
       });
     } catch (error) {
-      console.error('获取食材库存失败:', error);
+      logger.error('获取食材库存失败:', error);
       res.status(500).json({ error: '获取食材库存失败' });
     }
   }
@@ -75,7 +76,7 @@ export class IngredientInventoryController {
 
       res.status(201).json(newInventory);
     } catch (error) {
-      console.error('添加食材库存失败:', error);
+      logger.error('添加食材库存失败:', error);
       res.status(500).json({ error: '添加食材库存失败' });
     }
   }
@@ -110,7 +111,7 @@ export class IngredientInventoryController {
 
       res.json(updated);
     } catch (error) {
-      console.error('更新食材库存失败:', error);
+      logger.error('更新食材库存失败:', error);
       res.status(500).json({ error: '更新食材库存失败' });
     }
   }
@@ -136,7 +137,7 @@ export class IngredientInventoryController {
 
       res.json({ message: '删除成功' });
     } catch (error) {
-      console.error('删除食材库存失败:', error);
+      logger.error('删除食材库存失败:', error);
       res.status(500).json({ error: '删除食材库存失败' });
     }
   }
@@ -162,7 +163,7 @@ export class IngredientInventoryController {
 
       res.json({ message: '批量删除成功' });
     } catch (error) {
-      console.error('批量删除食材库存失败:', error);
+      logger.error('批量删除食材库存失败:', error);
       res.status(500).json({ error: '批量删除食材库存失败' });
     }
   }
@@ -238,7 +239,7 @@ export class IngredientInventoryController {
         recommended_recipes: recommendedRecipes,
       });
     } catch (error) {
-      console.error('获取即将过期食材失败:', error);
+      logger.error('获取即将过期食材失败:', error);
       res.status(500).json({ error: '获取即将过期食材失败' });
     }
   }

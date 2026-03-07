@@ -1,4 +1,6 @@
 import { db } from '../config/database';
+import { logger } from '../utils/logger';
+import { MealPlanService } from './mealPlan.service';
 
 export interface MealPlanTemplate {
   id: string;
@@ -111,7 +113,7 @@ export class MealPlanTemplateService {
   /**
    * 克隆模板到用户本周计划
    */
-  async cloneTemplate(userId: string, templateId: string): Promise<{ success: boolean; message: string }> {
+  async cloneTemplate(userId: string, templateId: string): Promise<{ success: boolean; message: string; clonedCount?: number }> {
     const template = await db('meal_plan_templates').where('id', templateId).first();
     if (!template) {
       throw new Error('模板不存在');
@@ -121,19 +123,77 @@ export class MealPlanTemplateService {
       throw new Error('无权访问该模板');
     }
 
-    // TODO: 将模板数据复制到用户的 meal_plan 表（当前周）
-    // 这里需要结合 MealPlanService 来实现具体的克隆逻辑
-    // 暂时先增加 clone_count
+    // 解析模板数据
+    const planData = typeof template.plan_data === 'string' 
+      ? JSON.parse(template.plan_data) 
+      : template.plan_data;
 
+    // 获取本周的起始日期
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // 周日
+    const startDateStr = startOfWeek.toISOString().split('T')[0];
+
+    // 克隆计划到用户的 meal_plan 表
+    let clonedCount = 0;
+    const mealPlanService = new MealPlanService();
+
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + i);
+      const dateStr = date.toISOString().split('T')[0];
+      const dayPlan = planData[dateStr];
+
+      if (!dayPlan) continue;
+
+      // 早餐
+      if (dayPlan.breakfast) {
+        await mealPlanService.setMealPlan({
+          user_id: userId,
+          plan_date: dateStr,
+          meal_type: 'breakfast',
+          recipe_id: dayPlan.breakfast,
+          servings: 1,
+        });
+        clonedCount++;
+      }
+
+      // 午餐
+      if (dayPlan.lunch) {
+        await mealPlanService.setMealPlan({
+          user_id: userId,
+          plan_date: dateStr,
+          meal_type: 'lunch',
+          recipe_id: dayPlan.lunch,
+          servings: 1,
+        });
+        clonedCount++;
+      }
+
+      // 晚餐
+      if (dayPlan.dinner) {
+        await mealPlanService.setMealPlan({
+          user_id: userId,
+          plan_date: dateStr,
+          meal_type: 'dinner',
+          recipe_id: dayPlan.dinner,
+          servings: 1,
+        });
+        clonedCount++;
+      }
+    }
+
+    // 增加克隆计数
     await db('meal_plan_templates')
       .where('id', templateId)
       .increment('clone_count', 1);
 
-    // 返回模板数据，由调用方决定如何处理
+    logger.info('Template cloned', { userId, templateId, clonedCount });
+
     return {
       success: true,
-      message: '模板克隆成功',
-      // 这里可以返回 plan_data 供前端使用
+      message: `模板克隆成功，已添加 ${clonedCount} 个餐食到本周计划`,
+      clonedCount,
     };
   }
 
