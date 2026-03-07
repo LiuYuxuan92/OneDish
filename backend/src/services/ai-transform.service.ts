@@ -4,15 +4,15 @@
  * 比规则引擎更智能的食材改编
  */
 
-import { Recipe, BabyVersion, TransformResult, BabyNutritionInfo, SyncCookingInfo, RecipeVersion } from '../types';
+import { Recipe, BabyVersion, TransformResult, BabyNutritionInfo, SyncCookingInfo } from '../types';
 import { RecipePairingEngine, getStageConfig, getStageByAge } from '../utils/recipe-pairing-engine';
 import { NutritionCalculator } from '../utils/nutrition-calculator';
 import { db } from '../config/database';
 import { logger } from '../utils/logger';
 import { UgcRiskService } from './ugc-risk.service';
 import { AISearchAdapter } from '../adapters/ai.adapter';
-import { quotaService } from './quota.service';
 import { metricsService } from './metrics.service';
+import { aiConfigService, AIProvider, UserAIConfig } from './ai-config.service';
 
 // ============================================
 // 类型定义
@@ -72,10 +72,42 @@ const COST_PER_TRANSFORM = 0.002; // ~$0.002 per transformation
 export class AITransformService {
   private aiAdapter: AISearchAdapter;
   private ugcRiskService: UgcRiskService;
+  private userConfig: UserAIConfig | null = null;
+  private systemProvider: 'minimax' | 'openai';
 
-  constructor(provider: 'minimax' | 'openai' = 'minimax') {
+  /**
+   * 创建 AI 转换服务
+   * @param provider 系统默认 provider
+   * @param userConfig 可选的用户自定义 AI 配置
+   */
+  constructor(provider: 'minimax' | 'openai' = 'minimax', userConfig?: UserAIConfig | null) {
+    this.systemProvider = provider;
     this.aiAdapter = new AISearchAdapter(provider);
     this.ugcRiskService = new UgcRiskService();
+    this.userConfig = userConfig || null;
+  }
+
+  /**
+   * 创建带有用户配置的 AI 转换服务
+   */
+  static async createWithUserConfig(userId: string): Promise<AITransformService> {
+    try {
+      // 优先使用用户的活跃 AI 配置
+      const userConfig = await aiConfigService.getActiveConfig(userId);
+      
+      if (userConfig) {
+        const provider = mapProviderToSystem(userConfig.provider);
+        const service = new AITransformService(provider, userConfig);
+        logger.info('Using user custom AI config', { userId, provider: userConfig.provider });
+        return service;
+      } else {
+        // 使用系统默认配置
+        return new AITransformService();
+      }
+    } catch (error) {
+      logger.warn('Failed to load user AI config, using system default', { userId, error });
+      return new AITransformService();
+    }
   }
 
   /**
@@ -314,13 +346,34 @@ ${stepsList}
    */
   private async callAIDirectly(prompt: string): Promise<AIBabyVersion | null> {
     try {
-      // 使用 MiniMax API 直接生成
       const config = this.getAIConfig();
       if (!config.apiKey) {
         logger.warn('AI API key not configured');
         return null;
       }
 
+      logger.info('Calling AI with provider', { provider: config.provider, hasUserConfig: !!this.userConfig });
+
+      // 根据不同 provider 调用不同的 API
+      if (config.provider === 'minimax') {
+        return await this.callMinimaxAPI(prompt, config);
+      } else if (config.provider === 'openai') {
+        return await this.callOpenAICompatibleAPI(prompt, config);
+      } else {
+        // 默认使用 MiniMax
+        return await this.callMinimaxAPI(prompt, config);
+      }
+    } catch (error) {
+      logger.error('AI direct call failed', { error });
+      return null;
+    }
+  }
+
+  /**
+   * 调用 MiniMax API
+   */
+  private async callMinimaxAPI(prompt: string, config: { apiKey: string; baseUrl: string; model: string }): Promise<AIBabyVersion | null> {
+    try {
       const response = await fetch(`${config.baseUrl}/text/chatcompletion_v2`, {
         method: 'POST',
         headers: {
@@ -338,17 +391,82 @@ ${stepsList}
       });
 
       if (!response.ok) {
-        logger.error('AI API error', { status: response.status });
+        logger.error('MiniMax API error', { status: response.status });
         return null;
       }
 
       const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
       const content = data.choices?.[0]?.message?.content || '';
 
-      // 解析 JSON
       return this.parseAIResponse(content);
     } catch (error) {
-      logger.error('AI direct call failed', { error });
+      logger.error('MiniMax API call failed', { error });
+      return null;
+    }
+  }
+
+  /**
+   * 调用 OpenAI 兼容 API (包括 OpenAI, Claude, Gemini 等)
+   */
+  private async callOpenAICompatibleAPI(prompt: string, config: { apiKey: string; baseUrl: string; model: string }): Promise<AIBabyVersion | null> {
+    try {
+      // 检测是否是 Anthropic (Claude)
+      if (config.baseUrl.includes('anthropic')) {
+        const response = await fetch(`${config.baseUrl}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': config.apiKey,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: config.model,
+            messages: [
+              { role: 'user', content: prompt },
+            ],
+            max_tokens: 4096,
+          }),
+        });
+
+        if (!response.ok) {
+          logger.error('Anthropic API error', { status: response.status });
+          return null;
+        }
+
+        const data = await response.json() as { content?: Array<{ text?: string }> };
+        const content = data.content?.[0]?.text || '';
+
+        return this.parseAIResponse(content);
+      }
+
+      // 其他 OpenAI 兼容 API
+      const response = await fetch(`${config.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${config.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: config.model,
+          messages: [
+            { role: 'system', content: '你是一个专业的宝宝辅食营养师，擅长将成人食谱改编为适合宝宝的安全营养辅食。' },
+            { role: 'user', content: prompt },
+          ],
+          temperature: 0.7,
+        }),
+      });
+
+      if (!response.ok) {
+        logger.error('OpenAI compatible API error', { status: response.status });
+        return null;
+      }
+
+      const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+      const content = data.choices?.[0]?.message?.content || '';
+
+      return this.parseAIResponse(content);
+    } catch (error) {
+      logger.error('OpenAI compatible API call failed', { error });
       return null;
     }
   }
@@ -412,9 +530,21 @@ ${stepsList}
   }
 
   /**
-   * 获取 AI 配置
+   * 获取 AI 配置（优先使用用户自定义配置）
    */
-  private getAIConfig(): { apiKey: string; baseUrl: string; model: string } {
+  private getAIConfig(): { apiKey: string; baseUrl: string; model: string; provider: string } {
+    // 如果有用户自定义配置，使用用户配置
+    if (this.userConfig) {
+      const apiKey = aiConfigService.getDecryptedApiKey(this.userConfig.api_key_encrypted);
+      return {
+        apiKey,
+        baseUrl: this.userConfig.base_url || getDefaultBaseUrl(this.userConfig.provider),
+        model: this.userConfig.model || getDefaultModel(this.userConfig.provider),
+        provider: this.userConfig.provider,
+      };
+    }
+
+    // 否则使用系统默认配置
     const provider = process.env.AI_PROVIDER || 'minimax';
     
     switch (provider) {
@@ -423,23 +553,36 @@ ${stepsList}
           apiKey: process.env.MINIMAX_API_KEY || '',
           baseUrl: process.env.MINIMAX_BASE_URL?.replace('/v1', '') || 'https://api.minimax.chat/v1',
           model: process.env.MINIMAX_MODEL || 'MiniMax-M2.5',
+          provider: 'minimax',
         };
       case 'openai':
         return {
           apiKey: process.env.OPENAI_API_KEY || '',
           baseUrl: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
           model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
+          provider: 'openai',
         };
       default:
-        return { apiKey: '', baseUrl: '', model: '' };
+        return { apiKey: '', baseUrl: '', model: '', provider: '' };
     }
+  }
+
+  /**
+   * 获取用户自定义配置信息（用于日志）
+   */
+  getUserConfigInfo(): { provider?: string; hasUserConfig: boolean } {
+    return {
+      provider: this.userConfig?.provider,
+      hasUserConfig: !!this.userConfig,
+    };
   }
 
   /**
    * 生成缓存键
    */
   private generateCacheKey(recipeId: string, babyAgeMonths: number): string {
-    return `ai_transform:${recipeId}:${babyAgeMonths}`;
+    const userPart = this.userConfig ? `:user_${this.userConfig.id}` : '';
+    return `ai_transform:${recipeId}:${babyAgeMonths}${userPart}`;
   }
 
   /**
@@ -510,6 +653,67 @@ ${stepsList}
       logger.warn('Failed to clear AI transform cache', { error });
     }
   }
+}
+
+// ============================================
+// 辅助函数
+// ============================================
+
+/**
+ * 将用户 AI provider 映射到系统 provider
+ */
+function mapProviderToSystem(provider: AIProvider): 'minimax' | 'openai' {
+  const mapping: Record<string, 'minimax' | 'openai'> = {
+    'minimax': 'minimax',
+    'openai': 'openai',
+    'claude': 'openai', // Claude 暂不支持，使用 OpenAI 兼容
+    'gemini': 'openai', // Gemini 暂不支持，使用 OpenAI 兼容
+    'doubao': 'openai', // 豆包暂不支持，使用 OpenAI 兼容
+    'wenxin': 'openai', // 文心暂不支持，使用 OpenAI 兼容
+    'tongyi': 'openai', // 通义暂不支持，使用 OpenAI 兼容
+    'hunyuan': 'openai', // 腾讯混元暂不支持，使用 OpenAI 兼容
+    'zhipu': 'openai', // 智谱暂不支持，使用 OpenAI 兼容
+    'kimi': 'openai', // Kimi 暂不支持，使用 OpenAI 兼容
+  };
+  return mapping[provider] || 'minimax';
+}
+
+/**
+ * 获取 provider 的默认 base URL
+ */
+function getDefaultBaseUrl(provider: AIProvider): string {
+  const urls: Record<string, string> = {
+    'openai': 'https://api.openai.com/v1',
+    'claude': 'https://api.anthropic.com/v1',
+    'gemini': 'https://generativelanguage.googleapis.com/v1',
+    'minimax': 'https://api.minimax.chat/v1',
+    'doubao': 'https://ark.cn-beijing.volces.com/api/v3',
+    'wenxin': 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1',
+    'tongyi': 'https://dashscope.aliyuncs.com/api/v1',
+    'hunyuan': 'https://hunyuan.tencentcloudapi.com',
+    'zhipu': 'https://open.bigmodel.cn/api/paas/v4',
+    'kimi': 'https://api.moonshot.cn/v1',
+  };
+  return urls[provider] || 'https://api.minimax.chat/v1';
+}
+
+/**
+ * 获取 provider 的默认模型
+ */
+function getDefaultModel(provider: AIProvider): string {
+  const models: Record<string, string> = {
+    'openai': 'gpt-3.5-turbo',
+    'claude': 'claude-3-haiku-20240307',
+    'gemini': 'gemini-pro',
+    'minimax': 'MiniMax-M2.5',
+    'doubao': 'doubao-lite-4k',
+    'wenxin': 'ernie-lite-8k',
+    'tongyi': 'qwen-turbo',
+    'hunyuan': 'hunyuan',
+    'zhipu': 'glm-4',
+    'kimi': 'kimi-latest',
+  };
+  return models[provider] || 'MiniMax-M2.5';
 }
 
 // 导出单例
