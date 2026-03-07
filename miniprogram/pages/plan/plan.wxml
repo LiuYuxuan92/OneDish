@@ -8,6 +8,12 @@
       当前清单
     </view>
     <view 
+      class="tab {{activeTab === 'generate' ? 'active' : ''}}" 
+      bindtap="onTabSwitch" 
+      data-tab="generate">
+      ✨ 智能生成
+    </view>
+    <view 
       class="tab {{activeTab === 'history' ? 'active' : ''}}" 
       bindtap="onTabSwitch" 
       data-tab="history">
@@ -68,6 +74,126 @@
     </block>
     <view wx:if="{{!history.length}}" class="empty-tip">
       <text>暂无历史记录</text>
+    </view>
+  </view>
+
+  <!-- 智能生成 -->
+  <view wx:if="{{activeTab === 'generate'}}" class="generate-section">
+    <view class="generate-header">
+      <text class="generate-title">✨ AI 智能生成周计划</text>
+      <text class="generate-desc">用自然语言描述您的需求，AI 将为您智能生成一周辅食计划</text>
+    </view>
+
+    <!-- 模式选择 -->
+    <view class="mode-selector">
+      <view 
+        class="mode-option {{isSmartMode ? 'active' : ''}}" 
+        bindtap="toggleSmartMode">
+        <text>✨ 智能模式</text>
+      </view>
+      <view 
+        class="mode-option {{!isSmartMode ? 'active' : ''}}" 
+        bindtap="toggleSmartMode">
+        <text>📋 标准模式</text>
+      </view>
+    </view>
+
+    <!-- 智能模式输入 -->
+    <view wx:if="{{isSmartMode}}" class="smart-mode-input">
+      <textarea
+        class="prompt-input"
+        placeholder="例如: 这周多做鱼类的菜，宝宝挑食不喜欢胡萝卜，做饭时间控制在30分钟以内"
+        value="{{smartPrompt}}"
+        bindinput="onSmartPromptInput"
+        maxlength="500"
+      ></textarea>
+      <text class="input-hint">用自然语言描述您的需求</text>
+    </view>
+
+    <!-- 标准模式选项 -->
+    <view wx:if="{{!isSmartMode}}" class="standard-options">
+      <view class="option-group">
+        <text class="option-label">宝宝月龄（可选）</text>
+        <view class="age-options">
+          <view 
+            class="age-option {{babyAge === null ? 'active' : ''}}" 
+            bindtap="onBabyAgeSelect" 
+            data-age="{{null}}">
+            不限
+          </view>
+          <view 
+            class="age-option {{babyAge === 6 ? 'active' : ''}}" 
+            bindtap="onBabyAgeSelect" 
+            data-age="{{6}}">
+            6月
+          </view>
+          <view 
+            class="age-option {{babyAge === 8 ? 'active' : ''}}" 
+            bindtap="onBabyAgeSelect" 
+            data-age="{{8}}">
+            8月
+          </view>
+          <view 
+            class="age-option {{babyAge === 10 ? 'active' : ''}}" 
+            bindtap="onBabyAgeSelect" 
+            data-age="{{10}}">
+            10月
+          </view>
+          <view 
+            class="age-option {{babyAge === 12 ? 'active' : ''}}" 
+            bindtap="onBabyAgeSelect" 
+            data-age="{{12}}">
+            12月
+          </view>
+          <view 
+            class="age-option {{babyAge === 18 ? 'active' : ''}}" 
+            bindtap="onBabyAgeSelect" 
+            data-age="{{18}}">
+            18月
+          </view>
+          <view 
+            class="age-option {{babyAge === 24 ? 'active' : ''}}" 
+            bindtap="onBabyAgeSelect" 
+            data-age="{{24}}">
+            24月
+          </view>
+        </view>
+      </view>
+
+      <view class="option-group">
+        <text class="option-label">排除食材（用逗号分隔）</text>
+        <input 
+          class="exclude-input" 
+          placeholder="例如: 虾, 花生, 牛奶" 
+          value="{{excludeIngredients}}"
+          bindinput="onExcludeInput"
+        />
+      </view>
+    </view>
+
+    <!-- 生成按钮 -->
+    <view class="generate-action">
+      <van-button 
+        type="primary" 
+        size="large" 
+        round 
+        loading="{{isGenerating}}"
+        bind:click="generateMealPlan">
+        {{isGenerating ? '生成中...' : '生成周计划'}}
+      </van-button>
+    </view>
+
+    <!-- 生成结果预览 -->
+    <view wx:if="{{generatedMealPlan}}" class="result-preview">
+      <view class="result-header">
+        <text class="result-title">✅ 生成成功</text>
+      </view>
+      <view class="result-content">
+        <text class="result-name">{{generatedMealPlan.title}}</text>
+      </view>
+      <view class="result-action">
+        <van-button type="success" size="small" round bindtap="viewGeneratedPlan">查看详情</van-button>
+      </view>
     </view>
   </view>
 

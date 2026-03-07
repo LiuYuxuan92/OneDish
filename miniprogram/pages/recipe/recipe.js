@@ -1,6 +1,5 @@
 const api = require('../../utils/api');
 const cache = require('../../utils/cache');
-const cache = require('../../utils/cache');
 
 const CACHE_KEY_RECIPES = 'recipes_list';
 
@@ -44,7 +43,14 @@ Page({
     detail: null,
     page: 1,
     hasMore: true,
-    isOffline: false // 网络状态
+    isOffline: false,
+    // AI 宝宝版本相关
+    showAIGenerateModal: false,
+    showAIResultModal: false,
+    selectedBabyAge: 12,
+    generateUseAI: true,
+    isGenerating: false,
+    aiResult: null
   },
 
   onShow() {
@@ -200,5 +206,54 @@ Page({
       title: detail?.title ? `${detail.title} - 简家厨` : '简家厨 - 一鱼两吃宝宝辅食',
       query: detail ? `id=${detail.id}` : ''
     };
+  },
+
+  // ========== AI 宝宝版本生成 ==========
+  openAIGenerateModal() {
+    this.setData({ showAIGenerateModal: true });
+  },
+
+  closeAIGenerateModal() {
+    this.setData({ 
+      showAIGenerateModal: false,
+      aiResult: null
+    });
+  },
+
+  onBabyAgeSelect(e) {
+    const age = parseInt(e.currentTarget.dataset.age);
+    this.setData({ selectedBabyAge: age });
+  },
+
+  toggleGenerateMode() {
+    this.setData({ generateUseAI: !this.data.generateUseAI });
+  },
+
+  async generateAIBabyVersion() {
+    const { detail, selectedBabyAge, generateUseAI } = this.data;
+    if (!detail) return;
+
+    this.setData({ isGenerating: true });
+
+    try {
+      const result = await api.generateAIBabyVersion(detail.id, selectedBabyAge, generateUseAI);
+      
+      this.setData({ 
+        aiResult: result,
+        isGenerating: false,
+        showAIGenerateModal: false,
+        showAIResultModal: true
+      });
+
+      wx.showToast({ title: '生成成功', icon: 'success' });
+    } catch (err) {
+      console.error('[recipe] generate AI baby version failed:', err);
+      this.setData({ isGenerating: false });
+      wx.showToast({ title: err.message || '生成失败', icon: 'none' });
+    }
+  },
+
+  closeAIResultModal() {
+    this.setData({ showAIResultModal: false, aiResult: null });
   }
 });

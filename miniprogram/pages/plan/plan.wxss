@@ -347,3 +347,162 @@
   padding: 24rpx;
   font-size: 30rpx;
 }
+
+/* ========== 智能生成样式 ========== */
+.generate-section {
+  padding: 24rpx;
+}
+
+.generate-header {
+  text-align: center;
+  margin-bottom: 32rpx;
+}
+
+.generate-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+.generate-desc {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.mode-selector {
+  display: flex;
+  background: #f5f7fb;
+  border-radius: 16rpx;
+  padding: 6rpx;
+  margin-bottom: 32rpx;
+}
+
+.mode-option {
+  flex: 1;
+  text-align: center;
+  padding: 20rpx 0;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  color: #666;
+}
+
+.mode-option.active {
+  background: #fff;
+  color: #1677ff;
+  font-weight: 600;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+}
+
+.smart-mode-input {
+  margin-bottom: 32rpx;
+}
+
+.prompt-input {
+  width: 100%;
+  height: 200rpx;
+  border: 1rpx solid #e5e7eb;
+  border-radius: 12rpx;
+  padding: 16rpx;
+  font-size: 28rpx;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.input-hint {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 8rpx;
+  display: block;
+}
+
+.standard-options {
+  margin-bottom: 32rpx;
+}
+
+.option-group {
+  margin-bottom: 24rpx;
+}
+
+.option-label {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333: block;
+ ;
+  display margin-bottom: 12rpx;
+}
+
+.age-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.age-option {
+  padding: 12rpx 24rpx;
+  border-radius: 32rpx;
+  background: #f5f7fb;
+  border: 1rpx solid #e5e7eb;
+  font-size: 26rpx;
+  color: #666;
+}
+
+.age-option.active {
+  background: #e6f4ff;
+  border-color: #1677ff;
+  color: #1677ff;
+}
+
+.exclude-input {
+  width: 100%;
+  border: 1rpx solid #e5e7eb;
+  border-radius: 12rpx;
+  padding: 16rpx;
+  font-size: 28rpx;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.generate-action {
+  margin-bottom: 32rpx;
+}
+
+.result-preview {
+  background: #f6ffed;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  border-left: 6rpx solid #52c41a;
+}
+
+.result-header {
+  margin-bottom: 12rpx;
+}
+
+.result-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #52c41a;
+}
+
+.result-content {
+  margin-bottom: 16rpx;
+}
+
+.result-name {
+  font-size: 28rpx;
+  color: #333;
+  display: block;
+}
+
+.result-desc {
+  font-size: 24rpx;
+  color: #666;
+  margin-top: 8rpx;
+  display: block;
+}
+
+.result-action {
+  display: flex;
+  justify-content: flex-end;
+}

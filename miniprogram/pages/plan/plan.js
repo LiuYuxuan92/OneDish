@@ -11,10 +11,18 @@ Page({
     items: [],
     history: [],
     newItem: '',
-    activeTab: 'current', // current | history
+    activeTab: 'current', // current | history | generate
     showShareModal: false,
     showDebug: false,
-    inviteCode: ''
+    inviteCode: '',
+    // 智能生成相关
+    showGenerateModal: false,
+    isSmartMode: false,
+    smartPrompt: '',
+    babyAge: null,
+    excludeIngredients: '',
+    isGenerating: false,
+    generatedMealPlan: null
   },
 
   onShow() {
@@ -248,5 +256,96 @@ Page({
     return {
       title: '简家厨购物清单 - 一键分享'
     };
+  },
+
+  // ========== 智能周计划生成 ==========
+  openGenerateModal() {
+    this.setData({ showGenerateModal: true });
+  },
+
+  closeGenerateModal() {
+    this.setData({ 
+      showGenerateModal: false,
+      isSmartMode: false,
+      smartPrompt: '',
+      babyAge: null,
+      excludeIngredients: '',
+      generatedMealPlan: null
+    });
+  },
+
+  toggleSmartMode() {
+    this.setData({ isSmartMode: !this.data.isSmartMode });
+  },
+
+  onSmartPromptInput(e) {
+    this.setData({ smartPrompt: e.detail.value });
+  },
+
+  onExcludeInput(e) {
+    this.setData({ excludeIngredients: e.detail.value });
+  },
+
+  onBabyAgeSelect(e) {
+    const age = e.currentTarget.dataset.age;
+    this.setData({ babyAge: age });
+  },
+
+  async generateMealPlan() {
+    const { isSmartMode, smartPrompt, babyAge, excludeIngredients } = this.data;
+    
+    if (isSmartMode && !smartPrompt.trim()) {
+      wx.showToast({ title: '请输入您的需求', icon: 'none' });
+      return;
+    }
+
+    this.setData({ isGenerating: true });
+
+    try {
+      let prompt = smartPrompt;
+      
+      // 标准模式：构建提示词
+      if (!isSmartMode) {
+        const parts = [];
+        if (babyAge) parts.push(`宝宝${babyAge}月龄`);
+        if (excludeIngredients) parts.push(`排除: ${excludeIngredients}`);
+        prompt = parts.length > 0 ? parts.join('，') + '的一周辅食计划' : '一周辅食计划';
+      }
+
+      const result = await api.generateMealPlanFromPrompt(prompt);
+      
+      this.setData({ 
+        generatedMealPlan: result,
+        isGenerating: false 
+      });
+
+      wx.showToast({ title: '生成成功', icon: 'success' });
+      
+      // 将生成的食材添加到清单
+      if (result && result.ingredients) {
+        const items = result.ingredients.map(name => ({
+          name,
+          checked: false
+        }));
+        this.importItems(items);
+      }
+      
+    } catch (err) {
+      console.error('[plan] generate meal plan failed:', err);
+      this.setData({ isGenerating: false });
+      wx.showToast({ title: err.message || '生成失败', icon: 'none' });
+    }
+  },
+
+  viewGeneratedPlan() {
+    const { generatedMealPlan } = this.data;
+    if (!generatedMealPlan) return;
+    
+    // TODO: 跳转到周计划详情页
+    wx.showModal({
+      title: generatedMealPlan.title || '周计划',
+      content: JSON.stringify(generatedMealPlan, null, 2),
+      showCancel: false
+    });
   }
 });

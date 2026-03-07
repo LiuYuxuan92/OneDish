@@ -75,10 +75,151 @@
           <view class="baby-title">宝宝版</view>
           <view class="baby-desc">{{detail.baby_version.description}}</view>
         </view>
+
+        <!-- AI 生成宝宝版本按钮 -->
+        <view class="ai-generate-section">
+          <button class="ai-generate-btn" bindtap="openAIGenerateModal">
+            ✨ AI 生成宝宝版本
+          </button>
+        </view>
       </scroll-view>
       <view class="detail-actions">
         <button class="btn-add" bindtap="addToListFromDetail">加入购物清单</button>
       </view>
+    </view>
+  </view>
+
+  <!-- AI 生成宝宝版本弹窗 -->
+  <view class="modal-mask" wx:if="{{showAIGenerateModal}}" bindtap="closeAIGenerateModal"></view>
+  <view class="ai-modal" wx:if="{{showAIGenerateModal}}">
+    <view class="ai-modal-header">
+      <text class="ai-modal-title">生成宝宝版本</text>
+      <text class="ai-modal-close" bindtap="closeAIGenerateModal">×</text>
+    </view>
+    <view class="ai-modal-body">
+      <!-- 宝宝月龄选择 -->
+      <view class="ai-option-group">
+        <text class="ai-option-label">宝宝月龄:</text>
+        <view class="ai-age-selector">
+          <view 
+            class="ai-age-option {{selectedBabyAge === 6 ? 'active' : ''}}" 
+            bindtap="onBabyAgeSelect" 
+            data-age="6">
+            6月
+          </view>
+          <view 
+            class="ai-age-option {{selectedBabyAge === 8 ? 'active' : ''}}" 
+            bindtap="onBabyAgeSelect" 
+            data-age="8">
+            8月
+          </view>
+          <view 
+            class="ai-age-option {{selectedBabyAge === 10 ? 'active' : ''}}" 
+            bindtap="onBabyAgeSelect" 
+            data-age="10">
+            10月
+          </view>
+          <view 
+            class="ai-age-option {{selectedBabyAge === 12 ? 'active' : ''}}" 
+            bindtap="onBabyAgeSelect" 
+            data-age="12">
+            12月
+          </view>
+          <view 
+            class="ai-age-option {{selectedBabyAge === 18 ? 'active' : ''}}" 
+            bindtap="onBabyAgeSelect" 
+            data-age="18">
+            18月
+          </view>
+          <view 
+            class="ai-age-option {{selectedBabyAge === 24 ? 'active' : ''}}" 
+            bindtap="onBabyAgeSelect" 
+            data-age="24">
+            24月
+          </view>
+        </view>
+      </view>
+
+      <!-- 生成方式选择 -->
+      <view class="ai-option-group">
+        <text class="ai-option-label">生成方式:</text>
+        <view class="ai-mode-options">
+          <view 
+            class="ai-mode-option {{generateUseAI ? 'active' : ''}}" 
+            bindtap="toggleGenerateMode">
+            <view class="ai-radio {{generateUseAI ? 'checked' : ''}}"></view>
+            <text>✨ AI 智能生成</text>
+          </view>
+          <view 
+            class="ai-mode-option {{!generateUseAI ? 'active' : ''}}" 
+            bindtap="toggleGenerateMode">
+            <view class="ai-radio {{!generateUseAI ? 'checked' : ''}}"></view>
+            <text>📋 规则引擎</text>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="ai-modal-footer">
+      <button class="ai-modal-cancel" bindtap="closeAIGenerateModal">取消</button>
+      <button 
+        class="ai-modal-confirm" 
+        bindtap="generateAIBabyVersion"
+        loading="{{isGenerating}}">
+        {{isGenerating ? '生成中...' : '开始生成'}}
+      </button>
+    </view>
+  </view>
+
+  <!-- AI 生成结果弹窗 -->
+  <view class="modal-mask" wx:if="{{showAIResultModal}}" bindtap="closeAIResultModal"></view>
+  <view class="ai-modal ai-result-modal" wx:if="{{showAIResultModal}}">
+    <view class="ai-modal-header">
+      <text class="ai-modal-title">✅ AI 宝宝版本已生成</text>
+      <text class="ai-modal-close" bindtap="closeAIResultModal">×</text>
+    </view>
+    <scroll-view class="ai-result-body" scroll-y>
+      <view wx:if="{{aiResult}}" class="ai-result-content">
+        <!-- 配料替换 -->
+        <view class="ai-result-section" wx:if="{{aiResult.ingredient_replacements && aiResult.ingredient_replacements.length}}">
+          <text class="ai-result-section-title">🍚 配料替换</text>
+          <block wx:for="{{aiResult.ingredient_replacements}}" wx:key="index">
+            <view class="ai-result-item">
+              <text class="ai-result-item-text">{{item.original}} → {{item.replacement}}</text>
+              <text class="ai-result-item-reason">{{item.reason}}</text>
+            </view>
+          </block>
+        </view>
+
+        <!-- 质地调整 -->
+        <view class="ai-result-section" wx:if="{{aiResult.texture_adjustments && aiResult.texture_adjustments.length}}">
+          <text class="ai-result-section-title">👶 质地调整</text>
+          <block wx:for="{{aiResult.texture_adjustments}}" wx:key="index">
+            <view class="ai-result-item">
+              <text class="ai-result-item-text">{{item.adjustment}}</text>
+              <text class="ai-result-item-reason">{{item.reason}}</text>
+            </view>
+          </block>
+        </view>
+
+        <!-- 过敏提醒 -->
+        <view class="ai-result-section" wx:if="{{aiResult.allergy_alerts && aiResult.allergy_alerts.length}}">
+          <text class="ai-result-section-title">⚠️ 过敏提醒</text>
+          <block wx:for="{{aiResult.allergy_alerts}}" wx:key="index">
+            <view class="ai-result-alert">
+              <text>{{item}}</text>
+            </view>
+          </block>
+        </view>
+
+        <!-- 营养提示 -->
+        <view class="ai-result-section" wx:if="{{aiResult.nutrition_tips}}">
+          <text class="ai-result-section-title">💡 营养提示</text>
+          <text class="ai-result-nutrition">{{aiResult.nutrition_tips}}</text>
+        </view>
+      </view>
+    </scroll-view>
+    <view class="ai-modal-footer">
+      <button class="ai-modal-cancel" bindtap="closeAIResultModal">关闭</button>
     </view>
   </view>
 </view>

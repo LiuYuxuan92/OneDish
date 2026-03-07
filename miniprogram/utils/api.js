@@ -98,6 +98,56 @@ function addFavorite(recipeId) {
   });
 }
 
+// 从自然语言提示生成周计划
+function generateMealPlanFromPrompt(prompt) {
+  return request({
+    url: '/meal-plans/generate-from-prompt',
+    method: 'POST',
+    data: { prompt },
+    withAuth: true
+  });
+}
+
+// 获取周计划列表
+function getMealPlans() {
+  return request({
+    url: '/meal-plans',
+    withAuth: true
+  });
+}
+
+// 生成 AI 宝宝版本
+function generateAIBabyVersion(recipeId, babyAgeMonths, useAI = true) {
+  return request({
+    url: '/pairing/generate-ai',
+    method: 'POST',
+    data: {
+      recipe_id: recipeId,
+      baby_age_months: babyAgeMonths,
+      use_ai: useAI
+    },
+    withAuth: true
+  });
+}
+
+// 获取用户 AI 配置
+function getAIConfig() {
+  return request({
+    url: '/ai-configs',
+    withAuth: true
+  });
+}
+
+// 更新用户 AI 配置
+function updateAIConfig(config) {
+  return request({
+    url: '/ai-configs',
+    method: 'PUT',
+    data: config,
+    withAuth: true
+  });
+}
+
 module.exports = {
   getTodayRecommendation,
   getRecipeList,
@@ -109,5 +159,10 @@ module.exports = {
   searchRecipes,
   getFavorites,
   removeFavorite,
-  addFavorite
+  addFavorite,
+  generateMealPlanFromPrompt,
+  getMealPlans,
+  generateAIBabyVersion,
+  getAIConfig,
+  updateAIConfig
 };

@@ -1,16 +1,28 @@
 const app = getApp();
+const api = require('../../utils/api');
 
 Page({
   data: {
     babyAge: null,
     babyAgeText: '',
     showPicker: false,
-    ageOptions: []
+    ageOptions: [],
+    // AI 配置相关
+    showAIConfigModal: false,
+    aiConfig: {
+      default_baby_age: 12,
+      prefer_ingredients: '',
+      exclude_ingredients: '',
+      cooking_time_limit: 30,
+      difficulty_preference: 'medium'
+    },
+    isSavingAI: false
   },
 
   onLoad() {
     this.initAgeOptions();
     this.loadBabyAge();
+    this.loadAIConfig();
   },
 
   initAgeOptions() {
@@ -99,5 +111,54 @@ Page({
       title: '简家厨 - 一鱼两吃',
       path: '/pages/home/home'
     };
+  },
+
+  // ========== AI 配置 ==========
+  async loadAIConfig() {
+    try {
+      const config = await api.getAIConfig();
+      if (config) {
+        this.setData({ aiConfig: { ...this.data.aiConfig, ...config } });
+      }
+    } catch (err) {
+      console.log('[profile] load AI config failed, using defaults');
+    }
+  },
+
+  openAIConfigModal() {
+    this.setData({ showAIConfigModal: true });
+  },
+
+  closeAIConfigModal() {
+    this.setData({ showAIConfigModal: false });
+  },
+
+  onAIConfigInput(e) {
+    const field = e.currentTarget.dataset.field;
+    const value = e.detail.value;
+    this.setData({
+      [`aiConfig.${field}`]: value
+    });
+  },
+
+  onDifficultySelect(e) {
+    const difficulty = e.currentTarget.dataset.difficulty;
+    this.setData({
+      'aiConfig.difficulty_preference': difficulty
+    });
+  },
+
+  async saveAIConfig() {
+    this.setData({ isSavingAI: true });
+
+    try {
+      await api.updateAIConfig(this.data.aiConfig);
+      wx.showToast({ title: '配置已保存', icon: 'success' });
+      this.setData({ showAIConfigModal: false, isSavingAI: false });
+    } catch (err) {
+      console.error('[profile] save AI config failed:', err);
+      this.setData({ isSavingAI: false });
+      wx.showToast({ title: err.message || '保存失败', icon: 'none' });
+    }
   }
 });
