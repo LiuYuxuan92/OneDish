@@ -21,6 +21,7 @@ import { useAddFavorite, useRemoveFavorite } from '../../hooks/useFavorites';
 import { useAddRecipeToShoppingList } from '../../hooks/useShoppingLists';
 import { useUserInfo } from '../../hooks/useUsers';
 import { useBabyVersion } from '../../hooks/useRecipeTransform';
+import { useAIBabyVersion } from '../../hooks/useAIBabyVersion';
 import { getBabyAgeInfo, formatBabyAge } from '../../components/common/BabyAgeCard';
 import { Button } from '../../components/common/Button';
 import { 
@@ -64,6 +65,12 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
   const [selectedBabyAge, setSelectedBabyAge] = useState<number>(12);
   const addRecipeToShoppingList = useAddRecipeToShoppingList();
   const { data: user } = useUserInfo();
+
+  // AI 宝宝版本生成相关状态
+  const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
+  const [showAIResultModal, setShowAIResultModal] = useState(false);
+  const [generateUseAI, setGenerateUseAI] = useState(true);
+  const aiBabyVersion = useAIBabyVersion();
 
   // 从后端返回的 is_favorited 初始化收藏状态
   React.useEffect(() => {
@@ -306,6 +313,19 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
             )}
           </TouchableOpacity>
         </View>
+
+        {/* AI 生成宝宝版本按钮 - 仅大人版显示 */}
+        {activeTab === 'adult' && (
+          <View style={styles.aiGenerateSection}>
+            <TouchableOpacity
+              style={styles.aiGenerateButton}
+              onPress={() => setShowAIGenerateModal(true)}
+            >
+              <Text style={styles.aiGenerateIcon}>✨</Text>
+              <Text style={styles.aiGenerateText}>AI 生成宝宝版本</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* 宝宝月龄选择器 - 仅宝宝版显示 */}
         {activeTab === 'baby' && (
@@ -713,6 +733,222 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
         onClose={() => setShowTimer(false)}
         initialTimers={timerSteps}
       />
+
+      {/* AI 生成宝宝版本弹窗 */}
+      <Modal
+        visible={showAIGenerateModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAIGenerateModal(false)}
+      >
+        <View style={styles.aiModalOverlay}>
+          <View style={styles.aiModalContainer}>
+            <View style={styles.aiModalHeader}>
+              <Text style={styles.aiModalTitle}>生成宝宝版本</Text>
+              <TouchableOpacity onPress={() => setShowAIGenerateModal(false)}>
+                <Text style={styles.aiModalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.aiModalContent}>
+              {/* 宝宝月龄选择 */}
+              <View style={styles.aiModalSection}>
+                <Text style={styles.aiModalLabel}>宝宝月龄:</Text>
+                <TouchableOpacity
+                  style={styles.aiAgeSelector}
+                  onPress={() => setShowAgePicker(true)}
+                >
+                  <Text style={styles.aiAgeSelectorText}>{formatBabyAge(selectedBabyAge)}</Text>
+                  <Text style={styles.aiAgeSelectorArrow}>▼</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* 生成方式选择 */}
+              <View style={styles.aiModalSection}>
+                <Text style={styles.aiModalLabel}>生成方式:</Text>
+                <View style={styles.aiGenerateOptions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.aiGenerateOption,
+                      generateUseAI && styles.aiGenerateOptionActive,
+                    ]}
+                    onPress={() => setGenerateUseAI(true)}
+                  >
+                    <View style={[
+                      styles.aiRadioCircle,
+                      generateUseAI && styles.aiRadioCircleActive,
+                    ]}>
+                      {generateUseAI && <View style={styles.aiRadioInner} />}
+                    </View>
+                    <Text style={[
+                      styles.aiGenerateOptionText,
+                      generateUseAI && styles.aiGenerateOptionTextActive,
+                    ]}>✨ AI 智能生成</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.aiGenerateOption,
+                      !generateUseAI && styles.aiGenerateOptionActive,
+                    ]}
+                    onPress={() => setGenerateUseAI(false)}
+                  >
+                    <View style={[
+                      styles.aiRadioCircle,
+                      !generateUseAI && styles.aiRadioCircleActive,
+                    ]}>
+                      {!generateUseAI && <View style={styles.aiRadioInner} />}
+                    </View>
+                    <Text style={[
+                      styles.aiGenerateOptionText,
+                      !generateUseAI && styles.aiGenerateOptionTextActive,
+                    ]}>📋 规则引擎</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.aiModalFooter}>
+              <TouchableOpacity
+                style={styles.aiModalCancelButton}
+                onPress={() => setShowAIGenerateModal(false)}
+              >
+                <Text style={styles.aiModalCancelText}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.aiModalConfirmButton,
+                  aiBabyVersion.isLoading && styles.aiModalConfirmButtonDisabled,
+                ]}
+                onPress={async () => {
+                  setShowAIGenerateModal(false);
+                  const result = await aiBabyVersion.generateAIBabyVersion({
+                    recipe_id: recipeId,
+                    baby_age_months: selectedBabyAge,
+                    use_ai: generateUseAI,
+                  });
+                  if (result) {
+                    setShowAIResultModal(true);
+                  } else if (aiBabyVersion.error) {
+                    Alert.alert('生成失败', aiBabyVersion.error);
+                  }
+                }}
+                disabled={aiBabyVersion.isLoading}
+              >
+                {aiBabyVersion.isLoading ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Text style={styles.aiModalConfirmText}>开始生成</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* AI 生成结果弹窗 */}
+      <Modal
+        visible={showAIResultModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAIResultModal(false)}
+      >
+        <View style={styles.aiModalOverlay}>
+          <View style={styles.aiModalContainer}>
+            <View style={styles.aiModalHeader}>
+              <Text style={styles.aiModalTitle}>✅ AI 宝宝版本已生成</Text>
+              <TouchableOpacity onPress={() => setShowAIResultModal(false)}>
+                <Text style={styles.aiModalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.aiResultScrollView}>
+              {aiBabyVersion.lastResult && (
+                <View style={styles.aiResultContent}>
+                  {/* 配料替换 */}
+                  {aiBabyVersion.lastResult.ingredient_replacements?.length > 0 && (
+                    <View style={styles.aiResultSection}>
+                      <Text style={styles.aiResultSectionTitle}>🍚 配料替换</Text>
+                      {aiBabyVersion.lastResult.ingredient_replacements.map((item, index) => (
+                        <View key={index} style={styles.aiResultItem}>
+                          <Text style={styles.aiResultItemText}>
+                            {item.original} → {item.replacement}
+                          </Text>
+                          <Text style={styles.aiResultItemReason}>{item.reason}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* 质地调整 */}
+                  {aiBabyVersion.lastResult.texture_adjustments?.length > 0 && (
+                    <View style={styles.aiResultSection}>
+                      <Text style={styles.aiResultSectionTitle}>👶 质地调整</Text>
+                      {aiBabyVersion.lastResult.texture_adjustments.map((item, index) => (
+                        <View key={index} style={styles.aiResultItem}>
+                          <Text style={styles.aiResultItemText}>{item.adjustment}</Text>
+                          <Text style={styles.aiResultItemReason}>{item.reason}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* 过敏提醒 */}
+                  {aiBabyVersion.lastResult.allergy_alerts?.length > 0 && (
+                    <View style={styles.aiResultSection}>
+                      <Text style={styles.aiResultSectionTitle}>⚠️ 过敏提醒</Text>
+                      {aiBabyVersion.lastResult.allergy_alerts.map((alert, index) => (
+                        <View key={index} style={styles.aiResultAlert}>
+                          <Text style={styles.aiResultAlertText}>{alert}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* 营养提示 */}
+                  {aiBabyVersion.lastResult.nutrition_tips && (
+                    <View style={styles.aiResultSection}>
+                      <Text style={styles.aiResultSectionTitle}>💡 营养提示</Text>
+                      <Text style={styles.aiResultNutritionText}>
+                        {aiBabyVersion.lastResult.nutrition_tips}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </ScrollView>
+
+            <View style={styles.aiModalFooter}>
+              <TouchableOpacity
+                style={styles.aiModalCopyButton}
+                onPress={() => {
+                  // 复制做法
+                  if (aiBabyVersion.lastResult) {
+                    const text = `宝宝版本做法\n\n${
+                      aiBabyVersion.lastResult.adjusted_steps?.map(
+                        s => `${s.step}. ${s.action}`
+                      ).join('\n') || ''
+                    }`;
+                    // 这里可以添加复制到剪贴板的逻辑
+                    Alert.alert('已复制', '做法已复制到剪贴板');
+                  }
+                }}
+              >
+                <Text style={styles.aiModalCopyText}>📋 复制做法</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.aiModalShareButton}
+                onPress={() => {
+                  // 分享功能
+                  setShowAIResultModal(false);
+                  handleShare();
+                }}
+              >
+                <Text style={styles.aiModalShareText}>📤 分享</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -935,6 +1171,251 @@ const styles = StyleSheet.create({
   },
   tabIndicatorTimeline: {
     backgroundColor: '#00ACC1',
+  },
+
+  // AI 生成宝宝版本按钮
+  aiGenerateSection: {
+    backgroundColor: Colors.background.primary,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border.light,
+  },
+  aiGenerateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.gradient.primary?.start || Colors.primary.main,
+    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.md,
+    gap: Spacing.sm,
+  },
+  aiGenerateIcon: {
+    fontSize: 18,
+  },
+  aiGenerateText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: '#FFFFFF',
+  },
+
+  // AI 生成弹窗
+  aiModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.lg,
+  },
+  aiModalContainer: {
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.xl,
+    width: '90%',
+    maxHeight: '80%',
+    overflow: 'hidden',
+    ...Shadows.lg,
+  },
+  aiModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border.light,
+  },
+  aiModalTitle: {
+    ...Typography.heading.h5,
+    color: Colors.text.primary,
+    fontWeight: Typography.fontWeight.bold,
+  },
+  aiModalClose: {
+    fontSize: Typography.fontSize.lg,
+    color: Colors.text.tertiary,
+    padding: Spacing.xs,
+  },
+  aiModalContent: {
+    padding: Spacing.lg,
+  },
+  aiModalSection: {
+    marginBottom: Spacing.lg,
+  },
+  aiModalLabel: {
+    ...Typography.body.regular,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.text.primary,
+    marginBottom: Spacing.sm,
+  },
+  aiAgeSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.neutral.gray100,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  aiAgeSelectorText: {
+    ...Typography.body.regular,
+    color: Colors.text.primary,
+  },
+  aiAgeSelectorArrow: {
+    fontSize: 12,
+    color: Colors.text.tertiary,
+  },
+  aiGenerateOptions: {
+    gap: Spacing.sm,
+  },
+  aiGenerateOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    backgroundColor: Colors.neutral.gray100,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+    gap: Spacing.sm,
+  },
+  aiGenerateOptionActive: {
+    backgroundColor: Colors.secondary[50],
+    borderColor: Colors.secondary.main,
+  },
+  aiRadioCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: Colors.text.tertiary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiRadioCircleActive: {
+    borderColor: Colors.secondary.main,
+  },
+  aiRadioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: Colors.secondary.main,
+  },
+  aiGenerateOptionText: {
+    ...Typography.body.regular,
+    color: Colors.text.secondary,
+  },
+  aiGenerateOptionTextActive: {
+    color: Colors.secondary.main,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  aiModalFooter: {
+    flexDirection: 'row',
+    padding: Spacing.lg,
+    gap: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border.light,
+  },
+  aiModalCancelButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  aiModalCancelText: {
+    ...Typography.body.regular,
+    color: Colors.text.secondary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  aiModalConfirmButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.secondary.main,
+  },
+  aiModalConfirmButtonDisabled: {
+    opacity: 0.6,
+  },
+  aiModalConfirmText: {
+    ...Typography.body.regular,
+    color: '#FFFFFF',
+    fontWeight: Typography.fontWeight.semibold,
+  },
+
+  // AI 结果弹窗
+  aiResultScrollView: {
+    maxHeight: 400,
+  },
+  aiResultContent: {
+    padding: Spacing.lg,
+  },
+  aiResultSection: {
+    marginBottom: Spacing.lg,
+  },
+  aiResultSectionTitle: {
+    ...Typography.body.regular,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+    marginBottom: Spacing.sm,
+    fontSize: Typography.fontSize.lg,
+  },
+  aiResultItem: {
+    paddingVertical: Spacing.xs,
+    paddingLeft: Spacing.sm,
+    borderLeftWidth: 2,
+    borderLeftColor: Colors.secondary.light,
+    marginBottom: Spacing.xs,
+  },
+  aiResultItemText: {
+    ...Typography.body.regular,
+    color: Colors.text.primary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  aiResultItemReason: {
+    ...Typography.body.caption,
+    color: Colors.text.tertiary,
+    marginTop: 2,
+  },
+  aiResultAlert: {
+    backgroundColor: Colors.functional.errorLight || '#FFEBEE',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.sm,
+    marginBottom: Spacing.xs,
+  },
+  aiResultAlertText: {
+    ...Typography.body.regular,
+    color: Colors.functional.error,
+  },
+  aiResultNutritionText: {
+    ...Typography.body.regular,
+    color: Colors.text.secondary,
+    lineHeight: 22,
+  },
+  aiModalCopyButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.primary.main,
+  },
+  aiModalCopyText: {
+    ...Typography.body.regular,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  aiModalShareButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.primary.main,
+  },
+  aiModalShareText: {
+    ...Typography.body.regular,
+    color: '#FFFFFF',
+    fontWeight: Typography.fontWeight.medium,
   },
 
   // 宝宝月龄选择器

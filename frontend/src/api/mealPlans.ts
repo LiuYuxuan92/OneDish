@@ -124,4 +124,8 @@ export const mealPlansApi = {
     apiClient.post(`/meal-plans/share/${shareId}/${planId}/complete`),
   regenerateWeeklyShareInvite: (shareId: string) => apiClient.post<{ id: string; invite_code: string; share_link: string; old_invite_code: string }>(`/meal-plans/share/${shareId}/regenerate`),
   removeWeeklyShareMember: (shareId: string, memberId: string) => apiClient.delete(`/meal-plans/share/${shareId}/members/${memberId}`),
+
+  // 自然语言生成一周计划
+  generateFromPrompt: (prompt: string, baby_age_months?: number) =>
+    apiClient.post<WeeklyPlanResponse>('/meal-plans/generate-from-prompt', { prompt, baby_age_months }),
 };

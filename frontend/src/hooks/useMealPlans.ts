@@ -227,3 +227,33 @@ export function useRemoveWeeklyShareMember(shareId?: string) {
     },
   });
 }
+
+/**
+ * 自然语言生成一周计划
+ */
+export function useGenerateFromPrompt() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ prompt, baby_age_months }: { prompt: string; baby_age_months?: number }) => {
+      const result = await mealPlansApi.generateFromPrompt(prompt, baby_age_months);
+      return result;
+    },
+
+    onSuccess: (newData) => {
+      // 更新相关查询缓存
+      queryClient.setQueryData(['mealPlans', 'weekly', undefined], newData);
+      queryClient.invalidateQueries({
+        queryKey: ['mealPlans'],
+        refetchType: 'none',
+      });
+    },
+
+    onError: (error: unknown) => {
+      const err = error as { statusCode?: number; response?: { status?: number } };
+      if (err?.statusCode === 429 || err?.response?.status === 429) {
+        // 429 错误时不缓存，允许用户重试
+      }
+    },
+  });
+}
