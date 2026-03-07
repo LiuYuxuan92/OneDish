@@ -164,3 +164,11 @@ export function ResetIcon({ size = 24, color = Colors.text.secondary }: IconProp
 export function RefreshCwIcon({ size = 24, color = Colors.text.secondary }: IconProps) {
   return <Ionicons name="refresh" size={size} color={color} />;
 }
+
+export function EyeIcon({ size = 24, color = Colors.text.secondary }: IconProps) {
+  return <Ionicons name="eye-outline" size={size} color={color} />;
+}
+
+export function EyeOffIcon({ size = 24, color = Colors.text.secondary }: IconProps) {
+  return <Ionicons name="eye-off-outline" size={size} color={color} />;
+}

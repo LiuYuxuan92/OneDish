@@ -15,6 +15,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../contexts/ThemeContext';
 import { quotaApi, QuotaStatus } from '../../api/quota';
 import { useRecommendationFeedbackStats } from '../../hooks/useMealPlans';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { ProfileStackParamList } from '../../types';
 
 // 需要清除的缓存键列表
 const CACHE_KEYS = [
@@ -23,7 +25,9 @@ const CACHE_KEYS = [
   '@recipe_list_cache',
 ];
 
-export function SettingsScreen() {
+type Props = NativeStackScreenProps<ProfileStackParamList, 'Settings'>;
+
+export function SettingsScreen({ navigation }: Props) {
   const { theme, themeMode, setThemeMode, themePreviews, isDark } = useTheme();
   const [notifications, setNotifications] = React.useState(true);
   const [showThemeModal, setShowThemeModal] = React.useState(false);
@@ -71,6 +75,7 @@ export function SettingsScreen() {
   const settings = [
     { icon: '🔔', title: '推送通知', type: 'switch', value: notifications, onValueChange: setNotifications },
     { icon: '🎨', title: '主题', type: 'navigation', value: themePreviews.find(t => t.mode === themeMode)?.name || '温暖橙', onPress: () => setShowThemeModal(true) },
+    { icon: '🤖', title: 'AI 配置', type: 'navigation', onPress: () => navigation.navigate('AISettings') },
     { icon: '👨‍👩‍👧', title: '家庭成员', type: 'navigation', onPress: () => {} },
     { icon: '🍽️', title: '饮食偏好', type: 'navigation', onPress: () => {} },
     { icon: '🌐', title: '语言', type: 'navigation', value: '简体中文', onPress: () => {} },
