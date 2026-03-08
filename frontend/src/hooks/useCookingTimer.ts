@@ -60,7 +60,7 @@ export interface UseCookingTimerReturn {
 
 export const useCookingTimer = (): UseCookingTimerReturn => {
   const [timers, setTimers] = useState<TimerStep[]>([]);
-  const intervalRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const intervalRefs = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
 
   // 清理interval
   const clearTimerInterval = useCallback((id: string) => {

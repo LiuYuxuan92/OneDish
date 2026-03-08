@@ -214,7 +214,7 @@ describe('HomeRecommendation', () => {
         preferredCategories: ['鱼类', '粥类'],
         currentStage: undefined,
         timeWindowMinutes: 10,
-        weights: null,
+        weights: undefined,
       });
 
       expect(candidate?.id).toBe('match');
