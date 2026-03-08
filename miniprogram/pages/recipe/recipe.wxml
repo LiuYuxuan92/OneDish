@@ -13,7 +13,7 @@
       <view class="recipe-card" bindtap="selectRecipe" data-id="{{item.id}}">
         <image 
           class="recipe-cover" 
-          src="{{item.cover_url || '/assets/placeholder-food.png'}}" 
+          src="{{item.cover_url || ''}}" 
           mode="aspectFill"
           bindload="onImageLoad"
         />
@@ -44,7 +44,7 @@
 
   <!-- 空状态 -->
   <view class="empty" wx:if="{{!loading && !recipes.length && !detail}}">
-    <image class="empty-icon" src="/assets/empty.png" mode="aspectFit" />
+    <text class="empty-icon">📭</text>
     <text class="empty-text">暂无菜谱</text>
   </view>
 
@@ -58,7 +58,7 @@
       <scroll-view class="detail-body" scroll-y>
         <image 
           class="detail-cover" 
-          src="{{detail.cover_url || '/assets/placeholder-food.png'}}" 
+          src="{{detail.cover_url || ''}}" 
           mode="aspectFill"
         />
         <view class="detail-meta">

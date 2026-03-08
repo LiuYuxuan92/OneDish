@@ -41,7 +41,7 @@
       <view class="result-item" bindtap="goToRecipe" data-id="{{item.id}}">
         <image 
           class="result-cover" 
-          src="{{item.cover_url || '/assets/placeholder-food.png'}}" 
+          src="{{item.cover_url || ''}}" 
           mode="aspectFill"
         />
         <view class="result-info">

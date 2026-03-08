@@ -18,14 +18,14 @@
 
   <!-- 错误态 -->
   <view class="error" wx:elif="{{error}}">
-    <image class="error-icon" src="/assets/error.png" mode="aspectFit" />
+    <text class="error-icon">⚠️</text>
     <text class="error-text">{{error}}</text>
     <button class="btn-retry" bindtap="loadTodayRecommendation">重新加载</button>
   </view>
 
   <!-- 空态 -->
   <view class="empty" wx:elif="{{!recommendation}}">
-    <image class="empty-icon" src="/assets/empty.png" mode="aspectFit" />
+    <text class="empty-icon">📭</text>
     <text class="empty-text">暂无推荐菜谱</text>
     <text class="empty-hint">去菜谱页看看有什么好吃的吧</text>
     <button class="btn-go" bindtap="goRecipe">浏览菜谱</button>
@@ -52,7 +52,7 @@
     <view class="card">
       <image 
         class="cover" 
-        src="{{currentVersion === 'baby' && recommendation.baby_version?.cover_url ? recommendation.baby_version.cover_url : recommendation.cover_url || '/assets/placeholder-food.png'}}" 
+        src="{{currentVersion === 'baby' && recommendation.baby_version?.cover_url ? recommendation.baby_version.cover_url : recommendation.cover_url || ''}}" 
         mode="aspectFill"
         bindtap="goRecipe"
       />

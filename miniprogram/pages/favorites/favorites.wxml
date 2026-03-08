@@ -12,7 +12,7 @@
         <view class="item-content" bindtap="goToRecipe" data-id="{{item.id}}">
           <image 
             class="item-cover" 
-            src="{{item.cover_url || '/assets/placeholder-food.png'}}" 
+            src="{{item.cover_url || ''}}" 
             mode="aspectFill"
           />
           <view class="item-info">
@@ -32,7 +32,7 @@
 
   <!-- 空状态 -->
   <view class="empty" wx:if="{{!loading && !favorites.length && !localFavorites.length}}">
-    <image class="empty-icon" src="/assets/empty.png" mode="aspectFit" />
+    <text class="empty-icon">📭</text>
     <text class="empty-text">暂无收藏</text>
     <text class="empty-hint">去发现喜欢的菜谱吧</text>
     <button class="btn-go" bindtap="goToRecipeList">浏览菜谱</button>
