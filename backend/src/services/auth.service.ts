@@ -1,13 +1,18 @@
 import { db } from '../config/database';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
+import { Knex } from 'knex';
 import { User } from '../types';
 import { jwtConfig, isProduction } from '../config/jwt';
 
 export class AuthService {
+  private table(trx?: Knex.Transaction) {
+    return (trx || db)('users');
+  }
+
   // 根据用户名或邮箱查找用户
-  async findByUsernameOrEmail(username?: string, email?: string) {
-    return db('users')
+  async findByUsernameOrEmail(username?: string, email?: string, trx?: Knex.Transaction) {
+    return this.table(trx)
       .where(function () {
         if (username) {
           this.orWhere('username', username);
@@ -20,18 +25,18 @@ export class AuthService {
   }
 
   // 根据邮箱查找用户
-  async findByEmail(email: string) {
-    return db('users').where('email', email).first();
+  async findByEmail(email: string, trx?: Knex.Transaction) {
+    return this.table(trx).where('email', email).first();
   }
 
   // 根据ID查找用户
-  async findById(userId: string) {
-    return db('users').where('id', userId).first();
+  async findById(userId: string, trx?: Knex.Transaction) {
+    return this.table(trx).where('id', userId).first();
   }
 
   // 根据微信openid查找用户
-  async findByWechatOpenid(openid: string) {
-    return db('users').where('wechat_openid', openid).first();
+  async findByWechatOpenid(openid: string, trx?: Knex.Transaction) {
+    return this.table(trx).where('wechat_openid', openid).first();
   }
 
   // 创建用户
@@ -41,13 +46,13 @@ export class AuthService {
     password: string;
     phone?: string;
     preferences?: Record<string, any>;
-  }) {
+  }, trx?: Knex.Transaction) {
     const { username, email, password, phone, preferences } = data;
 
     // 生成密码哈希
     const password_hash = await bcrypt.hash(password, 10);
 
-    const [user] = await db('users')
+    const [user] = await this.table(trx)
       .insert({
         username,
         email,
@@ -67,13 +72,13 @@ export class AuthService {
     openid: string;
     avatar_url?: string;
     password: string;
-  }) {
+  }, trx?: Knex.Transaction) {
     const { username, openid, avatar_url, password } = data;
 
     // 生成密码哈希
     const password_hash = await bcrypt.hash(password, 10);
 
-    const [user] = await db('users')
+    const [user] = await this.table(trx)
       .insert({
         username,
         wechat_openid: openid,

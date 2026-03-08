@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
 import { AuthService } from '../services/auth.service';
+import { AccountMergeService } from '../services/account-merge.service';
 import { logger } from '../utils/logger';
 import { jwtConfig, isProduction } from '../config/jwt';
 import { tokenBlacklistService } from '../services/token-blacklist.service';
@@ -12,9 +13,72 @@ tokenBlacklistService.startCleanupJob();
 
 export class AuthController {
   private authService: AuthService;
+  private accountMergeService: AccountMergeService;
 
   constructor() {
     this.authService = new AuthService();
+    this.accountMergeService = new AccountMergeService();
+  }
+
+  private buildAuthSuccessPayload(user: any, token: string, refreshToken: string, extra: Record<string, any> = {}) {
+    return {
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        avatar_url: user.avatar_url,
+        is_guest: Boolean(extra.is_guest),
+        role: (user as any).role || 'user',
+      },
+      token,
+      refresh_token: refreshToken,
+      ...extra,
+    };
+  }
+
+  private async getCurrentGuestUser(req: Request) {
+    const currentUserId = (req as any).user?.user_id;
+    if (!currentUserId) {
+      throw new Error('GUEST_AUTH_REQUIRED');
+    }
+
+    const currentUser = await this.authService.findById(currentUserId);
+    const currentPrefs = currentUser?.preferences && typeof currentUser.preferences === 'string'
+      ? (() => {
+          try {
+            return JSON.parse(currentUser.preferences);
+          } catch {
+            return {};
+          }
+        })()
+      : (currentUser?.preferences || {});
+
+    if (!currentUser || !currentPrefs?.is_guest) {
+      throw new Error('CURRENT_USER_NOT_GUEST');
+    }
+
+    return currentUser;
+  }
+
+  private handleUpgradeError(error: any, res: Response, fallbackMessage: string) {
+    const message = error instanceof Error ? error.message : '';
+    if (message === 'CURRENT_USER_NOT_GUEST' || message === 'GUEST_AUTH_REQUIRED') {
+      return res.status(400).json({ code: 400, message: '当前账号不是游客账号，无法执行升级合并', data: null });
+    }
+    if (message === 'MERGE_TARGET_SAME_AS_GUEST') {
+      return res.status(400).json({ code: 400, message: '当前账号已是目标账号，无需合并', data: null });
+    }
+    if (message === 'MERGE_SOURCE_NOT_GUEST') {
+      return res.status(400).json({ code: 400, message: '仅支持游客账号升级合并', data: null });
+    }
+    if (message === 'MERGE_TARGET_IS_GUEST') {
+      return res.status(400).json({ code: 400, message: '目标账号不能是游客账号', data: null });
+    }
+    if (message === 'MERGE_USER_NOT_FOUND') {
+      return res.status(404).json({ code: 404, message: '账号不存在，无法完成游客迁移', data: null });
+    }
+    logger.error(fallbackMessage, { error });
+    return res.status(500).json({ code: 500, message: fallbackMessage, data: null });
   }
 
   // 用户注册
@@ -56,16 +120,7 @@ export class AuthController {
       res.json({
         code: 200,
         message: '注册成功',
-        data: {
-          user: {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            role: (user as any).role || 'user',
-          },
-          token,
-          refresh_token: refreshToken,
-        },
+        data: this.buildAuthSuccessPayload(user, token, refreshToken),
       });
     } catch (error) {
       logger.error('Failed to register user', { error });
@@ -117,17 +172,7 @@ export class AuthController {
       res.json({
         code: 200,
         message: '登录成功',
-        data: {
-          user: {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            avatar_url: user.avatar_url,
-            role: (user as any).role || 'user',
-          },
-          token,
-          refresh_token: refreshToken,
-        },
+        data: this.buildAuthSuccessPayload(user, token, refreshToken),
       });
     } catch (error) {
       logger.error('Failed to login', { error });
@@ -321,16 +366,7 @@ export class AuthController {
       res.json({
         code: 200,
         message: '微信登录成功',
-        data: {
-          user: {
-            id: wechatUser.id,
-            username: wechatUser.username,
-            avatar_url: wechatUser.avatar_url,
-            role: (wechatUser as any).role || 'user',
-          },
-          token,
-          refresh_token: refreshToken,
-        },
+        data: this.buildAuthSuccessPayload(wechatUser, token, refreshToken),
       });
     } catch (error) {
       logger.error('Failed to login via wechat', { error });
@@ -339,6 +375,136 @@ export class AuthController {
         message: '微信登录失败',
         data: null,
       });
+    }
+  };
+
+  upgradeGuestRegister = async (req: Request, res: Response) => {
+    try {
+      const guestUser = await this.getCurrentGuestUser(req);
+      const { username, email, password, phone } = req.body;
+
+      if (!username || !password) {
+        return res.status(400).json({ code: 400, message: '用户名和密码不能为空', data: null });
+      }
+
+      const existingUser = await this.authService.findByUsernameOrEmail(username, email);
+      if (existingUser) {
+        return res.status(400).json({ code: 400, message: '用户名或邮箱已存在', data: null });
+      }
+
+      const user = await this.authService.createUser({ username, email, password, phone });
+      const mergeSummary = await this.accountMergeService.mergeGuestIntoUser(guestUser.id, user.id);
+      const mergedUser = await this.authService.findById(user.id);
+      const token = this.authService.generateToken(mergedUser as any);
+      const refreshToken = this.authService.generateRefreshToken(mergedUser as any);
+
+      res.json({
+        code: 200,
+        message: '注册并迁移成功',
+        data: this.buildAuthSuccessPayload(mergedUser, token, refreshToken, { merge_summary: mergeSummary }),
+      });
+    } catch (error) {
+      return this.handleUpgradeError(error, res, '游客注册升级失败');
+    }
+  };
+
+  upgradeGuestLogin = async (req: Request, res: Response) => {
+    try {
+      const guestUser = await this.getCurrentGuestUser(req);
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ code: 400, message: '邮箱和密码不能为空', data: null });
+      }
+
+      const user = await this.authService.findByEmail(email);
+      if (!user) {
+        return res.status(401).json({ code: 401, message: '邮箱或密码错误', data: null });
+      }
+
+      const isValidPassword = await bcrypt.compare(password, user.password_hash);
+      if (!isValidPassword) {
+        return res.status(401).json({ code: 401, message: '邮箱或密码错误', data: null });
+      }
+
+      const mergeSummary = await this.accountMergeService.mergeGuestIntoUser(guestUser.id, user.id);
+      const mergedUser = await this.authService.findById(user.id);
+      const token = this.authService.generateToken(mergedUser as any);
+      const refreshToken = this.authService.generateRefreshToken(mergedUser as any);
+
+      res.json({
+        code: 200,
+        message: '登录并迁移成功',
+        data: this.buildAuthSuccessPayload(mergedUser, token, refreshToken, { merge_summary: mergeSummary }),
+      });
+    } catch (error) {
+      return this.handleUpgradeError(error, res, '游客登录升级失败');
+    }
+  };
+
+  upgradeGuestWechat = async (req: Request, res: Response) => {
+    try {
+      const guestUser = await this.getCurrentGuestUser(req);
+      const { code, userInfo } = req.body;
+
+      if (!code) {
+        return res.status(400).json({ code: 400, message: 'code 不能为空', data: null });
+      }
+
+      let openid: string;
+      if (isProduction && process.env.WECHAT_APP_ID && process.env.WECHAT_APP_SECRET) {
+        try {
+          const wxRes = await axios.get<{
+            errcode?: number;
+            errmsg?: string;
+            openid?: string;
+            session_key?: string;
+          }>('https://api.weixin.qq.com/sns/jscode2session', {
+            params: {
+              appid: process.env.WECHAT_APP_ID,
+              secret: process.env.WECHAT_APP_SECRET,
+              js_code: code,
+              grant_type: 'authorization_code',
+            },
+          });
+
+          if (wxRes.data.errcode || !wxRes.data.openid) {
+            return res.status(400).json({ code: 400, message: '微信登录验证失败', data: null });
+          }
+
+          openid = wxRes.data.openid;
+        } catch (error) {
+          logger.error('WeChat API request failed during guest upgrade', { error });
+          return res.status(500).json({ code: 500, message: '微信登录验证失败', data: null });
+        }
+      } else {
+        openid = `wechat_${code}`;
+      }
+
+      let wechatUser = await this.authService.findByWechatOpenid(openid);
+      if (!wechatUser) {
+        const username = userInfo?.nickName || `微信用户_${openid.slice(-6)}`;
+        const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+        wechatUser = await this.authService.createWechatUser({
+          username,
+          openid,
+          avatar_url: userInfo?.avatarUrl || null,
+          password: randomPassword,
+        });
+      }
+
+      const mergeSummary = await this.accountMergeService.mergeGuestIntoUser(guestUser.id, wechatUser.id);
+      const mergedUser = await this.authService.findById(wechatUser.id);
+      const token = this.authService.generateToken(mergedUser as any);
+      const refreshToken = this.authService.generateRefreshToken(mergedUser as any);
+
+      res.json({
+        code: 200,
+        message: '微信登录并迁移成功',
+        data: this.buildAuthSuccessPayload(mergedUser, token, refreshToken, { merge_summary: mergeSummary }),
+      });
+    } catch (error) {
+      return this.handleUpgradeError(error, res, '游客微信升级失败');
     }
   };
 
@@ -375,17 +541,7 @@ export class AuthController {
       res.json({
         code: 200,
         message: '游客登录成功',
-        data: {
-          user: {
-            id: guestUser.id,
-            username: guestUser.username,
-            email: guestUser.email,
-            is_guest: true,
-            role: (guestUser as any).role || 'user',
-          },
-          token,
-          refresh_token: refreshToken,
-        },
+        data: this.buildAuthSuccessPayload(guestUser, token, refreshToken, { is_guest: true }),
       });
     } catch (error) {
       logger.error('Failed to guest login', { error });

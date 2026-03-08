@@ -341,7 +341,6 @@ export class ShoppingListService {
 
     await db('shopping_lists')
       .where('id', listId)
-      .where('user_id', userId)
       .update({ is_completed: true });
   }
 

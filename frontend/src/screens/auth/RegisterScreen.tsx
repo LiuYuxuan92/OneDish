@@ -18,7 +18,7 @@ export function RegisterScreen({ navigation }: any) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, isGuest } = useAuth();
 
   // 邮箱格式验证
   const isValidEmail = (email: string) => {
@@ -49,11 +49,16 @@ export function RegisterScreen({ navigation }: any) {
 
     setLoading(true);
     try {
-      const response = await authApi.register({ username, email, password });
+      if (isGuest) {
+        Alert.alert('正在迁移', '正在迁移你的收藏与计划，请稍候...');
+      }
+      const response = isGuest
+        ? await authApi.upgradeGuestRegister({ username, email, password })
+        : await authApi.register({ username, email, password });
       const payload = response?.data || response;
       if (payload?.token) {
         // 注册成功，自动登录
-        await login(payload.token, payload.refresh_token);
+        await login(payload.token, payload.refresh_token, payload.user);
       } else {
         Alert.alert('注册成功', '请登录');
         navigation.goBack();
@@ -110,7 +115,7 @@ export function RegisterScreen({ navigation }: any) {
           disabled={loading}
         >
           <Text style={styles.buttonText}>
-            {loading ? '注册中...' : '注册'}
+            {loading ? (isGuest ? '迁移中...' : '注册中...') : '注册'}
           </Text>
         </TouchableOpacity>
 

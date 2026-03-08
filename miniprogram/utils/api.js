@@ -57,11 +57,12 @@ function getShoppingLists() {
   return request({ url: '/shopping-lists', withAuth: true });
 }
 
-function wechatLogin(code, userInfo) {
+function wechatLogin(code, userInfo, options = {}) {
   return request({
-    url: '/auth/wechat',
+    url: options.upgradeGuest ? '/auth/upgrade-guest/wechat' : '/auth/wechat',
     method: 'POST',
-    data: { code, userInfo }
+    data: { code, userInfo },
+    withAuth: !!options.upgradeGuest
   });
 }
 
@@ -70,6 +71,24 @@ function guestLogin(deviceId) {
     url: '/auth/guest',
     method: 'POST',
     data: deviceId ? { device_id: deviceId } : {}
+  });
+}
+
+function upgradeGuestRegister(payload) {
+  return request({
+    url: '/auth/upgrade-guest/register',
+    method: 'POST',
+    data: payload,
+    withAuth: true
+  });
+}
+
+function upgradeGuestLogin(payload) {
+  return request({
+    url: '/auth/upgrade-guest/login',
+    method: 'POST',
+    data: payload,
+    withAuth: true
   });
 }
 
@@ -181,6 +200,8 @@ module.exports = {
   getShoppingLists,
   wechatLogin,
   guestLogin,
+  upgradeGuestRegister,
+  upgradeGuestLogin,
   searchRecipes,
   getFavorites,
   removeFavorite,

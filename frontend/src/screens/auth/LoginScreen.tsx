@@ -16,7 +16,7 @@ export function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, isGuest } = useAuth();
 
   // 邮箱格式验证
   const isValidEmail = (email: string) => {
@@ -37,11 +37,16 @@ export function LoginScreen({ navigation }: any) {
 
     setLoading(true);
     try {
-      const response = await authApi.login({ email, password });
+      if (isGuest) {
+        Alert.alert('正在迁移', '正在迁移你的收藏与计划，请稍候...');
+      }
+      const response = isGuest
+        ? await authApi.upgradeGuestLogin({ email, password })
+        : await authApi.login({ email, password });
       const payload = response?.data || response;
 
       if (payload?.token) {
-        await login(payload.token, payload.refresh_token);
+        await login(payload.token, payload.refresh_token, payload.user);
         // RootNavigator will automatically switch to MainNavigator
       } else {
         Alert.alert('登录失败', response?.message || '未知错误');
@@ -83,7 +88,7 @@ export function LoginScreen({ navigation }: any) {
           disabled={loading}
         >
           <Text style={styles.buttonText}>
-            {loading ? '登录中...' : '登录'}
+            {loading ? (isGuest ? '迁移中...' : '登录中...') : '登录'}
           </Text>
         </TouchableOpacity>
 

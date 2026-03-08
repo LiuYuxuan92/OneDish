@@ -14,6 +14,16 @@ function getOrCreateGuestDeviceId() {
   return deviceId;
 }
 
+function isGuestUser(user) {
+  return !!(user && user.is_guest);
+}
+
+function persistAuthResult(data) {
+  wx.setStorageSync('token', data.token);
+  wx.setStorageSync('refresh_token', data.refresh_token);
+  wx.setStorageSync('userInfo', data.user);
+}
+
 Page({
   data: {
     loading: false,
@@ -61,10 +71,15 @@ Page({
   },
 
   doWechatLogin(code, userInfo) {
-    api.wechatLogin(code, userInfo).then((data) => {
-      wx.setStorageSync('token', data.token);
-      wx.setStorageSync('refresh_token', data.refresh_token);
-      wx.setStorageSync('userInfo', data.user);
+    const currentUser = wx.getStorageSync('userInfo');
+    const upgradeGuest = isGuestUser(currentUser) && !!wx.getStorageSync('token');
+
+    if (upgradeGuest) {
+      wx.showLoading({ title: '迁移你的收藏与计划...', mask: true });
+    }
+
+    api.wechatLogin(code, userInfo, { upgradeGuest }).then((data) => {
+      persistAuthResult(data);
       
       this.setData({ 
         loading: false, 
@@ -72,12 +87,14 @@ Page({
         userInfo: data.user
       });
       
-      wx.showToast({ title: '登录成功', icon: 'success' });
+      wx.hideLoading();
+      wx.showToast({ title: upgradeGuest ? '迁移成功' : '登录成功', icon: 'success' });
       
       setTimeout(() => {
         wx.switchTab({ url: '/pages/home/home' });
       }, 1500);
     }).catch((err) => {
+      wx.hideLoading();
       wx.showToast({ title: err.message || '登录失败', icon: 'none' });
       this.setData({ loading: false });
     });
@@ -92,9 +109,7 @@ Page({
     const deviceId = getOrCreateGuestDeviceId();
 
     api.guestLogin(deviceId).then((data) => {
-      wx.setStorageSync('token', data.token);
-      wx.setStorageSync('refresh_token', data.refresh_token);
-      wx.setStorageSync('userInfo', data.user);
+      persistAuthResult(data);
       
       this.setData({ 
         loading: false, 
