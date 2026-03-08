@@ -1,4 +1,5 @@
 import { getRecipeMinutes, isBabyStageMatched, normalizeCategories } from './swapStrategy';
+import { buildProductizedReasonText, buildPreferenceSummaryLine } from '../../utils/preferenceCopy';
 
 export type RecommendationReasonStrength = 'high' | 'medium' | 'low';
 
@@ -86,45 +87,38 @@ export const buildRecommendationReasons = (params: {
   const normalizedExcludedIngredients = Array.isArray(preferenceSummary?.excludeIngredients)
     ? preferenceSummary?.excludeIngredients.filter(Boolean)
     : [];
-  const backendExplainReason = backendExplain.find(Boolean);
-  if (backendExplainReason) {
+
+  const productizedReasons = buildProductizedReasonText({
+    backendExplain,
+    backendReasons,
+    preferenceSummary,
+    maxItems: 2,
+  });
+
+  if (productizedReasons[0]) {
     reasons.push({
       key: 'backend-preference-explain',
-      title: '已按你的偏好做推荐',
-      detail: backendExplainReason,
+      title: '为什么今天会推荐它',
+      detail: productizedReasons[0],
       strength: 'high',
     });
   } else if (normalizedPreferredIngredients.length > 0 || normalizedExcludedIngredients.length > 0 || preferenceSummary?.cookingTimeLimit || preferenceSummary?.difficultyPreference) {
-    const summaryParts: string[] = [];
-    if (normalizedPreferredIngredients.length > 0) {
-      summaryParts.push(`偏好食材：${normalizedPreferredIngredients.slice(0, 2).join('、')}`);
-    }
-    if (normalizedExcludedIngredients.length > 0) {
-      summaryParts.push(`已避开：${normalizedExcludedIngredients.slice(0, 2).join('、')}`);
-    }
-    if (preferenceSummary?.cookingTimeLimit) {
-      summaryParts.push(`做饭时长控制在 ${preferenceSummary.cookingTimeLimit} 分钟内`);
-    }
-    if (preferenceSummary?.difficultyPreference) {
-      summaryParts.push(`难度偏好：${preferenceSummary.difficultyPreference}`);
-    }
-
-    if (summaryParts.length > 0) {
+    const summaryLine = buildPreferenceSummaryLine(preferenceSummary);
+    if (summaryLine) {
       reasons.push({
         key: 'preference-summary',
-        title: '已结合你的口味与做饭习惯',
-        detail: summaryParts.slice(0, 2).join('；'),
+        title: '这道更贴近你家的吃饭节奏',
+        detail: summaryLine,
         strength: 'medium',
       });
     }
   }
 
-  const backendDetailReason = backendReasons.find((item) => item?.detail || item?.label);
-  if (backendDetailReason) {
+  if (productizedReasons[1]) {
     reasons.push({
       key: 'backend-ranking-reason',
-      title: backendDetailReason.label || '推荐匹配点',
-      detail: backendDetailReason.detail || '综合偏好与约束更匹配',
+      title: '我们还替你多想了一步',
+      detail: productizedReasons[1],
       strength: 'medium',
     });
   }

@@ -2,6 +2,39 @@ const api = require('../../utils/api');
 
 const RECIPE_DETAIL_PENDING_KEY = 'pending_recipe_detail_id';
 
+function buildPreferenceSummary(config) {
+  if (!config) return '';
+
+  const parts = [];
+  if (config.default_baby_age) parts.push(`${config.default_baby_age}个月月龄`);
+  if (config.prefer_ingredients) parts.push(`偏爱${config.prefer_ingredients}`);
+  if (config.exclude_ingredients) parts.push(`避开${config.exclude_ingredients}`);
+  if (config.cooking_time_limit) parts.push(`${config.cooking_time_limit}分钟内优先`);
+  return parts.slice(0, 3).join('｜');
+}
+
+function buildProductizedReasons(recipe, preferenceSummaryText) {
+  const explain = Array.isArray(recipe?.recommendation_explain) ? recipe.recommendation_explain.filter(Boolean) : [];
+  const rankingReasons = Array.isArray(recipe?.ranking_reasons) ? recipe.ranking_reasons : [];
+  const polished = [];
+
+  rankingReasons.forEach((reason) => {
+    const code = String(reason?.code || '').trim();
+    const detail = String(reason?.detail || '').trim();
+    if (code === 'time') polished.push(detail ? `更贴合今天的下厨节奏（${detail}）` : '更贴合今天的下厨节奏');
+    if (code === 'baby') polished.push(detail ? `更照顾当前月龄阶段（${detail}）` : '更照顾当前月龄阶段');
+    if (code === 'preference') polished.push(detail ? `更接近你常做常买的口味（${detail}）` : '更接近你家的口味偏好');
+    if (code === 'difficulty') polished.push(detail ? `操作负担更刚好（${detail}）` : '操作负担更刚好');
+  });
+
+  explain.forEach((item) => polished.push(String(item).trim()));
+
+  const uniq = Array.from(new Set(polished.filter(Boolean)));
+  if (uniq.length) return uniq.slice(0, 2);
+  if (preferenceSummaryText) return [`已结合你的偏好设置：${preferenceSummaryText}`];
+  return [];
+}
+
 // 后端数据适配器 - 将后端返回的数据转成前端期望的格式
 function adaptRecipeData(recipe) {
   if (!recipe) return null;
@@ -44,16 +77,6 @@ function adaptRecipeData(recipe) {
 }
 
 Page({
-  buildPreferenceSummary(config) {
-    if (!config) return '';
-
-    const parts = [];
-    if (config.default_baby_age) parts.push(`默认月龄 ${config.default_baby_age} 个月`);
-    if (config.prefer_ingredients) parts.push(`偏好食材 ${config.prefer_ingredients}`);
-    if (config.exclude_ingredients) parts.push(`避开 ${config.exclude_ingredients}`);
-    if (config.cooking_time_limit) parts.push(`${config.cooking_time_limit} 分钟内完成`);
-    return parts.slice(0, 2).join('｜');
-  },
 
   async ensureUserPreferences() {
     const token = wx.getStorageSync('token');
@@ -68,7 +91,7 @@ Page({
 
     try {
       const config = await api.getUserPreferences();
-      const summary = this.buildPreferenceSummary(config);
+      const summary = buildPreferenceSummary(config);
       this.setData({ userPreferences: config, preferenceSummaryText: summary });
       return config;
     } catch (err) {
@@ -84,7 +107,8 @@ Page({
     recommendation: null,
     currentVersion: 'adult', // adult | baby
     userPreferences: null,
-    preferenceSummaryText: ''
+    preferenceSummaryText: '',
+    recommendationReasons: []
   },
 
   async onShow() {
@@ -102,6 +126,7 @@ Page({
       this.setData({ 
         recommendation: adaptedRecipe,
         currentVersion: adaptedRecipe?.baby_version ? 'adult' : 'adult',
+        recommendationReasons: buildProductizedReasons(adaptedRecipe, this.data.preferenceSummaryText),
         loading: false 
       });
     } catch (err) {
@@ -136,7 +161,8 @@ Page({
       const adaptedNext = adaptRecipeData(next);
       this.setData({ 
         recommendation: adaptedNext,
-        currentVersion: adaptedNext?.baby_version ? 'adult' : 'adult'
+        currentVersion: adaptedNext?.baby_version ? 'adult' : 'adult',
+        recommendationReasons: buildProductizedReasons(adaptedNext, this.data.preferenceSummaryText)
       });
       wx.showToast({ title: '已为你换一道', icon: 'success' });
     } catch (err) {

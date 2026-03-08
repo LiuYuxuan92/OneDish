@@ -101,6 +101,8 @@ export interface RecipeSummary {
   key_nutrients?: string[];
   scene_tags?: string[];
   texture_level?: string;
+  recommendation_explain?: string[];
+  ranking_reasons?: Array<{ code?: string; label?: string; detail?: string; contribution?: number }>;
 }
 
 // 餐食计划类型

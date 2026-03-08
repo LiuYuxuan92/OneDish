@@ -22,7 +22,8 @@ Page({
     babyAge: null,
     excludeIngredients: '',
     isGenerating: false,
-    generatedMealPlan: null
+    generatedMealPlan: null,
+    planPreferenceSummary: ''
   },
 
   onShow() {
@@ -35,7 +36,15 @@ Page({
 
     const token = wx.getStorageSync('token') || getToken();
     const baseURL = wx.getStorageSync('baseURL') || getBaseURL();
-    this.setData({ baseURL, token });
+    const preferenceConfig = wx.getStorageSync('user_preferences') || null;
+    const planPreferenceSummary = preferenceConfig
+      ? [
+          preferenceConfig.default_baby_age ? `${preferenceConfig.default_baby_age}个月月龄` : '',
+          preferenceConfig.cooking_time_limit ? `${preferenceConfig.cooking_time_limit}分钟内优先` : '',
+          preferenceConfig.exclude_ingredients ? `避开${preferenceConfig.exclude_ingredients}` : ''
+        ].filter(Boolean).slice(0, 3).join('｜')
+      : '';
+    this.setData({ baseURL, token, planPreferenceSummary });
     this.loadData();
     
     // 加载历史

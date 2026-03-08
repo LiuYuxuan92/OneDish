@@ -33,6 +33,8 @@ import type { SearchResult } from '../../api/search';
 import { recipesApi, TransformResult } from '../../api/recipes';
 import { useSaveSearchResult } from '../../hooks/useUserRecipes';
 import { trackEvent } from '../../analytics/sdk';
+import { useUserInfo } from '../../hooks/useUsers';
+import { buildSearchPreferenceHint, buildPreferenceLeadText } from '../../utils/preferenceCopy';
 
 type Props = NativeStackScreenProps<RecipeStackParamList, 'Search'>;
 
@@ -65,6 +67,7 @@ export function SearchScreen({ navigation }: Props) {
   const [transformError, setTransformError] = useState<string | null>(null);
 
   const saveSearchResult = useSaveSearchResult();
+  const { data: userInfo } = useUserInfo();
 
   // 只有 submittedKeyword 有值时才触发查询，避免自动查询与手动搜索时序冲突
   const { data: unifiedData, isLoading: isUnifiedLoading } = useUnifiedSearch(
@@ -579,6 +582,20 @@ export function SearchScreen({ navigation }: Props) {
     const sourceLabel = item.source === 'local' ? '📚 本地' : item.source === 'tianxing' ? '🌐 联网' : '🤖 AI';
     const timeLabel = typeof item.prep_time === 'number' ? `⏱ ${item.prep_time}分钟` : '';
     const diffLabel = item.difficulty ? ` · ${item.difficulty}` : '';
+    const preferenceHint = buildSearchPreferenceHint({
+      recipe: item,
+      preferenceSummary: {
+        defaultBabyAge: userInfo?.preferences?.default_baby_age,
+        preferIngredients: Array.isArray(userInfo?.preferences?.prefer_ingredients)
+          ? userInfo?.preferences?.prefer_ingredients
+          : typeof userInfo?.preferences?.prefer_ingredients === 'string'
+            ? userInfo.preferences.prefer_ingredients.split(/[,，、]/).map((token) => token.trim()).filter(Boolean)
+            : [],
+        excludeIngredients: userInfo?.preferences?.exclude_ingredients,
+        cookingTimeLimit: userInfo?.preferences?.cooking_time_limit ?? userInfo?.preferences?.max_prep_time,
+        difficultyPreference: userInfo?.preferences?.difficulty_preference,
+      },
+    });
 
     return (
       <TouchableOpacity
@@ -595,10 +612,15 @@ export function SearchScreen({ navigation }: Props) {
             <Text style={styles.recipeDescription} numberOfLines={2}>{item.description}</Text>
           ) : null}
           <Text style={styles.recipeMetaText}>{sourceLabel} {timeLabel}{diffLabel}</Text>
+          {!!preferenceHint && (
+            <View style={styles.preferenceHintBadge}>
+              <Text style={styles.preferenceHintBadgeText} numberOfLines={2}>{preferenceHint}</Text>
+            </View>
+          )}
         </View>
       </TouchableOpacity>
     );
-  }, [handleRecipePress]);
+  }, [handleRecipePress, userInfo?.preferences]);
 
   // 空状态
   const renderEmptyState = () => {
@@ -700,6 +722,19 @@ export function SearchScreen({ navigation }: Props) {
               </Text>
             </View>
           </View>
+          <Text style={styles.preferenceLeadText}>
+            {buildPreferenceLeadText({
+              defaultBabyAge: userInfo?.preferences?.default_baby_age,
+              preferIngredients: Array.isArray(userInfo?.preferences?.prefer_ingredients)
+                ? userInfo?.preferences?.prefer_ingredients
+                : typeof userInfo?.preferences?.prefer_ingredients === 'string'
+                  ? userInfo.preferences.prefer_ingredients.split(/[,，、]/).map((token) => token.trim()).filter(Boolean)
+                  : [],
+              excludeIngredients: userInfo?.preferences?.exclude_ingredients,
+              cookingTimeLimit: userInfo?.preferences?.cooking_time_limit ?? userInfo?.preferences?.max_prep_time,
+              difficultyPreference: userInfo?.preferences?.difficulty_preference,
+            })}
+          </Text>
         </View>
       )}
 
@@ -867,6 +902,12 @@ const styles = StyleSheet.create({
     color: Colors.primary.main,
     fontWeight: Typography.fontWeight.semibold,
   },
+  preferenceLeadText: {
+    marginTop: Spacing.sm,
+    ...Typography.body.caption,
+    color: Colors.text.secondary,
+    lineHeight: 18,
+  },
 
   // 列表
   scrollContainer: {
@@ -921,6 +962,19 @@ const styles = StyleSheet.create({
   recipeMetaText: {
     fontSize: Typography.fontSize.xs,
     color: Colors.text.tertiary,
+  },
+  preferenceHintBadge: {
+    marginTop: Spacing.sm,
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.secondary.light,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.md,
+  },
+  preferenceHintBadgeText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.secondary.dark,
+    lineHeight: 18,
   },
 
   // 空状态

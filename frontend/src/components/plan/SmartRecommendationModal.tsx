@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Colors, Typography, Spacing, BorderRadius } from '../../styles/theme';
 import { MEAL_LABELS } from '../../hooks/useWeeklyPlanState';
+import { buildProductizedReasonText } from '../../utils/preferenceCopy';
 
 interface SmartRecommendation {
   name: string;
@@ -76,25 +77,27 @@ export function SmartRecommendationModal({
                     if (!item) {
                       return <Text key={k} style={styles.genOptionLabel}>方案{k}：暂无可推荐</Text>;
                     }
+                    const polishedReasons = buildProductizedReasonText({
+                      backendExplain: item.explain,
+                      backendReasons: item.ranking_reasons,
+                      maxItems: 2,
+                    });
                     return (
                       <View key={k} style={styles.todayMealCard}>
                         <Text style={styles.todayMealName}>方案{k}：{item.name}</Text>
-                        <Text style={styles.genOptionLabel}>耗时：{item.time_estimate} 分钟</Text>
-                        <Text style={styles.genOptionLabel}>缺口食材：{item.missing_ingredients?.join('、') || '无'}</Text>
-                        <Text style={styles.genOptionLabel}>宝宝适配：{item.baby_suitable ? '是' : '否'}</Text>
-                        <Text style={styles.genOptionLabel}>替换理由：{item.switch_hint}</Text>
-                        <Text style={styles.genOptionLabel}>推荐理由：{item.explain?.join('；') || '综合评分更优'}</Text>
-                        {!!item.ranking_reasons?.length && (
-                          <Text style={styles.genOptionLabel}>
-                            偏好命中：{item.ranking_reasons
-                              ?.filter((reason) => ['preference', 'difficulty', 'baby', 'time'].includes(String(reason.code || '')))
-                              .slice(0, 2)
-                              .map((reason) => reason.detail || reason.label)
-                              .filter(Boolean)
-                              .join('；') || '已结合你的偏好与约束'}
-                          </Text>
+                        <Text style={styles.planReasonLead}>这份方案更适合现在的你</Text>
+                        {polishedReasons.length > 0 ? polishedReasons.map((reason, index) => (
+                          <View key={`${k}-${index}`} style={styles.planReasonRow}>
+                            <View style={styles.planReasonDot} />
+                            <Text style={styles.planReasonText}>{reason}</Text>
+                          </View>
+                        )) : (
+                          <Text style={styles.genOptionLabel}>已综合你家的做饭时长、宝宝适配和现有食材来排序</Text>
                         )}
-                        <Text style={styles.genOptionLabel}>与上次不同：{item.vs_last || '暂无'}</Text>
+                        <Text style={styles.genOptionLabel}>准备时长：约 {item.time_estimate} 分钟</Text>
+                        <Text style={styles.genOptionLabel}>家里还差：{item.missing_ingredients?.join('、') || '基本不用再补食材'}</Text>
+                        <Text style={styles.genOptionLabel}>宝宝适配：{item.baby_suitable ? '更安心，适合当前阶段' : '建议先看看月龄和口感再决定'}</Text>
+                        <Text style={styles.genOptionLabel}>和当前方案相比：{item.vs_last || item.switch_hint || '整体更顺手一些'}</Text>
                       </View>
                     );
                   })}
@@ -216,6 +219,31 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.text.primary,
     marginBottom: Spacing.xs,
+  },
+  planReasonLead: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.semibold,
+    marginBottom: Spacing.xs,
+  },
+  planReasonRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+  },
+  planReasonDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.primary.main,
+    marginTop: 6,
+    marginRight: 8,
+  },
+  planReasonText: {
+    flex: 1,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.primary,
+    lineHeight: 20,
   },
   genOptionLabel: {
     fontSize: Typography.fontSize.sm,

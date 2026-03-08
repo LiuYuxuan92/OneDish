@@ -371,6 +371,14 @@
   color: #999;
 }
 
+.generate-pref {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #b26b00;
+  line-height: 1.6;
+}
+
 .mode-selector {
   display: flex;
   background: #f5f7fb;

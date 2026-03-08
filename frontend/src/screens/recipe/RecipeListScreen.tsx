@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
 import { useAllRecipes, useSearchRecipes } from '../../hooks/useRecipes';
 import { useUnifiedSearch } from '../../hooks/useSearch';
+import { useUserInfo } from '../../hooks/useUsers';
 import { SearchResult } from '../../api/search';
 import { RecipeCard } from '../../components/recipe/RecipeCard';
 import { RecipeSummary } from '../../types';
@@ -176,6 +177,7 @@ export function RecipeListScreen({ navigation, route }: Props) {
   }, [selectedType, selectedDifficulty, isInitialized, route.params]);
 
   const { data: allData, isLoading: isAllLoading, error: allError, refetch } = useAllRecipes();
+  const { data: userInfo } = useUserInfo();
   const { data: searchData, isLoading: isSearchLoading, error: searchError } = useSearchRecipes({
     keyword: navIngredientRef.current || debouncedSearch,
     type: selectedType,
@@ -416,6 +418,7 @@ export function RecipeListScreen({ navigation, route }: Props) {
                 recipe={recipe}
                 onPress={() => navigation.navigate('RecipeDetail', { recipeId: recipe.id })}
                 showSource={isOnlineSearch}
+                preferenceSummary={userInfo?.preferences}
               />
             ))}
           </View>

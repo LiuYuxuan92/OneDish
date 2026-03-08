@@ -227,10 +227,18 @@
   margin-top: 16rpx;
 }
 
+.baby-tips-title {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #b26b00;
+  margin-bottom: 12rpx;
+}
+
 .baby-age, .baby-tips {
   font-size: 26rpx;
   color: #f5a623;
   margin-bottom: 8rpx;
+  line-height: 1.6;
 }
 
 /* 操作按钮 */

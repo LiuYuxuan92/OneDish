@@ -75,11 +75,13 @@ export function RecipeCard({
       </View>
 
       <View style={styles.reasonBox}>
-        <Text style={styles.reasonTitle}>推荐理由</Text>
-        {recommendationReasons.map((reason) => (
-          <View key={reason.key} style={styles.reasonItem}>
-            <View style={[styles.reasonStrengthBadge, styles[`reasonStrength_${reason.strength}`]]}>
-              <Text style={styles.reasonStrengthText}>{reason.strength.toUpperCase()}</Text>
+        <Text style={styles.reasonTitle}>为什么推荐给你</Text>
+        {recommendationReasons.map((reason, index) => (
+          <View key={reason.key} style={[styles.reasonItem, index === recommendationReasons.length - 1 && styles.reasonItemLast]}>
+            <View style={styles.reasonBulletWrap}>
+              <View style={[styles.reasonStrengthBadge, styles[`reasonStrength_${reason.strength}`]]}>
+                <Text style={styles.reasonStrengthText}>{index + 1}</Text>
+              </View>
             </View>
             <View style={styles.reasonContent}>
               <Text style={styles.reasonItemTitle}>{reason.title}</Text>
@@ -227,19 +229,26 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold,
     color: '#F57C00',
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.sm,
   },
   reasonItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  reasonItemLast: {
+    marginBottom: 0,
+  },
+  reasonBulletWrap: {
+    marginRight: Spacing.sm,
+    marginTop: 1,
   },
   reasonStrengthBadge: {
-    borderRadius: BorderRadius.sm,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginRight: Spacing.xs,
-    marginTop: 1,
+    borderRadius: 999,
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   reasonStrength_high: {
     backgroundColor: '#FFB74D',

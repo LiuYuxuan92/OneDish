@@ -22,7 +22,7 @@ import { useExpiringItems } from '../../hooks/useIngredientInventory';
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
 export function HomeScreen({ navigation }: Props) {
-  const { recipe, swapping, recommendationReasons, isLoading, error, currentStage, onRefresh } = useHomeRecommendation();
+  const { recipe, swapping, recommendationReasons, isLoading, error, currentStage, onRefresh, onSwapRecipe } = useHomeRecommendation();
   const { trackHomeView, trackQualityScore } = useHomeAnalytics();
   const { data: expiringData } = useExpiringItems(3);
 
@@ -69,7 +69,7 @@ export function HomeScreen({ navigation }: Props) {
           </View>
           {isLoading ? <View style={styles.skeletonContainer}><SkeletonCard showImage showFooter /></View>
           : error ? <View style={styles.card}><Text style={styles.errorText}>加载失败，请稍后重试</Text><TouchableOpacity style={styles.retryButton} onPress={onRefresh}><Text style={styles.retryButtonText}>点击重试</Text></TouchableOpacity></View>
-          : recipe ? <RecipeCard recipe={recipe} currentStage={currentStage} recommendationReasons={recommendationReasons} swapping={swapping} onSwap={onRefresh} onShoppingList={nav.shopping} onCookingStart={nav.cooking} onRecipePress={() => recipe.id && navigation.navigate('RecipeDetail', { recipeId: recipe.id })} />
+          : recipe ? <RecipeCard recipe={recipe} currentStage={currentStage} recommendationReasons={recommendationReasons} swapping={swapping} onSwap={onSwapRecipe} onShoppingList={nav.shopping} onCookingStart={nav.cooking} onRecipePress={() => recipe.id && navigation.navigate('RecipeDetail', { recipeId: recipe.id })} />
           : <View style={styles.card}><Text style={styles.emptyText}>暂无推荐</Text></View>}
         </View>
         {currentStage && <BabySection currentStage={currentStage} onNavigate={nav.baby} />}

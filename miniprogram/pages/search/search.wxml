@@ -35,6 +35,7 @@
   <view class="results" wx:if="{{!showHistory}}">
     <view class="results-header" wx:if="{{results.length}}">
       找到 {{results.length}} 个结果
+      <text class="results-subtitle">这些结果会优先参考你的口味、做饭时长和宝宝阶段</text>
     </view>
     
     <block wx:for="{{results}}" wx:key="id">
@@ -52,6 +53,9 @@
           </view>
           <view class="result-desc" wx:if="{{item.description}}">
             {{item.description}}
+          </view>
+          <view class="result-preference-hint" wx:if="{{item.preference_hint}}">
+            {{item.preference_hint}}
           </view>
         </view>
       </view>

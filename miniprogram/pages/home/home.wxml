@@ -70,12 +70,13 @@
           {{currentVersion === 'baby' ? (recommendation.baby_version && recommendation.baby_version.description) : recommendation.description}}
         </view>
 
-        <view class="baby-info" wx:if="{{recommendation.preference_tip || preferenceSummaryText}}">
-          <view class="baby-tips" wx:if="{{recommendation.preference_tip}}">
-            推荐依据：{{recommendation.preference_tip}}
+        <view class="baby-info" wx:if="{{recommendationReasons.length || preferenceSummaryText}}">
+          <view class="baby-tips-title">为什么推荐给你</view>
+          <view class="baby-tips" wx:for="{{recommendationReasons}}" wx:key="*this">
+            · {{item}}
           </view>
           <view class="baby-age" wx:if="{{preferenceSummaryText}}">
-            当前偏好：{{preferenceSummaryText}}
+            当前偏好排序参考：{{preferenceSummaryText}}
           </view>
         </view>
         

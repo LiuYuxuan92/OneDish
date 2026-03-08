@@ -1,5 +1,17 @@
 const api = require('../../utils/api');
 
+function buildPreferenceHint(item, preferenceSummary) {
+  const reasons = Array.isArray(item?.ranking_reasons) ? item.ranking_reasons : [];
+  const explain = Array.isArray(item?.recommendation_explain) ? item.recommendation_explain.filter(Boolean) : [];
+
+  const firstReason = reasons.find((reason) => ['time', 'baby', 'preference', 'difficulty'].includes(String(reason?.code || '')));
+  if (firstReason?.detail) return `按你的偏好优先：${firstReason.detail}`;
+  if (firstReason?.label) return `按你的偏好优先：${firstReason.label}`;
+  if (explain[0]) return `按你的偏好优先：${explain[0]}`;
+  if (preferenceSummary) return `排序时参考了你的设置：${preferenceSummary}`;
+  return '结果已综合口味、做饭时长和月龄需求排序';
+}
+
 // 后端数据适配器
 function adaptRecipeData(recipe) {
   if (!recipe) return null;
@@ -22,10 +34,20 @@ Page({
     keyword: '',
     results: [],
     history: [],
-    showHistory: true
+    showHistory: true,
+    preferenceSummaryText: ''
   },
 
-  onLoad() {
+  async onLoad() {
+     const preferenceConfig = wx.getStorageSync('user_preferences') || null;
+     const preferenceSummaryText = preferenceConfig
+       ? [
+           preferenceConfig.default_baby_age ? `${preferenceConfig.default_baby_age}个月月龄` : '',
+           preferenceConfig.cooking_time_limit ? `${preferenceConfig.cooking_time_limit}分钟内优先` : '',
+           preferenceConfig.prefer_ingredients ? `偏爱${preferenceConfig.prefer_ingredients}` : ''
+         ].filter(Boolean).slice(0, 3).join('｜')
+       : '';
+     this.setData({ preferenceSummaryText });
     // 加载搜索历史
     const history = wx.getStorageSync('search_history') || [];
     this.setData({ history });
@@ -33,6 +55,10 @@ Page({
 
   onInput(e) {
     this.setData({ keyword: e.detail.value, showHistory: false });
+  },
+
+  onClear() {
+    this.setData({ keyword: '', results: [], showHistory: true });
   },
 
   onSearch() {
@@ -47,7 +73,10 @@ Page({
     this.setData({ loading: true });
     api.searchRecipes(keyword).then(res => {
       // 使用适配器转换数据
-      const adaptedResults = adaptListData(res.items || []);
+      const adaptedResults = adaptListData(res.items || []).map(item => ({
+        ...item,
+        preference_hint: buildPreferenceHint(item, this.data.preferenceSummaryText)
+      }));
       this.setData({ 
         results: adaptedResults,
         loading: false 
