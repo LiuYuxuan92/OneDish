@@ -4,6 +4,23 @@
   padding: 24rpx;
 }
 
+/* 联系客服按钮 */
+.contact-btn {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  border: none;
+  line-height: inherit;
+}
+
+.contact-btn::after {
+  border: none;
+}
+
+.contact-btn .van-cell {
+  background: #fff;
+}
+
 .member-cell {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   margin-bottom: 24rpx;

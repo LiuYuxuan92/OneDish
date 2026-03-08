@@ -17,6 +17,11 @@
   <!-- AI 配置 -->
   <van-cell title="✨ AI 配置" value="自定义" is-link bindtap="openAIConfigModal"/>
   
+  <!-- 联系客服 -->
+  <button class="contact-btn" open-type="contact">
+    <van-cell title="联系客服" is-link/>
+  </button>
+  
   <!-- 账号 -->
   <van-cell title="账号" is-link bindtap="goToLogin"/>
   
