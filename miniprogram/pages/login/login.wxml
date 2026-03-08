@@ -1,6 +1,6 @@
 <view class="container">
   <view class="logo-area">
-    <image class="logo" src="/assets/logo.png" mode="aspectFit" />
+    <text class="logo-emoji">🍳</text>
     <view class="app-name">简家厨</view>
     <view class="slogan">一道菜，大人宝宝都能吃</view>
   </view>
@@ -34,12 +34,8 @@
   </view>
 
   <view class="user-area" wx:else>
-    <image 
-      class="avatar" 
-      src="{{userInfo.avatar_url || '/assets/default-avatar.png'}}" 
-      mode="aspectFill" 
-    />
-    <view class="username">{{userInfo.username}}</view>
+    <view class="avatar-emoji">👤</view>
+    <view class="username">{{userInfo.username || '用户'}}</view>
     <view class="role">已登录</view>
     
     <button class="btn-logout" bindtap="logout">退出登录</button>

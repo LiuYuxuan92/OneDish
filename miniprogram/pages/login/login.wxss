@@ -22,6 +22,11 @@
   margin-bottom: 24rpx;
 }
 
+.logo-emoji {
+  font-size: 140rpx;
+  margin-bottom: 16rpx;
+}
+
 .app-name {
   font-size: 48rpx;
   font-weight: bold;
@@ -107,6 +112,11 @@
   border-radius: 50%;
   background: #e5e7eb;
   margin-bottom: 24rpx;
+}
+
+.avatar-emoji {
+  font-size: 120rpx;
+  margin-bottom: 16rpx;
 }
 
 .username {
