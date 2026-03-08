@@ -8,5 +8,6 @@ const controller = new FeedingFeedbackController();
 router.use(authenticate);
 router.post('/', controller.createFeedback);
 router.get('/recent', controller.listRecentFeedbacks);
+router.get('/summary', controller.listRecipeSummaries);
 
 export default router;

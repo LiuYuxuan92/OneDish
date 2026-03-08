@@ -30,7 +30,37 @@ export interface FeedingFeedbackRecord {
 export interface ListRecentFeedingFeedbacksInput {
   user_id: string;
   limit?: number;
+  offset?: number;
   recipe_id?: string;
+}
+
+export interface FeedingFeedbackListResult {
+  items: FeedingFeedbackRecord[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+    has_more: boolean;
+  };
+}
+
+export interface FeedingFeedbackRecipeSummary {
+  recipe_id: string;
+  recipe_name?: string | null;
+  recipe_image_url?: string[] | string | null;
+  feedback_count: number;
+  like_count: number;
+  ok_count: number;
+  reject_count: number;
+  allergy_count: number;
+  latest_feedback_at?: string | null;
+  latest_accepted_level?: FeedingAcceptedLevel | null;
+  average_baby_age_at_feedback?: number | null;
+}
+
+export interface ListRecipeFeedbackSummariesInput {
+  user_id: string;
+  limit?: number;
 }
 
 const ACCEPTED_LEVELS: FeedingAcceptedLevel[] = ['like', 'ok', 'reject'];
@@ -57,8 +87,9 @@ export class FeedingFeedbackService {
     return this.getFeedbackById(row.id) as Promise<FeedingFeedbackRecord>;
   }
 
-  async listRecentFeedbacks(input: ListRecentFeedingFeedbacksInput): Promise<FeedingFeedbackRecord[]> {
+  async listRecentFeedbacks(input: ListRecentFeedingFeedbacksInput): Promise<FeedingFeedbackListResult> {
     const safeLimit = Math.max(1, Math.min(20, Number(input.limit) || 10));
+    const safeOffset = Math.max(0, Number(input.offset) || 0);
 
     let query = db('feeding_feedbacks as ff')
       .leftJoin('recipes as r', 'ff.recipe_id', 'r.id')
@@ -68,7 +99,7 @@ export class FeedingFeedbackService {
       query = query.andWhere('ff.recipe_id', input.recipe_id);
     }
 
-    const rows = await query
+    const allRows = await query
       .select(
         'ff.id',
         'ff.user_id',
@@ -83,10 +114,91 @@ export class FeedingFeedbackService {
         'r.name as recipe_name',
         'r.image_url as recipe_image_url'
       )
-      .orderBy('ff.created_at', 'desc')
-      .limit(safeLimit);
+      .orderBy('ff.created_at', 'desc');
 
-    return rows.map((row: any) => this.normalizeRow(row));
+    const normalizedRows = allRows.map((row: any) => this.normalizeRow(row));
+    const items = normalizedRows.slice(safeOffset, safeOffset + safeLimit);
+
+    return {
+      items,
+      pagination: {
+        limit: safeLimit,
+        offset: safeOffset,
+        total: normalizedRows.length,
+        has_more: safeOffset + items.length < normalizedRows.length,
+      },
+    };
+  }
+
+  async listRecipeSummaries(input: ListRecipeFeedbackSummariesInput): Promise<FeedingFeedbackRecipeSummary[]> {
+    const safeLimit = Math.max(1, Math.min(20, Number(input.limit) || 10));
+
+    const rows = await db('feeding_feedbacks as ff')
+      .leftJoin('recipes as r', 'ff.recipe_id', 'r.id')
+      .where('ff.user_id', input.user_id)
+      .select(
+        'ff.id',
+        'ff.recipe_id',
+        'ff.accepted_level',
+        'ff.allergy_flag',
+        'ff.baby_age_at_that_time',
+        'ff.created_at',
+        'r.name as recipe_name',
+        'r.image_url as recipe_image_url'
+      )
+      .orderBy('ff.created_at', 'desc');
+
+    const summaryMap = new Map<string, FeedingFeedbackRecipeSummary>();
+
+    for (const row of rows) {
+      const recipeId = row.recipe_id;
+      const existing = summaryMap.get(recipeId);
+      const babyAge = row.baby_age_at_that_time == null ? null : Number(row.baby_age_at_that_time);
+
+      if (!existing) {
+        summaryMap.set(recipeId, {
+          recipe_id: recipeId,
+          recipe_name: row.recipe_name || null,
+          recipe_image_url: row.recipe_image_url || null,
+          feedback_count: 1,
+          like_count: row.accepted_level === 'like' ? 1 : 0,
+          ok_count: row.accepted_level === 'ok' ? 1 : 0,
+          reject_count: row.accepted_level === 'reject' ? 1 : 0,
+          allergy_count: row.allergy_flag ? 1 : 0,
+          latest_feedback_at: row.created_at || null,
+          latest_accepted_level: row.accepted_level || null,
+          average_baby_age_at_feedback: babyAge,
+        });
+        continue;
+      }
+
+      existing.feedback_count += 1;
+      if (row.accepted_level === 'like') existing.like_count += 1;
+      if (row.accepted_level === 'ok') existing.ok_count += 1;
+      if (row.accepted_level === 'reject') existing.reject_count += 1;
+      if (row.allergy_flag) existing.allergy_count += 1;
+
+      if (babyAge != null) {
+        const currentAverage = existing.average_baby_age_at_feedback;
+        const countedBefore = existing.feedback_count - 1;
+        if (currentAverage == null || countedBefore <= 0) {
+          existing.average_baby_age_at_feedback = babyAge;
+        } else {
+          existing.average_baby_age_at_feedback = Number((((currentAverage * countedBefore) + babyAge) / (countedBefore + 1)).toFixed(1));
+        }
+      }
+    }
+
+    return Array.from(summaryMap.values())
+      .sort((a, b) => {
+        if (b.feedback_count !== a.feedback_count) {
+          return b.feedback_count - a.feedback_count;
+        }
+        const aTime = a.latest_feedback_at ? new Date(a.latest_feedback_at).getTime() : 0;
+        const bTime = b.latest_feedback_at ? new Date(b.latest_feedback_at).getTime() : 0;
+        return bTime - aTime;
+      })
+      .slice(0, safeLimit);
   }
 
   private async getFeedbackById(id: string): Promise<FeedingFeedbackRecord | null> {

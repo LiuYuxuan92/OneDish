@@ -33,18 +33,37 @@ export class FeedingFeedbackController {
     try {
       const userId = (req as any).user.user_id;
       const limit = Number(req.query.limit || 10);
+      const offset = Number(req.query.offset || 0);
       const recipeId = req.query.recipe_id ? String(req.query.recipe_id) : undefined;
 
-      const items = await feedingFeedbackService.listRecentFeedbacks({
+      const result = await feedingFeedbackService.listRecentFeedbacks({
         user_id: userId,
         limit,
+        offset,
         recipe_id: recipeId,
+      });
+
+      return res.json({ code: 200, message: 'success', data: result });
+    } catch (error) {
+      logger.error('Failed to list feeding feedbacks', { error });
+      return res.status(500).json({ code: 500, message: '获取用餐反馈失败', data: null });
+    }
+  };
+
+  listRecipeSummaries = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const limit = Number(req.query.limit || 10);
+
+      const items = await feedingFeedbackService.listRecipeSummaries({
+        user_id: userId,
+        limit,
       });
 
       return res.json({ code: 200, message: 'success', data: { items } });
     } catch (error) {
-      logger.error('Failed to list feeding feedbacks', { error });
-      return res.status(500).json({ code: 500, message: '获取用餐反馈失败', data: null });
+      logger.error('Failed to summarize feeding feedbacks', { error });
+      return res.status(500).json({ code: 500, message: '获取用餐反馈摘要失败', data: null });
     }
   };
 }
