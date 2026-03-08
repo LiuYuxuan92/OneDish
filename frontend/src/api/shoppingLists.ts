@@ -84,7 +84,11 @@ export interface ShoppingListItem {
   checked: boolean;
   note?: string;
   recipes?: string[];
-  source?: 'adult' | 'baby' | 'both';
+  source?: 'meal_plan' | 'recipe' | 'manual' | 'adult' | 'baby' | 'both';
+  source_date?: string | null;
+  source_meal_type?: string | null;
+  source_recipe_id?: string | null;
+  servings?: number | null;
   amount_adult?: string;
   amount_baby?: string;
   category?: ShoppingCategory;
@@ -108,6 +112,43 @@ export interface ShoppingList {
   unchecked_items?: number;
   is_completed: boolean;
   created_at: string;
+  inventory_summary?: {
+    covered_items: Array<{
+      name: string;
+      required_amount: string;
+      inventory_amount: string;
+      covered_amount?: string;
+      missing_amount?: string;
+      fully_covered: boolean;
+      coverage_ratio: number;
+      source?: string;
+      source_date?: string | null;
+      source_meal_type?: string | null;
+      source_recipe_id?: string | null;
+    }>;
+    missing_items: Array<{
+      name: string;
+      required_amount: string;
+      inventory_amount: string;
+      missing_amount?: string;
+      fully_covered: boolean;
+      coverage_ratio: number;
+      source?: string;
+      source_date?: string | null;
+      source_meal_type?: string | null;
+      source_recipe_id?: string | null;
+    }>;
+    expiring_items: Array<{
+      inventory_id: string;
+      ingredient_name: string;
+      quantity: number;
+      unit: string;
+      expiry_date?: string | null;
+    }>;
+    total_required_items: number;
+    covered_count: number;
+    missing_count: number;
+  };
   share?: {
     share_id: string;
     role: 'owner' | 'member';

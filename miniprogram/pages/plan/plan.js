@@ -23,7 +23,8 @@ Page({
     excludeIngredients: '',
     isGenerating: false,
     generatedMealPlan: null,
-    planPreferenceSummary: ''
+    planPreferenceSummary: '',
+    shoppingSummary: null
   },
 
   onShow() {
@@ -95,12 +96,11 @@ Page({
     if (token) {
       api.getShoppingLists().then(lists => {
         const latest = Array.isArray(lists) ? lists[0] : null;
-        const mergedItems = this.extractItemsFromList(latest).map(name => ({
-          name,
-          checked: false,
-          source: 'API'
-        }));
-        this.setData({ items: mergedItems });
+        const mergedItems = this.extractItemsFromList(latest);
+        this.setData({
+          items: mergedItems,
+          shoppingSummary: latest && latest.inventory_summary ? latest.inventory_summary : null
+        });
       }).catch(() => {
         this.loadLocalData();
       });
@@ -125,21 +125,33 @@ Page({
     const appendByKey = (obj, key) => {
       if (!obj || !Array.isArray(obj[key])) return;
       obj[key].forEach(it => {
-        if (it?.item_name) results.push(it.item_name);
-        else if (it?.name) results.push(it.name);
+        const name = it?.item_name || it?.name;
+        if (!name) return;
+        results.push({
+          name,
+          checked: !!it?.checked,
+          source: it?.source || 'API',
+          amount: it?.amount || '',
+          sourceMealType: it?.source_meal_type || '',
+        });
       });
     };
+    const keys = ['produce', 'protein', 'staple', 'seasoning', 'snack_dairy', 'household', 'other', 'meat'];
     if (list.items_v2) {
-      appendByKey(list.items_v2, 'produce');
-      appendByKey(list.items_v2, 'meat');
-      appendByKey(list.items_v2, 'other');
+      keys.forEach((key) => appendByKey(list.items_v2, key));
     }
     if (list.items) {
-      appendByKey(list.items, 'produce');
-      appendByKey(list.items, 'meat');
-      appendByKey(list.items, 'other');
+      keys.forEach((key) => appendByKey(list.items, key));
     }
-    return [...new Set(results)];
+    const deduped = [];
+    const seen = new Set();
+    results.forEach((item) => {
+      const dedupeKey = `${item.name}::${item.amount}::${item.source}::${item.sourceMealType}`;
+      if (seen.has(dedupeKey)) return;
+      seen.add(dedupeKey);
+      deduped.push(item);
+    });
+    return deduped;
   },
 
   addItem() {

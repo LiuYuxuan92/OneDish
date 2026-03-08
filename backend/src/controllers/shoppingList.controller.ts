@@ -181,12 +181,12 @@ export class ShoppingListController {
       const userId = (req as any).user.user_id;
       const { listId } = req.params;
 
-      await this.shoppingListService.markComplete(listId, userId);
+      const result = await this.shoppingListService.markComplete(listId, userId);
 
       res.json({
         code: 200,
         message: '标记成功',
-        data: null,
+        data: result,
       });
     } catch (error) {
       logger.error('Failed to mark list complete', { error });

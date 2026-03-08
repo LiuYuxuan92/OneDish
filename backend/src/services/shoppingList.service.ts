@@ -2,6 +2,7 @@ import { db } from '../config/database';
 import { logger } from '../utils/logger';
 import { ShoppingListShareService } from './shoppingList/share/shoppingListShare.service';
 import { ShoppingListGenerationService } from './shoppingList/shoppingListGeneration.service';
+import { ShoppingListInventoryService } from './shoppingList/shoppingListInventory.service';
 
 export class ShoppingListService {
   private static readonly DEFAULT_ITEMS_STRUCTURE: Record<string, any[]> = {
@@ -18,10 +19,12 @@ export class ShoppingListService {
   private shareService: ShoppingListShareService;
   // 生成服务实例
   private generationService: ShoppingListGenerationService;
+  private inventoryService: ShoppingListInventoryService;
 
   constructor() {
     this.shareService = new ShoppingListShareService();
     this.generationService = new ShoppingListGenerationService();
+    this.inventoryService = new ShoppingListInventoryService();
   }
 
   /**
@@ -92,6 +95,11 @@ export class ShoppingListService {
       normalized[area].push(...list.map((item: any) => ({
         ...item,
         category: area,
+        source: item?.source || 'manual',
+        source_date: item?.source_date || null,
+        source_meal_type: item?.source_meal_type || null,
+        source_recipe_id: item?.source_recipe_id || null,
+        servings: typeof item?.servings === 'number' ? item.servings : null,
         assignee: typeof item?.assignee === 'undefined' ? null : item.assignee,
         status: item?.status || (item?.checked ? 'done' : 'todo'),
       })));
@@ -130,7 +138,7 @@ export class ShoppingListService {
 
     // 为每个列表计算统计信息
     return {
-      items: items.map((list: any) => {
+      items: await Promise.all(items.map(async (list: any) => {
         // 解析 JSON 字符串，使用安全解析避免corrupted data导致的崩溃
         let parsedItems;
         try {
@@ -153,13 +161,15 @@ export class ShoppingListService {
             sum + items.filter((i: any) => !i.checked).length,
           0
         );
+        const inventory_summary = await this.inventoryService.buildCoverageSummary(userId, parsedItems);
         return {
           ...list,
           items: parsedItems,
           total_items: totalItems,
           unchecked_items: uncheckedItems,
+          inventory_summary,
         };
-      }),
+      })),
     };
   }
 
@@ -194,12 +204,14 @@ export class ShoppingListService {
     );
 
     const shareContext = await this.shareService.getShareContextByListId(listId, userId);
+    const inventory_summary = await this.inventoryService.buildCoverageSummary(userId, parsedItems);
 
     return {
       ...list,
       items: parsedItems,
       total_items: totalItems,
       unchecked_items: uncheckedItems,
+      inventory_summary,
       share: shareContext,
     };
   }
@@ -291,7 +303,6 @@ export class ShoppingListService {
       throw new Error('无权限修改该购物清单');
     }
 
-    // 解析清单项
     let items;
     try {
       const rawItems = typeof list.items === 'string' ? JSON.parse(list.items) : list.items;
@@ -300,48 +311,14 @@ export class ShoppingListService {
       items = this.normalizeShoppingItems(null);
     }
 
-    // 将已勾选食材添加到库存
-    for (const area in items) {
-      for (const item of items[area]) {
-        if (item.checked) {
-          try {
-            // 检查是否已存在
-            const existing = await db('ingredient_inventory')
-              .where('user_id', userId)
-              .where('ingredient_name', item.name)
-              .first();
+    await db.transaction(async (trx) => {
+      await this.inventoryService.restockCheckedShoppingItems(userId, items, trx);
+      await trx('shopping_lists')
+        .where('id', listId)
+        .update({ is_completed: true });
+    });
 
-            if (!existing) {
-              // 查询食材的默认保质期
-              const ingredient = await db('ingredients')
-                .where('name', item.name)
-                .first();
-
-              const shelfLifeDays = ingredient?.shelf_life || 7;
-              const expiryDate = new Date();
-              expiryDate.setDate(expiryDate.getDate() + shelfLifeDays);
-
-              await db('ingredient_inventory').insert({
-                user_id: userId,
-                ingredient_name: item.name,
-                quantity: 1,
-                unit: '份',
-                location: ingredient?.storage_area === '冷藏' ? '冷藏' : '常温',
-                purchase_date: new Date().toISOString().split('T')[0],
-                expiry_date: expiryDate.toISOString().split('T')[0],
-              });
-            }
-          } catch (err) {
-            // 忽略单个食材入库失败，继续处理其余
-            logger.error('Failed to auto-stock ingredient', { name: item.name, error: err });
-          }
-        }
-      }
-    }
-
-    await db('shopping_lists')
-      .where('id', listId)
-      .update({ is_completed: true });
+    return this.getShoppingListById(listId, userId);
   }
 
   /**
@@ -499,6 +476,11 @@ export class ShoppingListService {
       category: storageArea,
       ingredient_id: ingredient?.id,
       estimated_price: estimatedPrice,
+      source: 'manual',
+      source_date: list.list_date,
+      source_meal_type: null,
+      source_recipe_id: null,
+      servings: null,
     });
 
     // 重新计算总价

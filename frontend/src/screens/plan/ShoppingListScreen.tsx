@@ -44,7 +44,7 @@ const AREA_LABELS: Record<string, { label: string; icon: string; color: string }
 const AREA_ORDER = ['produce', 'protein', 'staple', 'seasoning', 'snack_dairy', 'household', 'other'];
 
 // 筛选类型
-type FilterType = 'all' | 'both' | 'adult' | 'baby';
+type FilterType = 'all' | 'meal_plan' | 'recipe' | 'manual';
 
 export function ShoppingListScreen({ navigation }: Props) {
   // 状态管理
@@ -393,13 +393,13 @@ export function ShoppingListScreen({ navigation }: Props) {
       <View style={styles.filterPanel}>
         {/* 按来源筛选 */}
         <View style={styles.filterSection}>
-          <Text style={styles.filterLabel}>按版本筛选</Text>
+          <Text style={styles.filterLabel}>按来源筛选</Text>
           <View style={styles.filterOptions}>
             {[
               { key: 'all', label: '全部', icon: '🍽️' },
-              { key: 'both', label: '共用', icon: '👨‍👶' },
-              { key: 'adult', label: '大人', icon: '👨' },
-              { key: 'baby', label: '宝宝', icon: '👶' },
+              { key: 'meal_plan', label: '周计划', icon: '🗓️' },
+              { key: 'recipe', label: '菜谱加入', icon: '📖' },
+              { key: 'manual', label: '手动添加', icon: '✍️' },
             ].map((option) => (
               <TouchableOpacity
                 key={option.key}
@@ -620,44 +620,58 @@ export function ShoppingListScreen({ navigation }: Props) {
               </View>
             </View>
 
-            {/* 一菜两吃统计 */}
-            {(() => {
-              const allItems = Object.values(shoppingList.items).flat();
-              const pairedItems = allItems.filter((item: any) => item.source);
-              if (pairedItems.length === 0) {return null;}
-
-              const bothCount = pairedItems.filter((item: any) => item.source === 'both').length;
-              const adultCount = pairedItems.filter((item: any) => item.source === 'adult').length;
-              const babyCount = pairedItems.filter((item: any) => item.source === 'baby').length;
-
-              return (
-                <View style={styles.pairedStatsCard}>
-                  <View style={styles.pairedStatsHeader}>
-                    <Text style={styles.pairedStatsIcon}>👨‍🍳👶</Text>
-                    <Text style={styles.pairedStatsTitle}>一菜两吃统计</Text>
-                  </View>
-                  <View style={styles.pairedStatsRow}>
-                    <View style={[styles.pairedStatItem, styles.pairedStatBoth]}>
-                      <Text style={styles.pairedStatValue}>{bothCount}</Text>
-                      <Text style={styles.pairedStatLabel}>共用食材</Text>
-                    </View>
-                    <View style={[styles.pairedStatItem, styles.pairedStatAdult]}>
-                      <Text style={styles.pairedStatValue}>{adultCount}</Text>
-                      <Text style={styles.pairedStatLabel}>大人版</Text>
-                    </View>
-                    <View style={[styles.pairedStatItem, styles.pairedStatBaby]}>
-                      <Text style={styles.pairedStatValue}>{babyCount}</Text>
-                      <Text style={styles.pairedStatLabel}>宝宝版</Text>
-                    </View>
-                  </View>
-                  {bothCount > 0 && (
-                    <Text style={styles.pairedStatsTip}>
-                      💡 有{bothCount}种食材大人宝宝共用，节省备菜时间！
-                    </Text>
-                  )}
+            {/* 闭环摘要 */}
+            {!!shoppingList?.inventory_summary && (
+              <View style={styles.pairedStatsCard}>
+                <View style={styles.pairedStatsHeader}>
+                  <Text style={styles.pairedStatsIcon}>🔄</Text>
+                  <Text style={styles.pairedStatsTitle}>本周计划闭环摘要</Text>
                 </View>
-              );
-            })()}
+                <View style={styles.pairedStatsRow}>
+                  <View style={[styles.pairedStatItem, styles.pairedStatBoth]}>
+                    <Text style={styles.pairedStatValue}>{shoppingList.inventory_summary.covered_count || 0}</Text>
+                    <Text style={styles.pairedStatLabel}>库存已覆盖</Text>
+                  </View>
+                  <View style={[styles.pairedStatItem, styles.pairedStatAdult]}>
+                    <Text style={styles.pairedStatValue}>{shoppingList.inventory_summary.missing_count || 0}</Text>
+                    <Text style={styles.pairedStatLabel}>仍需采购</Text>
+                  </View>
+                  <View style={[styles.pairedStatItem, styles.pairedStatBaby]}>
+                    <Text style={styles.pairedStatValue}>{shoppingList.inventory_summary.expiring_items?.length || 0}</Text>
+                    <Text style={styles.pairedStatLabel}>临期优先消耗</Text>
+                  </View>
+                </View>
+                <Text style={styles.pairedStatsTip}>
+                  💡 先用库存覆盖，再补缺口；做菜完成会优先扣减最早过期库存。
+                </Text>
+              </View>
+            )}
+
+            {/* 缺口 / 覆盖 */}
+            {!!shoppingList?.inventory_summary && (
+              <View style={styles.coverageCard}>
+                {(shoppingList.inventory_summary.missing_items || []).length > 0 && (
+                  <View style={styles.coverageSection}>
+                    <Text style={styles.coverageTitle}>🛒 本周缺口</Text>
+                    {(shoppingList.inventory_summary.missing_items || []).slice(0, 5).map((item: any) => (
+                      <Text key={`${item.name}-${item.source_recipe_id || item.source_date || ''}`} style={styles.coverageText}>
+                        • {item.name} {item.missing_amount || item.required_amount}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+                {(shoppingList.inventory_summary.covered_items || []).length > 0 && (
+                  <View style={styles.coverageSection}>
+                    <Text style={styles.coverageTitle}>✅ 已被库存覆盖</Text>
+                    {(shoppingList.inventory_summary.covered_items || []).slice(0, 5).map((item: any) => (
+                      <Text key={`${item.name}-${item.source_recipe_id || item.source_date || ''}-covered`} style={styles.coverageText}>
+                        • {item.name} {item.covered_amount || item.required_amount}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
 
             {/* 筛选栏 */}
             <FilterBar />
@@ -1039,6 +1053,27 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  coverageCard: {
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+    padding: Spacing.lg,
+    backgroundColor: Colors.background.card,
+    borderRadius: BorderRadius.lg,
+  },
+  coverageSection: {
+    marginBottom: Spacing.sm,
+  },
+  coverageTitle: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+    marginBottom: Spacing.xs,
+  },
+  coverageText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    lineHeight: 20,
   },
 
   // 筛选栏

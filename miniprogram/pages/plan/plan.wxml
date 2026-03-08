@@ -41,6 +41,18 @@
       <text class="clear-btn" bindtap="clearChecked">清除已购</text>
     </view>
 
+    <view wx:if="{{shoppingSummary}}" class="summary-card">
+      <view class="summary-row">
+        <text>库存覆盖 {{shoppingSummary.covered_count || 0}}</text>
+        <text>仍需购买 {{shoppingSummary.missing_count || 0}}</text>
+        <text>临期优先 {{shoppingSummary.expiring_items.length || 0}}</text>
+      </view>
+      <view wx:if="{{shoppingSummary.missing_items.length}}" class="summary-block">
+        <text class="summary-title">缺口</text>
+        <text wx:for="{{shoppingSummary.missing_items}}" wx:key="index">• {{item.name}} {{item.missing_amount || item.required_amount}}</text>
+      </view>
+    </view>
+
     <block wx:for="{{items}}" wx:key="index">
       <view class="list-item">
         <van-checkbox value="{{ item.checked }}" bind:change="toggleItem" data-index="{{index}}"/>

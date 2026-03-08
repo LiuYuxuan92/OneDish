@@ -1,6 +1,7 @@
 import { db, generateUUID } from '../config/database';
 import { isIngredientSuitable } from '../utils/recipe-pairing-engine';
 import { RecipeCalibrationService } from './recipe-calibration.service';
+import { ShoppingListInventoryService } from './shoppingList/shoppingListInventory.service';
 import { AISearchAdapter } from '../adapters/ai.adapter';
 import { logger } from '../utils/logger';
 import { userPreferenceService } from './user-preference.service';
@@ -46,6 +47,7 @@ interface RankingWeights {
 
 export class MealPlanService {
   private recipePoolCache: RecipePool | null = null;
+  private inventoryService = new ShoppingListInventoryService();
 
   private genInviteCode(prefix = 'MP'): string {
     return `${prefix}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
@@ -477,23 +479,7 @@ export class MealPlanService {
     }
     if (!adultVersion?.ingredients) return;
 
-    for (const ing of adultVersion.ingredients) {
-      const inventoryItems = await db('ingredient_inventory')
-        .where('user_id', userId)
-        .where('ingredient_name', ing.name)
-        .where('quantity', '>', 0)
-        .orderBy('expiry_date', 'asc')
-        .select('*');
-
-      if (inventoryItems.length === 0) continue;
-      const item = inventoryItems[0];
-      const newQty = Math.max(0, item.quantity - 1);
-      if (newQty === 0) {
-        await db('ingredient_inventory').where('id', item.id).delete();
-      } else {
-        await db('ingredient_inventory').where('id', item.id).update({ quantity: newQty });
-      }
-    }
+    await this.inventoryService.consumeIngredientsForRecipe(userId, adultVersion.ingredients);
 
     // 更新食谱完成统计（用于难度校准）
     const calibrationService = new RecipeCalibrationService();

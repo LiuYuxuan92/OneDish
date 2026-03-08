@@ -20,7 +20,7 @@ export class ShoppingListGenerationService {
       .where('meal_plans.user_id', user_id)
       .where('meal_plans.plan_date', date)
       .whereIn('meal_plans.meal_type', meal_types)
-      .select('recipes.*');
+      .select('recipes.*', 'meal_plans.meal_type as plan_meal_type', 'meal_plans.plan_date as source_date', 'meal_plans.recipe_id as plan_recipe_id');
 
     if (mealPlans.length === 0) {
       throw new Error('该日期没有餐食计划');
@@ -45,14 +45,24 @@ export class ShoppingListGenerationService {
       // 处理大人版食材
       if (adultVersion?.ingredients) {
         for (const ing of adultVersion.ingredients) {
-          this.addIngredientWithSource(adultIngredients, ing, recipe.name, 'adult', servings);
+          this.addIngredientWithSource(adultIngredients, ing, recipe, 'adult', servings, {
+            source: 'meal_plan',
+            source_date: recipe.source_date,
+            source_meal_type: recipe.plan_meal_type,
+            source_recipe_id: recipe.plan_recipe_id,
+          });
         }
       }
 
       // 处理宝宝版食材
       if (babyVersion?.ingredients) {
         for (const ing of babyVersion.ingredients) {
-          this.addIngredientWithSource(babyIngredients, ing, recipe.name, 'baby', servings);
+          this.addIngredientWithSource(babyIngredients, ing, recipe, 'baby', servings, {
+            source: 'meal_plan',
+            source_date: recipe.source_date,
+            source_meal_type: recipe.plan_meal_type,
+            source_recipe_id: recipe.plan_recipe_id,
+          });
         }
       }
 
@@ -235,14 +245,22 @@ export class ShoppingListGenerationService {
     // 处理大人版食材
     if (adultVersion?.ingredients) {
       for (const ing of adultVersion.ingredients) {
-        this.addIngredientWithSource(adultIngredients, ing, recipe.name, 'adult', servings);
+        this.addIngredientWithSource(adultIngredients, ing, recipe, 'adult', servings, {
+          source: 'recipe',
+          source_date: date,
+          source_recipe_id: recipe_id,
+        });
       }
     }
 
     // 处理宝宝版食材（如果有）
     if (babyVersion?.ingredients) {
       for (const ing of babyVersion.ingredients) {
-        this.addIngredientWithSource(babyIngredients, ing, recipe.name, 'baby', servings);
+        this.addIngredientWithSource(babyIngredients, ing, recipe, 'baby', servings, {
+          source: 'recipe',
+          source_date: date,
+          source_recipe_id: recipe_id,
+        });
       }
     }
 
@@ -281,33 +299,41 @@ export class ShoppingListGenerationService {
 
     // 合并到现有清单
     for (const [name, data] of ingredientMap) {
-      // 查询存储区域
       const ingredient = await db('ingredients')
         .where('name', name)
         .first();
 
       const category = this.inferCategoryByIngredient(ingredient, name);
       const estimatedPrice = ingredient?.average_price || 0;
+      const existingItemIndex = (existingItems[category] || []).findIndex((i: any) => this.canSafelyMergeItems(i, {
+        ...data,
+        name,
+        category,
+      }));
 
-      // 检查是否已存在
-      const existingItem = existingItems[category]?.find((i: any) => i.name === name);
-
-      if (existingItem) {
-        // 已存在，更新菜谱列表和来源标记
-        if (!existingItem.recipes.includes(recipe.name)) {
-          existingItem.recipes.push(recipe.name);
-        }
-        // 更新来源标记（如果变为共用）
+      if (existingItemIndex >= 0) {
+        const existingItem = existingItems[category][existingItemIndex];
+        existingItem.amount = this.combineAmounts(existingItem.amount, data.amount);
+        existingItem.recipes = Array.from(new Set([...(existingItem.recipes || []), ...(data.recipes || []), recipe.name]));
+        existingItem.is_merged = true;
+        existingItem.from_recipes = Array.from(new Set([...(existingItem.from_recipes || existingItem.recipes || []), ...(data.recipes || [])]));
         if (existingItem.source !== data.source) {
-          existingItem.source = 'both';
+          existingItem.source = existingItem.source === 'manual' ? data.source : existingItem.source;
         }
+        existingItem.source_recipe_id = existingItem.source_recipe_id || recipe_id;
+        existingItem.source_date = existingItem.source_date || date;
+        existingItem.servings = existingItem.servings || servings;
       } else {
-        // 不存在，添加新项
         if (!existingItems[category]) {
           existingItems[category] = [];
         }
         existingItems[category].push({
           ...data,
+          source: 'recipe',
+          source_date: date,
+          source_meal_type: null,
+          source_recipe_id: recipe_id,
+          servings,
           category,
           ingredient_id: ingredient?.id,
           estimated_price: estimatedPrice,
@@ -380,11 +406,18 @@ export class ShoppingListGenerationService {
   private addIngredientWithSource(
     map: Map<string, any>,
     ingredient: any,
-    recipeName: string,
+    recipe: any,
     source: 'adult' | 'baby',
-    servings: number = 2
+    servings: number = 2,
+    metadata: {
+      source?: 'meal_plan' | 'recipe' | 'manual';
+      source_date?: string;
+      source_meal_type?: string;
+      source_recipe_id?: string;
+    } = {}
   ) {
     const key = ingredient.name;
+    const recipeName = recipe?.name || '';
 
     if (map.has(key)) {
       const existing = map.get(key);
@@ -392,7 +425,6 @@ export class ShoppingListGenerationService {
         existing.recipes.push(recipeName);
       }
     } else {
-      // 根据 servings 调整食材数量
       const adjustedAmount = this.adjustAmountByServings(ingredient.amount, servings);
       map.set(key, {
         name: key,
@@ -400,7 +432,12 @@ export class ShoppingListGenerationService {
         note: ingredient.note,
         recipes: [recipeName],
         checked: false,
-        source, // 'adult' 或 'baby'
+        source,
+        list_source: metadata.source || 'recipe',
+        source_date: metadata.source_date || null,
+        source_meal_type: metadata.source_meal_type || null,
+        source_recipe_id: metadata.source_recipe_id || recipe?.id || null,
+        servings,
       });
     }
   }
@@ -449,7 +486,8 @@ export class ShoppingListGenerationService {
         // 新食材
         mergedMap.set(normalizedName, {
           ...data,
-          name: normalizedName,
+          name,
+          normalized_name: normalizedName,
           is_merged: false,
           from_recipes: [...data.recipes],
         });
@@ -464,6 +502,21 @@ export class ShoppingListGenerationService {
    */
   private normalizeIngredientName(name: string): string {
     return name.trim().toLowerCase();
+  }
+
+  private canSafelyMergeItems(existing: any, incoming: any): boolean {
+    if (!existing || !incoming) return false;
+    if (this.normalizeIngredientName(existing.name || '') !== this.normalizeIngredientName(incoming.name || '')) return false;
+    if (this.normalizeArea(existing.category || 'other') !== this.normalizeArea(incoming.category || 'other')) return false;
+
+    const parsedExisting = this.parseAmount(existing.amount || '');
+    const parsedIncoming = this.parseAmount(incoming.amount || '');
+
+    if (parsedExisting.unit && parsedIncoming.unit) {
+      return parsedExisting.unit === parsedIncoming.unit || this.canConvertUnit(parsedExisting.unit, parsedIncoming.unit);
+    }
+
+    return parsedExisting.unit === parsedIncoming.unit;
   }
 
   /**
@@ -635,6 +688,7 @@ export class ShoppingListGenerationService {
 
       grouped[category].push({
         ...data,
+        source: data.list_source || data.source || 'recipe',
         category,
         ingredient_id: ingredient?.id,
         estimated_price: estimatedPrice,
@@ -720,6 +774,11 @@ export class ShoppingListGenerationService {
       normalized[area].push(...list.map((item: any) => ({
         ...item,
         category: area,
+        source: item?.source || 'manual',
+        source_date: item?.source_date || null,
+        source_meal_type: item?.source_meal_type || null,
+        source_recipe_id: item?.source_recipe_id || null,
+        servings: typeof item?.servings === 'number' ? item.servings : null,
         assignee: typeof item?.assignee === 'undefined' ? null : item.assignee,
         status: item?.status || (item?.checked ? 'done' : 'todo'),
       })));
