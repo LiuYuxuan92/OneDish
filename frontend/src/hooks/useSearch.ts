@@ -3,12 +3,12 @@ import { searchApi, SearchResult, UnifiedSearchResult } from '../api/search';
 import { trackEvent } from '../analytics/sdk';
 
 // 统一搜索（联网搜索）
-export function useUnifiedSearch(keyword?: string) {
+export function useUnifiedSearch(keyword?: string, options?: { inventoryIngredients?: string[]; scenario?: string }) {
   return useQuery<UnifiedSearchResult>({
-    queryKey: ['search', 'unified', keyword],
+    queryKey: ['search', 'unified', keyword, options],
     queryFn: async () => {
       try {
-        const result = await searchApi.search(keyword!);
+        const result = await searchApi.search(keyword!, options);
 
         if (result.code && result.code !== 200) {
           console.error('[useUnifiedSearch] API error:', result.message);
@@ -35,12 +35,12 @@ export function useUnifiedSearch(keyword?: string) {
 }
 
 // 指定来源搜索
-export function useSourceSearch(keyword?: string, source?: 'local' | 'tianxing' | 'ai') {
+export function useSourceSearch(keyword?: string, source?: 'local' | 'tianxing' | 'ai', options?: { inventoryIngredients?: string[]; scenario?: string }) {
   return useQuery({
-    queryKey: ['search', source, keyword],
+    queryKey: ['search', source, keyword, options],
     queryFn: async () => {
       try {
-        const result = await searchApi.searchFromSource(keyword!, source!);
+        const result = await searchApi.searchFromSource(keyword!, source!, options);
 
         if (result.code && result.code !== 200) {
           console.error('[useSourceSearch] API error:', result.message);

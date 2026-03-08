@@ -16,6 +16,8 @@ export interface SearchResult {
   nutrition_info?: any;
   tags?: string[];
   category?: string[];
+  recommendation_explain?: string[];
+  ranking_reasons?: Array<{ code?: string; label?: string; detail?: string; contribution?: number }>;
 }
 
 // 搜索适配器接口

@@ -71,7 +71,16 @@ router.get('/', async (req: Request, res: Response, next: NextFunction): Promise
       return next(createError('请提供搜索关键词', 400, ErrorCodes.BAD_REQUEST));
     }
 
-    const result = await searchService.search(keyword);
+    const inventoryIngredients = typeof req.query.inventory_ingredients === 'string'
+      ? req.query.inventory_ingredients.split(/[、,，/\n\r;]/).map((item) => item.trim()).filter(Boolean)
+      : [];
+    const scenario = typeof req.query.scenario === 'string' ? req.query.scenario : undefined;
+
+    const result = await searchService.search(keyword, {
+      userId: req.user?.user_id,
+      inventoryIngredients,
+      scenario,
+    });
 
     res.json({
       code: 200,
@@ -98,7 +107,16 @@ router.get('/source/:source', async (req: Request, res: Response, next: NextFunc
       return next(createError('无效的搜索来源', 400, ErrorCodes.BAD_REQUEST));
     }
 
-    const results = await searchService.searchFromSource(keyword, source);
+    const inventoryIngredients = typeof req.query.inventory_ingredients === 'string'
+      ? req.query.inventory_ingredients.split(/[、,，/\n\r;]/).map((item) => item.trim()).filter(Boolean)
+      : [];
+    const scenario = typeof req.query.scenario === 'string' ? req.query.scenario : undefined;
+
+    const results = await searchService.searchFromSource(keyword, source, {
+      userId: req.user?.user_id,
+      inventoryIngredients,
+      scenario,
+    });
 
     res.json({
       code: 200,

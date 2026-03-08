@@ -6,6 +6,7 @@ import { logger } from '../utils/logger';
 import { quotaService } from './quota.service';
 import { metricsService } from './metrics.service';
 import { redisService } from './redis.service';
+import { searchRankingService } from './search-ranking.service';
 
 export interface ResolveRequest {
   query: string;
@@ -97,28 +98,48 @@ export class SearchService {
     return { items: [], route_used: 'local', cache_hit: false, degrade_level: 2 };
   }
 
-  async search(keyword: string): Promise<UnifiedSearchResult> {
-    const result = await this.resolve({ query: keyword, intent_type: 'search', user_tier: 'free', user_id: 'anonymous' });
+  async search(keyword: string, options?: { userId?: string; inventoryIngredients?: string[]; scenario?: string }): Promise<UnifiedSearchResult> {
+    const result = await this.resolve({ query: keyword, intent_type: 'search', user_tier: 'free', user_id: options?.userId || 'anonymous' });
+    const ranked = await searchRankingService.rank(result.items, {
+      userId: options?.userId,
+      keyword,
+      inventoryIngredients: options?.inventoryIngredients,
+      scenario: options?.scenario,
+      source: result.route_used,
+    });
     return {
-      results: result.items,
+      results: ranked,
       source: result.route_used === 'web' ? 'tianxing' : result.route_used,
-      total: result.items.length,
+      route_source: result.route_used,
+      total: ranked.length,
     } as UnifiedSearchResult;
   }
 
-  async searchFromSource(keyword: string, source: 'local' | 'tianxing' | 'ai'): Promise<SearchResult[]> {
+  async searchFromSource(keyword: string, source: 'local' | 'tianxing' | 'ai', options?: { userId?: string; inventoryIngredients?: string[]; scenario?: string }): Promise<SearchResult[]> {
     const trimmedKeyword = keyword.trim();
+    let results: SearchResult[] = [];
 
     switch (source) {
       case 'local':
-        return await this.localAdapter.search(trimmedKeyword);
+        results = await this.localAdapter.search(trimmedKeyword);
+        break;
       case 'tianxing':
-        return await this.tianxingAdapter.search(trimmedKeyword);
+        results = await this.tianxingAdapter.search(trimmedKeyword);
+        break;
       case 'ai':
-        return await this.aiAdapter.search(trimmedKeyword);
+        results = await this.aiAdapter.search(trimmedKeyword);
+        break;
       default:
-        return [];
+        results = [];
     }
+
+    return await searchRankingService.rank(results, {
+      userId: options?.userId,
+      keyword,
+      inventoryIngredients: options?.inventoryIngredients,
+      scenario: options?.scenario,
+      source,
+    });
   }
 
   setAIProvider(provider: AIProvider): void {

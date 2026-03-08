@@ -51,14 +51,26 @@ const normalizeUnifiedData = (data: any, meta?: any): UnifiedSearchResult => ({
 
 export const searchApi = {
   // 统一搜索
-  search: async (keyword: string) => {
-    const res = await apiClient.get<UnifiedSearchResult>('/search', { params: { keyword } });
+  search: async (keyword: string, options?: { inventoryIngredients?: string[]; scenario?: string }) => {
+    const res = await apiClient.get<UnifiedSearchResult>('/search', {
+      params: {
+        keyword,
+        inventory_ingredients: options?.inventoryIngredients?.join('、'),
+        scenario: options?.scenario,
+      },
+    });
     return { ...res, data: normalizeUnifiedData(res.data, (res as any).meta) };
   },
 
   // 指定来源搜索
-  searchFromSource: async (keyword: string, source: 'local' | 'tianxing' | 'ai') => {
-    const res = await apiClient.get<UnifiedSearchResult>(`/search/source/${source}`, { params: { keyword } });
+  searchFromSource: async (keyword: string, source: 'local' | 'tianxing' | 'ai', options?: { inventoryIngredients?: string[]; scenario?: string }) => {
+    const res = await apiClient.get<UnifiedSearchResult>(`/search/source/${source}`, {
+      params: {
+        keyword,
+        inventory_ingredients: options?.inventoryIngredients?.join('、'),
+        scenario: options?.scenario,
+      },
+    });
     return { ...res, data: normalizeUnifiedData(res.data, (res as any).meta) };
   },
 };

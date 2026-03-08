@@ -28,6 +28,13 @@ function adaptListData(items) {
   return items.map(item => adaptRecipeData(item));
 }
 
+const SCENARIOS = [
+  { key: 'quick', label: '赶时间', query: '赶时间 快手 简单点' },
+  { key: 'light', label: '清淡点', query: '清淡 少油' },
+  { key: 'appetite', label: '宝宝没胃口', query: '宝宝没胃口 开胃' },
+  { key: 'fish', label: '想吃鱼但别太复杂', query: '想吃鱼 但别太复杂' }
+];
+
 Page({
   data: {
     loading: false,
@@ -35,7 +42,11 @@ Page({
     results: [],
     history: [],
     showHistory: true,
-    preferenceSummaryText: ''
+    preferenceSummaryText: '',
+    inventoryIngredients: [],
+    inventoryFirst: true,
+    scenarios: SCENARIOS,
+    selectedScenario: ''
   },
 
   async onLoad() {
@@ -51,6 +62,17 @@ Page({
     // 加载搜索历史
     const history = wx.getStorageSync('search_history') || [];
     this.setData({ history });
+
+    try {
+      const inventoryRes = await require('../../utils/request')({
+        url: '/ingredient-inventory',
+        withAuth: true
+      });
+      const inventoryIngredients = Array.isArray(inventoryRes?.inventory)
+        ? inventoryRes.inventory.map(item => String(item.ingredient_name || '').trim()).filter(Boolean).slice(0, 20)
+        : [];
+      this.setData({ inventoryIngredients });
+    } catch (_) {}
   },
 
   onInput(e) {
@@ -71,7 +93,10 @@ Page({
 
   doSearch(keyword) {
     this.setData({ loading: true });
-    api.searchRecipes(keyword).then(res => {
+    api.searchRecipes(keyword, {
+      inventoryIngredients: this.data.inventoryFirst ? this.data.inventoryIngredients : [],
+      scenario: this.data.selectedScenario || undefined
+    }).then(res => {
       // 使用适配器转换数据
       const adaptedResults = adaptListData(res.items || []).map(item => ({
         ...item,
@@ -107,6 +132,24 @@ Page({
         }
       }
     });
+  },
+
+  toggleInventoryFirst() {
+    const next = !this.data.inventoryFirst;
+    this.setData({ inventoryFirst: next });
+    if (this.data.keyword.trim()) this.doSearch(this.data.keyword.trim());
+  },
+
+  onScenarioTap(e) {
+    const query = e.currentTarget.dataset.query;
+    const next = this.data.selectedScenario === query ? '' : query;
+    this.setData({
+      selectedScenario: next,
+      keyword: this.data.keyword || next
+    });
+    if (this.data.keyword || next) {
+      this.doSearch((this.data.keyword || next).trim());
+    }
   },
 
   onHistoryTap(e) {

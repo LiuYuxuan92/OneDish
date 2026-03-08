@@ -9,7 +9,7 @@
  * 5. 加载状态优化：骨架屏加载动画
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -35,6 +35,7 @@ import { useSaveSearchResult } from '../../hooks/useUserRecipes';
 import { trackEvent } from '../../analytics/sdk';
 import { useUserInfo } from '../../hooks/useUsers';
 import { buildSearchPreferenceHint, buildPreferenceLeadText } from '../../utils/preferenceCopy';
+import { ingredientInventoryApi } from '../../api/ingredientInventory';
 
 type Props = NativeStackScreenProps<RecipeStackParamList, 'Search'>;
 
@@ -53,12 +54,22 @@ const SOURCE_OPTIONS: { key: SearchSource; label: string; icon: string }[] = [
   { key: 'ai', label: 'AI推荐', icon: '🤖' },
 ];
 
+const SCENARIO_OPTIONS = [
+  { key: 'quick', label: '赶时间', query: '赶时间 快手 简单点' },
+  { key: 'light', label: '清淡点', query: '清淡 少油' },
+  { key: 'appetite', label: '宝宝没胃口', query: '宝宝没胃口 开胃' },
+  { key: 'fish', label: '想吃鱼但别太复杂', query: '想吃鱼 但别太复杂' },
+];
+
 export function SearchScreen({ navigation }: Props) {
   // inputValue: 用户正在输入的内容；submittedKeyword: 用户提交搜索的关键词
   const [inputValue, setInputValue] = useState('');
   const [submittedKeyword, setSubmittedKeyword] = useState('');
   const [searchSource, setSearchSource] = useState<SearchSource>('all');
   const [selectedRecipe, setSelectedRecipe] = useState<SearchResult | null>(null);
+  const [inventoryIngredients, setInventoryIngredients] = useState<string[]>([]);
+  const [inventoryFirstEnabled, setInventoryFirstEnabled] = useState(true);
+  const [selectedScenario, setSelectedScenario] = useState<string>('');
   // 详情页 Tab 状态
   const [activeDetailTab, setActiveDetailTab] = useState<'adult' | 'baby'>('adult');
   const [selectedDetailBabyAge, setSelectedDetailBabyAge] = useState(12);
@@ -69,14 +80,31 @@ export function SearchScreen({ navigation }: Props) {
   const saveSearchResult = useSaveSearchResult();
   const { data: userInfo } = useUserInfo();
 
+  useEffect(() => {
+    ingredientInventoryApi.getInventory().then((res: any) => {
+      const payload = res?.data || res;
+      const names = Array.isArray(payload?.inventory)
+        ? payload.inventory.map((item: any) => String(item?.ingredient_name || '').trim()).filter(Boolean)
+        : [];
+      setInventoryIngredients(names.slice(0, 20));
+    }).catch(() => {});
+  }, []);
+
+  const searchOptions = useMemo(() => ({
+    inventoryIngredients: inventoryFirstEnabled ? inventoryIngredients : [],
+    scenario: selectedScenario || undefined,
+  }), [inventoryFirstEnabled, inventoryIngredients, selectedScenario]);
+
   // 只有 submittedKeyword 有值时才触发查询，避免自动查询与手动搜索时序冲突
   const { data: unifiedData, isLoading: isUnifiedLoading } = useUnifiedSearch(
-    searchSource === 'all' ? submittedKeyword : undefined
+    searchSource === 'all' ? submittedKeyword : undefined,
+    searchOptions
   );
 
   const { data: sourceData, isLoading: isSourceLoading } = useSourceSearch(
     searchSource !== 'all' ? submittedKeyword : undefined,
-    searchSource !== 'all' ? searchSource : undefined
+    searchSource !== 'all' ? searchSource : undefined,
+    searchOptions
   );
 
   const hasSearched = submittedKeyword.length > 0;
@@ -106,9 +134,11 @@ export function SearchScreen({ navigation }: Props) {
         page_id: 'search',
         keyword: trimmed,
         search_mode: searchSource,
+        inventory_first: inventoryFirstEnabled,
+        scenario: selectedScenario || 'none',
       });
     }
-  }, [inputValue, searchSource]);
+  }, [inputValue, searchSource, inventoryFirstEnabled, selectedScenario]);
 
   const handleSourceChange = useCallback((source: SearchSource) => {
     setSearchSource(source);
@@ -512,39 +542,72 @@ export function SearchScreen({ navigation }: Props) {
   };
 
   const renderSearchBar = () => (
-    <View style={styles.searchBarContainer}>
-      <View style={styles.searchBar}>
-        <SearchIcon size={20} color={Colors.primary.main} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="搜索菜谱名称、食材..."
-          value={inputValue}
-          onChangeText={setInputValue}
-          placeholderTextColor={Colors.text.tertiary}
-          autoCorrect={false}
-          autoCapitalize="none"
-          returnKeyType="search"
-          onSubmitEditing={handleSearch}
-        />
-        {inputValue ? (
-          <TouchableOpacity
-            onPress={() => { setInputValue(''); setSubmittedKeyword(''); }}
-            style={styles.clearButton}
-          >
-            <XIcon size={18} color={Colors.text.secondary} />
-          </TouchableOpacity>
-        ) : null}
+    <>
+      <View style={styles.searchBarContainer}>
+        <View style={styles.searchBar}>
+          <SearchIcon size={20} color={Colors.primary.main} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="搜索菜谱名称、食材..."
+            value={inputValue}
+            onChangeText={setInputValue}
+            placeholderTextColor={Colors.text.tertiary}
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="search"
+            onSubmitEditing={handleSearch}
+          />
+          {inputValue ? (
+            <TouchableOpacity
+              onPress={() => { setInputValue(''); setSubmittedKeyword(''); setSelectedScenario(''); }}
+              style={styles.clearButton}
+            >
+              <XIcon size={18} color={Colors.text.secondary} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+        <TouchableOpacity
+          style={[styles.searchButton, !inputValue.trim() && styles.searchButtonDisabled]}
+          onPress={handleSearch}
+          disabled={!inputValue.trim()}
+        >
+          <Text style={[styles.searchButtonText, !inputValue.trim() && styles.searchButtonTextDisabled]}>
+            搜索
+          </Text>
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity
-        style={[styles.searchButton, !inputValue.trim() && styles.searchButtonDisabled]}
-        onPress={handleSearch}
-        disabled={!inputValue.trim()}
-      >
-        <Text style={[styles.searchButtonText, !inputValue.trim() && styles.searchButtonTextDisabled]}>
-          搜索
-        </Text>
-      </TouchableOpacity>
-    </View>
+      <View style={styles.assistRow}>
+        <TouchableOpacity
+          style={[styles.inventoryChip, inventoryFirstEnabled && styles.inventoryChipActive]}
+          onPress={() => setInventoryFirstEnabled((prev) => !prev)}
+        >
+          <Text style={[styles.inventoryChipText, inventoryFirstEnabled && styles.inventoryChipTextActive]}>
+            {inventoryFirstEnabled ? '✅ 库存优先' : '库存优先'}
+          </Text>
+          {!!inventoryIngredients.length && (
+            <Text style={styles.inventoryChipMeta}>已识别{inventoryIngredients.length}种</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scenarioRow}>
+        {SCENARIO_OPTIONS.map((option) => {
+          const active = selectedScenario === option.query;
+          return (
+            <TouchableOpacity
+              key={option.key}
+              style={[styles.scenarioChip, active && styles.scenarioChipActive]}
+              onPress={() => {
+                setSelectedScenario(active ? '' : option.query);
+                if (!inputValue.trim()) setInputValue(option.query);
+                if (!active && !submittedKeyword) setSubmittedKeyword(option.query);
+              }}
+            >
+              <Text style={[styles.scenarioChipText, active && styles.scenarioChipTextActive]}>{option.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </>
   );
 
   // 来源标签（优化版）
@@ -823,6 +886,60 @@ const styles = StyleSheet.create({
   },
   searchButtonTextDisabled: {
     color: Colors.text.tertiary,
+  },
+  assistRow: {
+    backgroundColor: Colors.background.primary,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.sm,
+  },
+  inventoryChip: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.neutral.gray100,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  inventoryChipActive: {
+    backgroundColor: '#EEF7F1',
+    borderColor: '#9FD3AF',
+  },
+  inventoryChipText: {
+    ...Typography.body.small,
+    color: Colors.text.secondary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  inventoryChipTextActive: {
+    color: '#1E7A38',
+  },
+  inventoryChipMeta: {
+    ...Typography.body.caption,
+    color: Colors.text.tertiary,
+    marginTop: 2,
+  },
+  scenarioRow: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+    gap: Spacing.sm,
+    backgroundColor: Colors.background.primary,
+  },
+  scenarioChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: '#F5F7FB',
+  },
+  scenarioChipActive: {
+    backgroundColor: '#E8F0FF',
+  },
+  scenarioChipText: {
+    ...Typography.body.small,
+    color: Colors.text.secondary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  scenarioChipTextActive: {
+    color: Colors.primary.main,
   },
 
   // 来源标签（优化版）

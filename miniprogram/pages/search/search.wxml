@@ -13,6 +13,26 @@
     <icon type="clear" size="16" color="#999" wx:if="{{keyword}}" bindtap="onClear"/>
   </view>
 
+  <view class="assist-bar">
+    <view class="inventory-toggle {{inventoryFirst ? 'active' : ''}}" bindtap="toggleInventoryFirst">
+      <text>{{inventoryFirst ? '✅ 库存优先' : '库存优先'}}</text>
+      <text class="assist-sub" wx:if="{{inventoryIngredients.length}}">已识别{{inventoryIngredients.length}}种现有食材</text>
+    </view>
+    <scroll-view scroll-x class="scenario-scroll">
+      <view class="scenario-list">
+        <view
+          class="scenario-chip {{selectedScenario === item.query ? 'active' : ''}}"
+          wx:for="{{scenarios}}"
+          wx:key="key"
+          bindtap="onScenarioTap"
+          data-query="{{item.query}}"
+        >
+          {{item.label}}
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
   <!-- 搜索历史 -->
   <view class="history-section" wx:if="{{showHistory && history.length}}">
     <view class="history-header">

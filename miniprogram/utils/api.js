@@ -93,8 +93,16 @@ function upgradeGuestLogin(payload) {
 }
 
 // 搜索菜谱
-function searchRecipes(keyword) {
-  return request({ url: '/recipes', data: { keyword }, withAuth: true });
+function searchRecipes(keyword, options = {}) {
+  return request({
+    url: '/search',
+    data: {
+      keyword,
+      inventory_ingredients: Array.isArray(options.inventoryIngredients) ? options.inventoryIngredients.join('、') : undefined,
+      scenario: options.scenario || undefined,
+    },
+    withAuth: true
+  });
 }
 
 // 获取收藏列表
