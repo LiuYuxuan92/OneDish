@@ -77,7 +77,7 @@ export function SettingsScreen({ navigation }: Props) {
     { icon: '🎨', title: '主题', type: 'navigation', value: themePreviews.find(t => t.mode === themeMode)?.name || '温暖橙', onPress: () => setShowThemeModal(true) },
     { icon: '🤖', title: 'AI 配置', type: 'navigation', onPress: () => navigation.navigate('AISettings') },
     { icon: '👨‍👩‍👧', title: '家庭成员', type: 'navigation', onPress: () => {} },
-    { icon: '🍽️', title: '饮食偏好', type: 'navigation', onPress: () => {} },
+    { icon: '🍽️', title: '饮食偏好', type: 'navigation', value: '宝宝月龄 / 食材 / 时间 / 难度', onPress: () => navigation.navigate('PreferenceSettings') },
     { icon: '🌐', title: '语言', type: 'navigation', value: '简体中文', onPress: () => {} },
     {
       icon: '📊',

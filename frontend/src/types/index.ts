@@ -34,6 +34,10 @@ export interface UserPreferences {
   max_prep_time?: number;
   favorite_categories?: string[];
   exclude_ingredients?: string[];
+  default_baby_age?: number;
+  prefer_ingredients?: string[] | string;
+  cooking_time_limit?: number;
+  difficulty_preference?: 'easy' | 'medium' | 'hard' | string;
 }
 
 // 菜谱类型
@@ -263,6 +267,7 @@ export type PlanStackParamList = {
 export type ProfileStackParamList = {
   Profile: undefined;
   Settings: undefined;
+  PreferenceSettings: undefined;
   AISettings: undefined;
   Favorites: undefined;
   EditProfile: undefined;

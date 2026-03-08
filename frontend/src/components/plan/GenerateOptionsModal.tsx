@@ -57,6 +57,7 @@ export function GenerateOptionsModal({
       <TouchableOpacity style={styles.genModalOverlay} activeOpacity={1} onPress={onClose}>
         <View style={styles.genModalContent} onStartShouldSetResponder={() => true}>
           <Text style={styles.genModalTitle}>生成周计划</Text>
+          <Text style={styles.genModalHint}>若不手动选择，将优先使用你已保存的默认月龄与饮食偏好。</Text>
 
           {/* 模式选择 */}
           {onSmartModeChange && (
@@ -168,8 +169,15 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.xl,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.sm,
     textAlign: 'center',
+  },
+  genModalHint: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+    lineHeight: 20,
   },
   modeSelector: {
     flexDirection: 'row',

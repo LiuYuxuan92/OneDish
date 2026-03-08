@@ -84,6 +84,7 @@ afterAll(() => {
 });
 
 import { MealPlanService } from '../mealPlan.service';
+import { userPreferenceService } from '../user-preference.service';
 
 describe('MealPlanService', () => {
   let mealPlanService: MealPlanService;
@@ -91,9 +92,48 @@ describe('MealPlanService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mealPlanService = new MealPlanService();
+    jest.spyOn(userPreferenceService, 'getUserPreferences').mockResolvedValue({
+      default_baby_age: 12,
+      prefer_ingredients: ['鸡蛋'],
+      exclude_ingredients: ['香菜'],
+      cooking_time_limit: 20,
+      difficulty_preference: 'easy',
+    });
   });
 
   describe('generateWeeklyPlan', () => {
+    it('should rank recipes by preferences with excluded ingredients filtered out', async () => {
+      const ranked = (mealPlanService as any).rankRecipesByPreferences([
+        {
+          id: 'r1',
+          name: '香菜炒蛋',
+          prep_time: 15,
+          difficulty: 'easy',
+          adult_version: { ingredients: [{ name: '香菜' }, { name: '鸡蛋' }] },
+        },
+        {
+          id: 'r2',
+          name: '鸡蛋羹',
+          prep_time: 10,
+          difficulty: 'easy',
+          adult_version: { ingredients: [{ name: '鸡蛋' }] },
+        },
+        {
+          id: 'r3',
+          name: '牛肉面',
+          prep_time: 18,
+          difficulty: 'hard',
+          adult_version: { ingredients: [{ name: '牛肉' }] },
+        },
+      ], {
+        prefer_ingredients: ['鸡蛋'],
+        exclude_ingredients: ['香菜'],
+        cooking_time_limit: 20,
+        difficulty_preference: 'easy',
+      });
+
+      expect(ranked.map((item: any) => item.id)).toEqual(['r2', 'r1', 'r3']);
+    });
     it('should generate a weekly plan with 7 days', async () => {
       const result = await mealPlanService.generateWeeklyPlan(
         'user-123',

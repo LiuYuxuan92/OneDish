@@ -5,8 +5,29 @@ import { usersApi, UserInfo, UpdateUserInfoRequest, UserPreferences } from '../a
 export function useUserInfo() {
   return useQuery({
     queryKey: ['users', 'me'],
-    queryFn: () => usersApi.getUserInfo().then(res => res.data || res),
-    staleTime: 5 * 60 * 1000, // 5分钟
+    queryFn: async () => {
+      const user = await usersApi.getUserInfo().then(res => res.data || res);
+      try {
+        const prefResponse = await usersApi.getPreferences();
+        const prefPayload = prefResponse?.data || prefResponse;
+        return {
+          ...user,
+          preferences: prefPayload?.preferences || prefPayload || user?.preferences || {},
+        };
+      } catch {
+        return user;
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// 获取用户偏好
+export function usePreferenceInfo() {
+  return useQuery({
+    queryKey: ['users', 'me', 'preferences'],
+    queryFn: () => usersApi.getPreferences().then(res => res.data || res),
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -32,6 +53,7 @@ export function useUpdatePreferences() {
       usersApi.updatePreferences(data).then(res => res.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users', 'me'] });
+      queryClient.invalidateQueries({ queryKey: ['users', 'me', 'preferences'] });
     },
   });
 }

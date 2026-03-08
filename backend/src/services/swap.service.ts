@@ -5,6 +5,7 @@ import { db } from '../config/database';
 import { logger } from '../utils/logger';
 import { BabyStageService } from './baby-stage.service';
 import { FavoriteService } from './favorite.service';
+import { userPreferenceService } from './user-preference.service';
 
 const SWAP_TIME_WINDOW_MINUTES = 10;
 
@@ -27,6 +28,8 @@ interface SwapResult {
   recipe: any;
   score: number;
   reasons: string[];
+  explain?: string[];
+  ranking_reasons?: Array<{ code: string; label: string; detail?: string; contribution: number }>;
 }
 
 /**
@@ -147,6 +150,10 @@ export class SwapService {
   async swapRecipe(params: SwapParams): Promise<SwapResult | null> {
     const { current_recipe_id, user_id, baby_age_months, preferred_categories: inputCategories } = params;
 
+    const userPrefs = await userPreferenceService.getUserPreferences(user_id);
+    const effectiveBabyAge = baby_age_months || userPrefs.default_baby_age;
+    const effectiveTimeLimit = userPrefs.cooking_time_limit;
+
     // 获取当前菜谱
     const currentRecipe = await db('recipes').where('id', current_recipe_id).first();
     if (!currentRecipe) {
@@ -155,11 +162,21 @@ export class SwapService {
     }
 
     // 获取所有可用菜谱（排除当前）
-    const allRecipes = await db('recipes')
+    let recipeQuery = db('recipes')
       .where('is_active', true)
       .whereNot('id', current_recipe_id)
-      .select('id', 'name', 'category', 'type', 'prep_time', 'total_time', 'stage', 'image_url')
-      .limit(100);
+      .select('id', 'name', 'category', 'type', 'prep_time', 'total_time', 'stage', 'image_url', 'adult_version', 'difficulty', 'calibrated_difficulty', 'age_min', 'age_max', 'baby_age_min', 'baby_age_max', 'baby_age_range');
+
+    if (effectiveTimeLimit) {
+      recipeQuery = recipeQuery.where('prep_time', '<=', effectiveTimeLimit) as any;
+    }
+
+    const allRecipes = (await recipeQuery.limit(100)).filter((recipe: any) => {
+      if (userPreferenceService.recipeContainsExcludedIngredient(recipe, userPrefs.exclude_ingredients)) {
+        return false;
+      }
+      return userPreferenceService.matchesBabyAge(recipe, effectiveBabyAge);
+    });
 
     if (allRecipes.length === 0) {
       return null;
@@ -173,10 +190,12 @@ export class SwapService {
       preferredCategories = await this.buildPreferredCategories(user_id);
     }
 
+    const preferredIngredients = userPrefs.prefer_ingredients;
+
     // 获取宝宝阶段
     let currentStage: any = null;
-    if (baby_age_months) {
-      currentStage = await this.babyStageService.getByAge(baby_age_months);
+    if (effectiveBabyAge) {
+      currentStage = await this.babyStageService.getByAge(effectiveBabyAge);
     }
 
     // 评分计算
@@ -203,20 +222,63 @@ export class SwapService {
 
       const stageMatched = isBabyStageMatched(item, currentStage);
 
-      const score =
+      const prefScore = userPreferenceService.scoreRecipeByPreferences(item, userPrefs, effectiveTimeLimit || currentMinutes || undefined);
+      const preferredIngredientHit = preferredIngredients.filter((target) =>
+        userPreferenceService.extractRecipeIngredientNames(item).some((name) => name.includes(target) || target.includes(name))
+      ).length;
+
+      let score =
         preferredCategoryHit * DEFAULT_SWAP_WEIGHTS.preference +
         categoryOverlap * DEFAULT_SWAP_WEIGHTS.category +
         (inSameTimeWindow ? DEFAULT_SWAP_WEIGHTS.time : 0) +
         (stageMatched ? DEFAULT_SWAP_WEIGHTS.stage : 0) -
         prepDiff * DEFAULT_SWAP_WEIGHTS.prepDiffPenalty;
 
+      score += prefScore.score + preferredIngredientHit * 18;
+
+      const rankingReasons = [
+        {
+          code: 'preference',
+          label: preferredIngredientHit > 0 ? `命中${preferredIngredientHit}项偏好食材` : '偏好食材命中较少',
+          detail: preferredIngredients.slice(0, 3).join('、') || '默认',
+          contribution: preferredIngredientHit * 18,
+        },
+        {
+          code: 'category',
+          label: preferredCategoryHit > 0 ? '命中常选分类' : '分类接近当前菜谱',
+          detail: [...itemCategory].slice(0, 2).join('、') || '默认',
+          contribution: preferredCategoryHit * DEFAULT_SWAP_WEIGHTS.preference + categoryOverlap * DEFAULT_SWAP_WEIGHTS.category,
+        },
+        {
+          code: 'time',
+          label: inSameTimeWindow ? '做饭时长与当前更接近' : '做饭时长略有变化',
+          detail: itemMinutes > 0 ? `约${itemMinutes}分钟` : '时长未知',
+          contribution: inSameTimeWindow ? DEFAULT_SWAP_WEIGHTS.time : Math.max(0, DEFAULT_SWAP_WEIGHTS.time - prepDiff),
+        },
+        {
+          code: 'baby',
+          label: stageMatched ? '宝宝月龄适配更好' : '宝宝适配一般',
+          detail: effectiveBabyAge ? `月龄${effectiveBabyAge}` : '未设置默认月龄',
+          contribution: stageMatched ? DEFAULT_SWAP_WEIGHTS.stage : 0,
+        },
+      ].sort((a, b) => b.contribution - a.contribution || a.code.localeCompare(b.code));
+
+      const explain = [
+        ...prefScore.reasons,
+        ...rankingReasons.filter((reason) => reason.contribution > 0).slice(0, 2).map((reason) => reason.label),
+      ].filter(Boolean).slice(0, 3);
+
       return {
         item,
         score,
         preferredCategoryHit,
+        preferredIngredientHit,
         inSameTimeWindow,
         stageMatched,
         categoryOverlap,
+        prefReasons: prefScore.reasons,
+        explain,
+        ranking_reasons: rankingReasons,
       };
     });
 
@@ -254,14 +316,16 @@ export class SwapService {
    * 构建返回结果
    */
   private buildResult(scoredEntry: any, currentRecipe: any): SwapResult {
-    const { item, score, preferredCategoryHit, inSameTimeWindow, stageMatched, categoryOverlap } = scoredEntry;
+    const { item, score, preferredCategoryHit, preferredIngredientHit, inSameTimeWindow, stageMatched, categoryOverlap, prefReasons, explain, ranking_reasons } = scoredEntry;
     
     // 构建原因列表
     const reasons: string[] = [];
     if (preferredCategoryHit > 0) reasons.push('符合你的偏好分类');
+    if (preferredIngredientHit > 0) reasons.push('命中偏好食材');
     if (categoryOverlap > 0) reasons.push(`与当前菜谱分类重叠: ${categoryOverlap}类`);
     if (inSameTimeWindow) reasons.push('烹饪时间相近');
     if (stageMatched) reasons.push('匹配宝宝当前发育阶段');
+    if (Array.isArray(prefReasons) && prefReasons.length > 0) reasons.push(...prefReasons.slice(0, 2));
     if (reasons.length === 0) reasons.push('综合评分最高');
 
     return {
@@ -276,9 +340,13 @@ export class SwapService {
         total_time: item.total_time,
         image_url: item.image_url,
         stage: item.stage,
+        recommendation_explain: explain || reasons.slice(0, 3),
+        ranking_reasons: ranking_reasons || [],
       },
       score,
       reasons,
+      explain: explain || reasons.slice(0, 3),
+      ranking_reasons: ranking_reasons || [],
     };
   }
 }

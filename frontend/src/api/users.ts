@@ -17,6 +17,10 @@ export interface UserPreferences {
   max_prep_time?: number;
   favorite_categories?: string[];
   exclude_ingredients?: string[];
+  default_baby_age?: number;
+  prefer_ingredients?: string[] | string;
+  cooking_time_limit?: number;
+  difficulty_preference?: 'easy' | 'medium' | 'hard' | string;
 }
 
 export interface UpdateUserInfoRequest {
@@ -30,6 +34,11 @@ export const usersApi = {
   // 获取用户信息
   getUserInfo: () => {
     return apiClient.get<UserInfo>('/users/me');
+  },
+
+  // 获取用户偏好
+  getPreferences: () => {
+    return apiClient.get<{ preferences: UserPreferences }>('/users/me/preferences');
   },
 
   // 更新用户信息

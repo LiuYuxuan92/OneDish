@@ -75,6 +75,7 @@ export class RecipeController {
         limit = 20,
       } = req.query;
 
+      const userId = (req as any).user?.user_id;
       const result = await this.recipeService.searchRecipes({
         keyword: keyword as string,
         type: type as string,
@@ -83,6 +84,7 @@ export class RecipeController {
         difficulty: difficulty as string,
         page: Number(page),
         limit: Number(limit),
+        user_id: userId,
       });
 
       res.json({

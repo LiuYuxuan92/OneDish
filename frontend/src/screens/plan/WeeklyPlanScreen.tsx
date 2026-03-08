@@ -16,6 +16,7 @@ import { WeeklyShareModal } from '../../components/plan/WeeklyShareModal';
 import { ShareTemplateModal } from '../../components/plan/ShareTemplateModal';
 import { TodayDetailTab } from '../../components/plan/TodayDetailTab';
 import { weeklyPlanStyles as styles } from './weeklyPlanStyles';
+import { useUserInfo } from '../../hooks/useUsers';
 
 type Props = NativeStackScreenProps<PlanStackParamList, 'WeeklyPlan'>;
 
@@ -36,6 +37,13 @@ export function WeeklyPlanScreen({ navigation }: Props) {
   } = useWeeklyPlanState();
 
   const [showShareTemplate, setShowShareTemplate] = useState(false);
+
+  const { data: userInfo } = useUserInfo();
+  const preferredBabyAge = userInfo?.preferences?.default_baby_age ?? userInfo?.baby_age;
+  const preferredExcludeIngredients = Array.isArray(userInfo?.preferences?.exclude_ingredients)
+    ? userInfo.preferences.exclude_ingredients
+    : [];
+  const preferredCookingTimeLimit = userInfo?.preferences?.cooking_time_limit ?? userInfo?.preferences?.max_prep_time;
 
   const { data: weeklyData, isLoading, error, refetch } = useWeeklyPlan();
   const generateMutation = useGenerateWeeklyPlan();
@@ -62,8 +70,13 @@ export function WeeklyPlanScreen({ navigation }: Props) {
       for (let i = 0; i < 7; i++) { const d = new Date(start); d.setDate(d.getDate() + i); const dateStr = d.toISOString().split('T')[0]; MEAL_TYPES.forEach(type => allMealKeys.push(dateStr + '-' + type)); }
       setRefreshingMeals(new Set(allMealKeys));
       const params: Record<string, unknown> = { start_date: formatDate(start) };
-      if (genBabyAge) params.baby_age_months = genBabyAge;
-      if (genExclude.trim()) params.exclude_ingredients = genExclude.split(/[,，、]/).map(s => s.trim()).filter(Boolean);
+      const effectiveBabyAge = genBabyAge ?? preferredBabyAge;
+      const effectiveExcludeIngredients = [
+        ...preferredExcludeIngredients,
+        ...genExclude.split(/[,，、]/).map(s => s.trim()).filter(Boolean),
+      ].filter((value, index, arr) => value && arr.indexOf(value) === index);
+      if (effectiveBabyAge) params.baby_age_months = effectiveBabyAge;
+      if (effectiveExcludeIngredients.length > 0) params.exclude_ingredients = effectiveExcludeIngredients;
       await generateMutation.mutateAsync(params);
     } catch (genErr: unknown) {
       const err = genErr as { response?: { status: number }; statusCode?: number };
@@ -74,8 +87,13 @@ export function WeeklyPlanScreen({ navigation }: Props) {
 
   const handleSmartRecommendation = async () => {
     try {
-      await trackEvent('smart_recommendation_requested', { page_id: 'weekly_plan', meal_type: smartMealType, has_baby_age: Boolean(genBabyAge), has_exclude_ingredients: Boolean(genExclude.trim()) });
-      const data = await smartRecMutation.mutateAsync({ meal_type: smartMealType, baby_age_months: genBabyAge || undefined, exclude_ingredients: genExclude.trim() ? genExclude.split(/[,，、]/).map(s => s.trim()).filter(Boolean) : undefined, max_prep_time: 40 });
+      const effectiveBabyAge = genBabyAge ?? preferredBabyAge;
+      const effectiveExcludeIngredients = [
+        ...preferredExcludeIngredients,
+        ...genExclude.split(/[,，、]/).map(s => s.trim()).filter(Boolean),
+      ].filter((value, index, arr) => value && arr.indexOf(value) === index);
+      await trackEvent('smart_recommendation_requested', { page_id: 'weekly_plan', meal_type: smartMealType, has_baby_age: Boolean(effectiveBabyAge), has_exclude_ingredients: Boolean(effectiveExcludeIngredients.length), preference_time_limit: preferredCookingTimeLimit || null });
+      const data = await smartRecMutation.mutateAsync({ meal_type: smartMealType, baby_age_months: effectiveBabyAge || undefined, exclude_ingredients: effectiveExcludeIngredients.length ? effectiveExcludeIngredients : undefined, max_prep_time: preferredCookingTimeLimit || 40 });
       const mealGroupCount = Object.keys(data?.recommendations || {}).length;
       await trackEvent('smart_recommendation_viewed', { page_id: 'weekly_plan', meal_type: smartMealType, meal_group_count: mealGroupCount });
       setShowSmartRec(true);

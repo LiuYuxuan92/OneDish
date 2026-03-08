@@ -2,6 +2,7 @@ import { db } from '../config/database';
 import { Recipe, RecipeSummary, PaginationResult } from '../types';
 import { logger } from '../utils/logger';
 import { RecipeCalibrationService } from './recipe-calibration.service';
+import { userPreferenceService } from './user-preference.service';
 
 interface DailyRecommendationParams {
   type?: string;
@@ -17,6 +18,7 @@ interface SearchRecipesParams {
   difficulty?: string;
   page: number;
   limit: number;
+  user_id?: string;
 }
 
 export class RecipeService {
@@ -25,15 +27,22 @@ export class RecipeService {
     const { type, max_time = 30, user_id } = params;
     const mixUgcEnabled = process.env.RECOMMEND_MIX_UGC_ENABLED !== 'false';
 
+    const userPrefs = await userPreferenceService.getUserPreferences(user_id);
+    const effectiveMaxTime = userPrefs.cooking_time_limit || max_time;
+
     let profileTags: any = null;
     if (user_id) {
       const user = await db('users').where({ id: user_id }).first();
+      const normalizedPrefs = userPreferenceService.normalizePreferences(user?.preferences);
       profileTags = user?.preferences?.profile_tags || null;
+      if (!profileTags && normalizedPrefs.default_baby_age) {
+        profileTags = { baby_age_months: normalizedPrefs.default_baby_age };
+      }
     }
 
     let query = db('recipes')
       .where('is_active', true)
-      .where('prep_time', '<=', max_time);
+      .where('prep_time', '<=', effectiveMaxTime);
 
     if (type) {
       query = query.where('type', type) as any;
@@ -41,13 +50,28 @@ export class RecipeService {
       query = query.whereIn('type', profileTags.meal_slots) as any;
     }
 
-    const recipes = await query.select('*');
-    let recipe: any = recipes.length > 0 ? recipes[Math.floor(Math.random() * recipes.length)] : null;
+    const recipes = (await query.select('*')).filter((item: any) => {
+      if (userPreferenceService.recipeContainsExcludedIngredient(item, userPrefs.exclude_ingredients)) {
+        return false;
+      }
+      return userPreferenceService.matchesBabyAge(item, userPrefs.default_baby_age || profileTags?.baby_age_months);
+    });
+
+    const scoredRecipes = recipes
+      .map((item: any) => ({
+        recipe: item,
+        pref: userPreferenceService.scoreRecipeByPreferences(item, userPrefs, effectiveMaxTime),
+      }))
+      .sort((a, b) => b.pref.score - a.pref.score || a.recipe.prep_time - b.recipe.prep_time || a.recipe.id.localeCompare(b.recipe.id));
+
+    let recipe: any = scoredRecipes.length > 0
+      ? scoredRecipes[Math.floor(Math.random() * Math.min(3, scoredRecipes.length))].recipe
+      : null;
 
     if (mixUgcEnabled) {
       const ugcQuery = db('user_recipes')
         .where({ is_active: true, status: 'published', in_recommend_pool: true })
-        .where('prep_time', '<=', max_time)
+        .where('prep_time', '<=', effectiveMaxTime)
         .orderBy('quality_score', 'desc')
         .limit(30);
 
@@ -58,6 +82,12 @@ export class RecipeService {
       if (profileTags?.baby_stage) ugcQuery.andWhere('baby_age_range', 'like', `%${profileTags.baby_stage}%`);
 
       let ugcCandidates = await ugcQuery.select('*');
+      ugcCandidates = ugcCandidates.filter((r: any) => {
+        if (userPreferenceService.recipeContainsExcludedIngredient(r, userPrefs.exclude_ingredients)) {
+          return false;
+        }
+        return userPreferenceService.matchesBabyAge(r, userPrefs.default_baby_age || profileTags?.baby_age_months);
+      });
       if (Array.isArray(profileTags?.flavors) && profileTags.flavors.length > 0) {
         ugcCandidates = ugcCandidates.filter((r: any) => {
           const tags = Array.isArray(r.tags) ? r.tags : (() => {
@@ -66,6 +96,10 @@ export class RecipeService {
           return tags.some((t: string) => profileTags.flavors.includes(t));
         });
       }
+      ugcCandidates = ugcCandidates
+        .map((r: any) => ({ recipe: r, pref: userPreferenceService.scoreRecipeByPreferences(r, userPrefs, effectiveMaxTime) }))
+        .sort((a: any, b: any) => b.pref.score - a.pref.score || (b.recipe.quality_score || 0) - (a.recipe.quality_score || 0))
+        .map((entry: any) => entry.recipe);
       if (ugcCandidates.length > 0 && Math.random() < 0.3) {
         const picked = ugcCandidates[Math.floor(Math.random() * ugcCandidates.length)];
         recipe = {
@@ -77,10 +111,25 @@ export class RecipeService {
     }
 
     const parsedRecipe = this.parseRecipeJsonFields(recipe as any);
+    const selectedPrefScore = recipe
+      ? scoredRecipes.find((entry) => entry.recipe.id === recipe.id)?.pref
+      : null;
+    const recommendationExplain = selectedPrefScore?.reasons?.slice(0, 3) || [];
+    const rankingReasons = recommendationExplain.map((label: string, index: number) => ({
+      code: `preference_${index + 1}`,
+      label,
+      contribution: Math.max(0.1, 1 - index * 0.2),
+    }));
 
     return {
       date: new Date().toISOString().split('T')[0],
-      recipe: parsedRecipe,
+      recipe: parsedRecipe
+        ? {
+            ...parsedRecipe,
+            recommendation_explain: recommendationExplain,
+            ranking_reasons: rankingReasons,
+          }
+        : parsedRecipe,
     };
   }
 
@@ -168,18 +217,42 @@ export class RecipeService {
       difficulty,
       page = 1,
       limit = 20,
+      user_id,
     } = params;
 
     logger.info('[searchRecipes] params:', params);
 
+    const userPrefs = await userPreferenceService.getUserPreferences(user_id);
+    const effectiveMaxTime = max_time || userPrefs.cooking_time_limit;
+    const explicitDifficulty = difficulty ? userPreferenceService.normalizePreferences({ difficulty_preference: difficulty }).difficulty_preference : undefined;
+    const preferenceDifficulty = explicitDifficulty || userPrefs.difficulty_preference;
+    const effectiveBabyAge = userPrefs.default_baby_age;
+
     let query = db('recipes')
-      .where('is_active', 1)  // SQLite boolean: 1 = true
-      .select('id', 'name', 'type', 'prep_time', 'image_url', 'difficulty', 'calibrated_difficulty');
+      .where('is_active', 1)
+      .select(
+        'id',
+        'name',
+        'type',
+        'prep_time',
+        'image_url',
+        'difficulty',
+        'calibrated_difficulty',
+        'adult_version',
+        'baby_version',
+        'baby_age_range',
+        'suitable_baby_age',
+        'age_min',
+        'age_max',
+        'baby_age_min',
+        'baby_age_max',
+        'stage',
+        'created_at'
+      );
 
     logger.info('[searchRecipes] base query built');
 
     if (keyword && keyword.trim()) {
-      // 使用 LIKE 进行中文搜索（SQLite 对中文支持良好）
       const searchPattern = `%${keyword.trim()}%`;
       logger.info('[searchRecipes] keyword:', keyword, 'pattern:', searchPattern);
       query = query.andWhere(function() {
@@ -192,41 +265,61 @@ export class RecipeService {
       query = query.where('type', type);
     }
 
-    if (max_time) {
-      query = query.where('prep_time', '<=', max_time);
-    }
-
-    if (difficulty) {
-      query = query.where('difficulty', difficulty);
+    if (effectiveMaxTime) {
+      query = query.where('prep_time', '<=', effectiveMaxTime);
     }
 
     if (category) {
       query = query.whereRaw('? = ANY(category)', [category]);
     }
 
-    // 获取总数
-    const totalResult = await query.clone().count('* as count').first();
-    const total = Number(totalResult?.count || 0);
+    const rawItems = await query;
+
+    const filteredItems = (rawItems as any[]).filter((item) => {
+      if (userPreferenceService.recipeContainsExcludedIngredient(item, userPrefs.exclude_ingredients)) {
+        return false;
+      }
+      return userPreferenceService.matchesBabyAge(item, effectiveBabyAge);
+    });
+
+    const scoredItems = filteredItems
+      .map((item) => ({
+        item,
+        pref: userPreferenceService.scoreRecipeByPreferences(item, {
+          ...userPrefs,
+          cooking_time_limit: effectiveMaxTime,
+          difficulty_preference: preferenceDifficulty,
+        }, effectiveMaxTime),
+      }))
+      .sort((a, b) => {
+        const scoreDiff = b.pref.score - a.pref.score;
+        if (scoreDiff !== 0) return scoreDiff;
+        const timeDiff = (a.item.prep_time || 0) - (b.item.prep_time || 0);
+        if (timeDiff !== 0) return timeDiff;
+        return String(a.item.id).localeCompare(String(b.item.id));
+      });
+
+    const total = scoredItems.length;
     logger.info('[searchRecipes] total count:', total);
 
-    // 获取分页数据
-    const items = await query
-      .orderBy('created_at', 'desc')
-      .limit(limit)
-      .offset((page - 1) * limit);
-
-    // 转换结果，将校准难度加入
-    const transformedItems = (items as any[]).map((item) => ({
-      ...item,
-      // 使用校准后的难度（如果有）
-      difficulty: item.calibrated_difficulty || item.difficulty,
-    }));
+    const pagedItems = scoredItems
+      .slice((page - 1) * limit, page * limit)
+      .map(({ item, pref }) => ({
+        id: item.id,
+        name: item.name,
+        type: item.type,
+        prep_time: item.prep_time,
+        image_url: item.image_url,
+        difficulty: item.calibrated_difficulty || item.difficulty,
+        preference_match_score: pref.score,
+        preference_match_reasons: pref.reasons,
+      }));
 
     return {
       total,
       page,
       limit,
-      items: transformedItems,
+      items: pagedItems as any,
     };
   }
 

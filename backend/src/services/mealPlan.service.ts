@@ -3,6 +3,7 @@ import { isIngredientSuitable } from '../utils/recipe-pairing-engine';
 import { RecipeCalibrationService } from './recipe-calibration.service';
 import { AISearchAdapter } from '../adapters/ai.adapter';
 import { logger } from '../utils/logger';
+import { userPreferenceService } from './user-preference.service';
 
 interface RecipePool {
   breakfast: any[];
@@ -134,19 +135,47 @@ export class MealPlanService {
     const end = new Date(start);
     end.setDate(end.getDate() + 6);
 
-    const maxPrepTime = preferences?.max_prep_time || 30;
-    const babyAgeMonths = preferences?.baby_age_months || null;
-    const excludeIngredients: string[] = preferences?.exclude_ingredients || [];
+    const userPrefs = await userPreferenceService.getUserPreferences(userId);
+    const inlinePrefs = userPreferenceService.normalizePreferences(preferences || {});
+    const maxPrepTime = preferences?.max_prep_time || inlinePrefs.cooking_time_limit || userPrefs.cooking_time_limit || 30;
+    const babyAgeMonths = preferences?.baby_age_months || inlinePrefs.default_baby_age || userPrefs.default_baby_age || null;
+    const excludeIngredients: string[] = [
+      ...new Set([
+        ...(Array.isArray(preferences?.exclude_ingredients) ? preferences.exclude_ingredients : []),
+        ...inlinePrefs.exclude_ingredients,
+        ...userPrefs.exclude_ingredients,
+      ])
+    ];
+    const preferIngredients: string[] = [
+      ...new Set([
+        ...(Array.isArray(preferences?.prefer_ingredients) ? preferences.prefer_ingredients : []),
+        ...inlinePrefs.prefer_ingredients,
+        ...userPrefs.prefer_ingredients,
+      ])
+    ];
+    const difficultyPreference = inlinePrefs.difficulty_preference || userPrefs.difficulty_preference;
 
     const existingPlans = await this.getExistingPlans(userId, start, end);
     const recipePool = await this.getRecipePool(maxPrepTime);
 
-    if (babyAgeMonths) {
-      for (const mealType of ['breakfast', 'lunch', 'dinner'] as const) {
+    for (const mealType of ['breakfast', 'lunch', 'dinner'] as const) {
+      recipePool[mealType] = recipePool[mealType]
+        .filter(recipe => !userPreferenceService.recipeContainsExcludedIngredient(recipe, excludeIngredients))
+        .filter(recipe => userPreferenceService.matchesBabyAge(recipe, babyAgeMonths || undefined));
+
+      if (babyAgeMonths) {
         recipePool[mealType] = recipePool[mealType].filter(recipe => (
           this.scoreRecipeForBaby(recipe, babyAgeMonths, excludeIngredients) >= 0
         ));
       }
+
+      recipePool[mealType] = this.rankRecipesByPreferences(recipePool[mealType], {
+        preferIngredients,
+        excludeIngredients,
+        cooking_time_limit: maxPrepTime,
+        difficulty_preference: difficultyPreference,
+        default_baby_age: babyAgeMonths || undefined,
+      });
     }
 
     const plans: Record<string, any> = {};
@@ -418,8 +447,17 @@ export class MealPlanService {
     if (availablePool.length === 0 && excludeId) availablePool = pool.filter(r => r.id !== excludeId);
     if (availablePool.length === 0) availablePool = pool;
 
-    const randomIndex = Math.floor(Math.random() * availablePool.length);
-    return availablePool[randomIndex];
+    return availablePool[0] || null;
+  }
+
+  private rankRecipesByPreferences(pool: any[], prefs: any): any[] {
+    return [...pool]
+      .map((recipe) => ({
+        recipe,
+        pref: userPreferenceService.scoreRecipeByPreferences(recipe, userPreferenceService.normalizePreferences(prefs), prefs?.cooking_time_limit),
+      }))
+      .sort((a, b) => b.pref.score - a.pref.score || a.recipe.prep_time - b.recipe.prep_time || a.recipe.id.localeCompare(b.recipe.id))
+      .map((entry) => entry.recipe);
   }
 
   async markMealCompleted(userId: string, planId: string) {
@@ -499,15 +537,18 @@ export class MealPlanService {
 
   async getSmartRecommendations(userId: string, input: SmartRecommendationInput) {
     const mealType = input.meal_type || 'all-day';
-    const maxPrepTime = input.max_prep_time || 40;
-    const babyAgeMonths = input.baby_age_months;
-    const excludeIngredients = input.exclude_ingredients || [];
+    const userPrefs = await userPreferenceService.getUserPreferences(userId);
+    const maxPrepTime = input.max_prep_time || userPrefs.cooking_time_limit || 40;
+    const babyAgeMonths = input.baby_age_months || userPrefs.default_baby_age;
+    const excludeIngredients = [...new Set([...(input.exclude_ingredients || []), ...userPrefs.exclude_ingredients])];
 
     const inventoryFromDb = await db('ingredient_inventory').where('user_id', userId).where('quantity', '>', 0).select('ingredient_name');
     const inventorySet = new Set<string>([
       ...(input.inventory || []),
       ...inventoryFromDb.map((row: any) => row.ingredient_name),
     ]);
+    const preferIngredients = userPrefs.prefer_ingredients;
+    preferIngredients.forEach((item) => inventorySet.add(item));
 
     // 获取即将过期的食材（3天内）
     const today = new Date();
@@ -526,11 +567,13 @@ export class MealPlanService {
 
     const targetMealTypes: MealType[] = mealType === 'all-day' ? ['breakfast', 'lunch', 'dinner'] : [mealType as MealType];
 
-    const recipes = await db('recipes')
+    const recipes = (await db('recipes')
       .where('is_active', true)
       .where('prep_time', '<=', maxPrepTime)
       .whereIn('type', targetMealTypes)
-      .select('*');
+      .select('*'))
+      .filter((recipe: any) => !userPreferenceService.recipeContainsExcludedIngredient(recipe, excludeIngredients))
+      .filter((recipe: any) => userPreferenceService.matchesBabyAge(recipe, babyAgeMonths || undefined));
 
     const grouped: Record<MealType, any[]> = { breakfast: [], lunch: [], dinner: [] };
     for (const r of recipes) {
@@ -552,6 +595,8 @@ export class MealPlanService {
           feedbackProfile,
           mealWeights,
           expiringIngredientsSet,
+          preferIngredients,
+          difficultyPreference: userPrefs.difficulty_preference,
         }))
         .filter((item) => item.score >= 0)
         .sort((a, b) => b.score - a.score || a.recipe.prep_time - b.recipe.prep_time || a.recipe.id.localeCompare(b.recipe.id));
@@ -679,9 +724,11 @@ export class MealPlanService {
       feedbackProfile: any;
       mealWeights: RankingWeights;
       expiringIngredientsSet?: Set<string>;
+      preferIngredients?: string[];
+      difficultyPreference?: string;
     }
   ) {
-    const { babyAgeMonths, inventorySet, excludeIngredients = [], maxPrepTime, feedbackProfile, mealWeights, expiringIngredientsSet } = opts;
+    const { babyAgeMonths, inventorySet, excludeIngredients = [], maxPrepTime, feedbackProfile, mealWeights, expiringIngredientsSet, preferIngredients = [], difficultyPreference } = opts;
     let ingredients: string[] = [];
     let babySuitable = true;
 
@@ -720,6 +767,13 @@ export class MealPlanService {
     const normalizedMaxPrep = Math.max(10, maxPrepTime || 40);
     const prep = Number(recipe.prep_time) || normalizedMaxPrep;
     const timeScore = Math.max(0, 1 - prep / normalizedMaxPrep);
+    const preferredIngredientHits = preferIngredients.filter((target) =>
+      ingredients.some((ing) => ing.includes(target) || target.includes(ing))
+    ).length;
+    const difficultyRaw = String(recipe?.calibrated_difficulty || recipe?.difficulty || '').toLowerCase();
+    const difficultyScore = difficultyPreference
+      ? (difficultyRaw === difficultyPreference ? 1 : (difficultyPreference === 'easy' && difficultyRaw === 'hard' ? 0.1 : 0.6))
+      : 0.6;
     const inventoryScore = inventorySet && inventorySet.size > 0
       ? Math.max(0, 1 - missingIngredients.length / Math.max(1, ingredients.length || 1))
       : 0.6;
@@ -746,7 +800,8 @@ export class MealPlanService {
       expiring_boost: mealWeights.expiring_boost * expiringBoostScore,
     };
 
-    const score = scoreParts.time + scoreParts.inventory + scoreParts.baby + scoreParts.feedback + scoreParts.expiring_boost;
+    const preferenceBonus = preferredIngredientHits * 0.08 + (difficultyScore - 0.6) * 0.12;
+    const score = scoreParts.time + scoreParts.inventory + scoreParts.baby + scoreParts.feedback + scoreParts.expiring_boost + preferenceBonus;
 
     const rankingReasons = [
       { code: 'time', label: prep <= 20 ? '准备时间更短' : '准备耗时可接受', contribution: scoreParts.time, detail: `约${prep}分钟` },
@@ -754,6 +809,8 @@ export class MealPlanService {
       { code: 'baby', label: babyAgeMonths ? (babySuitable ? '宝宝月龄适配更好' : '宝宝适配一般') : '未启用宝宝筛选', contribution: scoreParts.baby, detail: babyAgeMonths ? `月龄${babyAgeMonths}` : '默认' },
       { code: 'feedback', label: '历史反馈衰减学习加权', contribution: scoreParts.feedback, detail: `7天${Math.round((feedbackProfile.window_7d?.adoption_rate || 0) * 100)}%/30天${Math.round((feedbackProfile.window_30d?.adoption_rate || 0) * 100)}%` },
       { code: 'expiring_boost', label: expiringMatchCount > 0 ? `使用${expiringMatchCount}种即将过期食材` : '无即将过期食材', contribution: scoreParts.expiring_boost, detail: expiringMatchCount > 0 ? `过期食材${expiringMatchCount}项` : '默认' },
+      { code: 'preference', label: preferredIngredientHits > 0 ? `命中${preferredIngredientHits}项偏好食材` : '偏好食材命中较少', contribution: preferredIngredientHits * 0.08, detail: preferIngredients.slice(0, 3).join('、') || '默认' },
+      { code: 'difficulty', label: difficultyPreference ? (difficultyRaw === difficultyPreference ? '难度符合偏好' : '难度与偏好有偏差') : '未启用难度偏好', contribution: Math.max(0, (difficultyScore - 0.3) * 0.12), detail: difficultyRaw || '默认' },
     ].sort((a, b) => b.contribution - a.contribution || a.code.localeCompare(b.code));
 
     const explain = rankingReasons.filter(x => x.contribution > 0.03).slice(0, 3).map(x => x.label);

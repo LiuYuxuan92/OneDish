@@ -19,6 +19,7 @@ interface SmartRecommendation {
   baby_suitable: boolean;
   switch_hint: string;
   explain?: string[];
+  ranking_reasons?: Array<{ code?: string; label?: string; detail?: string; contribution?: number }>;
   vs_last?: string;
 }
 
@@ -83,6 +84,16 @@ export function SmartRecommendationModal({
                         <Text style={styles.genOptionLabel}>宝宝适配：{item.baby_suitable ? '是' : '否'}</Text>
                         <Text style={styles.genOptionLabel}>替换理由：{item.switch_hint}</Text>
                         <Text style={styles.genOptionLabel}>推荐理由：{item.explain?.join('；') || '综合评分更优'}</Text>
+                        {!!item.ranking_reasons?.length && (
+                          <Text style={styles.genOptionLabel}>
+                            偏好命中：{item.ranking_reasons
+                              ?.filter((reason) => ['preference', 'difficulty', 'baby', 'time'].includes(String(reason.code || '')))
+                              .slice(0, 2)
+                              .map((reason) => reason.detail || reason.label)
+                              .filter(Boolean)
+                              .join('；') || '已结合你的偏好与约束'}
+                          </Text>
+                        )}
                         <Text style={styles.genOptionLabel}>与上次不同：{item.vs_last || '暂无'}</Text>
                       </View>
                     );

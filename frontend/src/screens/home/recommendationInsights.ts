@@ -27,9 +27,18 @@ export const buildRecommendationReasons = (params: {
   recipe: any;
   currentStage?: any;
   preferredCategories?: string[];
+  preferenceSummary?: {
+    defaultBabyAge?: number;
+    preferIngredients?: string[];
+    excludeIngredients?: string[];
+    cookingTimeLimit?: number;
+    difficultyPreference?: string;
+  };
+  backendExplain?: string[];
+  backendReasons?: Array<{ code?: string; label?: string; detail?: string }>;
   limit?: number;
 }): RecommendationReason[] => {
-  const { recipe, currentStage, preferredCategories = [], limit = 3 } = params;
+  const { recipe, currentStage, preferredCategories = [], preferenceSummary, backendExplain = [], backendReasons = [], limit = 3 } = params;
   if (!recipe) {
     return [];
   }
@@ -68,6 +77,55 @@ export const buildRecommendationReasons = (params: {
       title: '命中家庭偏好',
       detail: `匹配你常选的分类：${preferredHit.slice(0, 2).join('、')}`,
       strength: 'high',
+    });
+  }
+
+  const normalizedPreferredIngredients = Array.isArray(preferenceSummary?.preferIngredients)
+    ? preferenceSummary?.preferIngredients.filter(Boolean)
+    : [];
+  const normalizedExcludedIngredients = Array.isArray(preferenceSummary?.excludeIngredients)
+    ? preferenceSummary?.excludeIngredients.filter(Boolean)
+    : [];
+  const backendExplainReason = backendExplain.find(Boolean);
+  if (backendExplainReason) {
+    reasons.push({
+      key: 'backend-preference-explain',
+      title: '已按你的偏好做推荐',
+      detail: backendExplainReason,
+      strength: 'high',
+    });
+  } else if (normalizedPreferredIngredients.length > 0 || normalizedExcludedIngredients.length > 0 || preferenceSummary?.cookingTimeLimit || preferenceSummary?.difficultyPreference) {
+    const summaryParts: string[] = [];
+    if (normalizedPreferredIngredients.length > 0) {
+      summaryParts.push(`偏好食材：${normalizedPreferredIngredients.slice(0, 2).join('、')}`);
+    }
+    if (normalizedExcludedIngredients.length > 0) {
+      summaryParts.push(`已避开：${normalizedExcludedIngredients.slice(0, 2).join('、')}`);
+    }
+    if (preferenceSummary?.cookingTimeLimit) {
+      summaryParts.push(`做饭时长控制在 ${preferenceSummary.cookingTimeLimit} 分钟内`);
+    }
+    if (preferenceSummary?.difficultyPreference) {
+      summaryParts.push(`难度偏好：${preferenceSummary.difficultyPreference}`);
+    }
+
+    if (summaryParts.length > 0) {
+      reasons.push({
+        key: 'preference-summary',
+        title: '已结合你的口味与做饭习惯',
+        detail: summaryParts.slice(0, 2).join('；'),
+        strength: 'medium',
+      });
+    }
+  }
+
+  const backendDetailReason = backendReasons.find((item) => item?.detail || item?.label);
+  if (backendDetailReason) {
+    reasons.push({
+      key: 'backend-ranking-reason',
+      title: backendDetailReason.label || '推荐匹配点',
+      detail: backendDetailReason.detail || '综合偏好与约束更匹配',
+      strength: 'medium',
     });
   }
 

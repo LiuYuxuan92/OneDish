@@ -1,11 +1,14 @@
 const request = require('./request');
 
 function getTodayRecommendation() {
-  return request({ url: '/recipes/daily' });
+  return request({
+    url: '/recipes/daily',
+    withAuth: true
+  });
 }
 
 function getRecipeList(params = {}) {
-  return request({ url: '/recipes', data: { page: 1, limit: 20, ...params } });
+  return request({ url: '/recipes', data: { page: 1, limit: 20, ...params }, withAuth: true });
 }
 
 function getRecipeDetail(id) {
@@ -72,7 +75,7 @@ function guestLogin(deviceId) {
 
 // 搜索菜谱
 function searchRecipes(keyword) {
-  return request({ url: '/recipes', data: { keyword } });
+  return request({ url: '/recipes', data: { keyword }, withAuth: true });
 }
 
 // 获取收藏列表
@@ -132,11 +135,17 @@ function generateAIBabyVersion(recipeId, babyAgeMonths, useAI = true) {
 }
 
 function normalizeUserPreferences(config = {}) {
+  const normalizedBabyAge = Number(config.default_baby_age);
+  const normalizedCookingTime = Number(config.cooking_time_limit);
   return {
-    default_baby_age: Number(config.default_baby_age) || 12,
-    prefer_ingredients: typeof config.prefer_ingredients === 'string' ? config.prefer_ingredients : '',
-    exclude_ingredients: typeof config.exclude_ingredients === 'string' ? config.exclude_ingredients : '',
-    cooking_time_limit: Number(config.cooking_time_limit) || 30,
+    default_baby_age: Number.isFinite(normalizedBabyAge) && normalizedBabyAge > 0 ? normalizedBabyAge : null,
+    prefer_ingredients: Array.isArray(config.prefer_ingredients)
+      ? config.prefer_ingredients.filter(Boolean).join('、')
+      : (typeof config.prefer_ingredients === 'string' ? config.prefer_ingredients : ''),
+    exclude_ingredients: Array.isArray(config.exclude_ingredients)
+      ? config.exclude_ingredients.filter(Boolean).join('、')
+      : (typeof config.exclude_ingredients === 'string' ? config.exclude_ingredients : ''),
+    cooking_time_limit: Number.isFinite(normalizedCookingTime) && normalizedCookingTime > 0 ? normalizedCookingTime : null,
     difficulty_preference: typeof config.difficulty_preference === 'string' ? config.difficulty_preference : 'medium'
   };
 }

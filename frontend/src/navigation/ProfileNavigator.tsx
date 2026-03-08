@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { SettingsScreen } from '../screens/profile/SettingsScreen';
+import { PreferenceSettingsScreen } from '../screens/profile/PreferenceSettingsScreen';
 import { AISettingsScreen } from '../screens/settings/AISettingsScreen';
 import { FavoritesScreen } from '../screens/profile/FavoritesScreen';
 import { EditProfileScreen } from '../screens/profile/EditProfileScreen';
@@ -28,6 +29,11 @@ export function ProfileNavigator() {
         name="Settings"
         component={SettingsScreen}
         options={{ title: '设置' }}
+      />
+      <Stack.Screen
+        name="PreferenceSettings"
+        component={PreferenceSettingsScreen}
+        options={{ title: '饮食偏好' }}
       />
       <Stack.Screen
         name="AISettings"

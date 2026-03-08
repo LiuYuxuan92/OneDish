@@ -5,6 +5,13 @@ const RECIPE_DETAIL_PENDING_KEY = 'pending_recipe_detail_id';
 // 后端数据适配器 - 将后端返回的数据转成前端期望的格式
 function adaptRecipeData(recipe) {
   if (!recipe) return null;
+
+  const recommendationExplain = Array.isArray(recipe.recommendation_explain)
+    ? recipe.recommendation_explain.filter(Boolean)
+    : [];
+  const rankingReasons = Array.isArray(recipe.ranking_reasons)
+    ? recipe.ranking_reasons
+    : [];
   
   const adapted = {
     ...recipe,
@@ -12,6 +19,9 @@ function adaptRecipeData(recipe) {
     title: recipe.name || recipe.title,
     cover_url: recipe.image_url || recipe.cover_url,
     cook_time: recipe.cook_time || recipe.total_time,
+    recommendation_explain: recommendationExplain,
+    ranking_reasons: rankingReasons,
+    preference_tip: recommendationExplain[0] || rankingReasons[0]?.detail || rankingReasons[0]?.label || '',
     
     // 成人版数据
     ingredients: recipe.adult_version?.ingredients || recipe.ingredients || [],
@@ -34,15 +44,51 @@ function adaptRecipeData(recipe) {
 }
 
 Page({
+  buildPreferenceSummary(config) {
+    if (!config) return '';
+
+    const parts = [];
+    if (config.default_baby_age) parts.push(`默认月龄 ${config.default_baby_age} 个月`);
+    if (config.prefer_ingredients) parts.push(`偏好食材 ${config.prefer_ingredients}`);
+    if (config.exclude_ingredients) parts.push(`避开 ${config.exclude_ingredients}`);
+    if (config.cooking_time_limit) parts.push(`${config.cooking_time_limit} 分钟内完成`);
+    return parts.slice(0, 2).join('｜');
+  },
+
+  async ensureUserPreferences() {
+    const token = wx.getStorageSync('token');
+    if (!token) {
+      this.setData({ userPreferences: null, preferenceSummaryText: '' });
+      return null;
+    }
+
+    if (this.data.userPreferences) {
+      return this.data.userPreferences;
+    }
+
+    try {
+      const config = await api.getUserPreferences();
+      const summary = this.buildPreferenceSummary(config);
+      this.setData({ userPreferences: config, preferenceSummaryText: summary });
+      return config;
+    } catch (err) {
+      console.log('[home] load user preferences failed:', err);
+      return null;
+    }
+  },
+
   data: {
     loading: false,
     swapping: false,
     error: null,
     recommendation: null,
-    currentVersion: 'adult' // adult | baby
+    currentVersion: 'adult', // adult | baby
+    userPreferences: null,
+    preferenceSummaryText: ''
   },
 
-  onShow() {
+  async onShow() {
+    await this.ensureUserPreferences();
     this.loadTodayRecommendation();
   },
 
@@ -77,6 +123,7 @@ Page({
     if (this.data.swapping) return;
     
     const currentId = this.data.recommendation?.id;
+    await this.ensureUserPreferences();
     this.setData({ swapping: true });
     
     try {

@@ -54,7 +54,8 @@ export function useHomeRecommendation(): UseHomeRecommendationReturn {
   const { data: allRecipesData } = useAllRecipes();
   const { data: favoritesData } = useFavorites({ page: 1, limit: 20 });
   const { data: userInfo } = useUserInfo();
-  const { data: currentStage } = useBabyStageByAge(9);
+  const preferredBabyAge = userInfo?.preferences?.default_baby_age ?? userInfo?.baby_age;
+  const { data: currentStage } = useBabyStageByAge(preferredBabyAge);
 
   // Local state
   const [refreshing, setRefreshing] = useState(false);
@@ -175,9 +176,28 @@ export function useHomeRecommendation(): UseHomeRecommendationReturn {
         recipe: currentRecipe,
         currentStage,
         preferredCategories,
+        preferenceSummary: {
+          defaultBabyAge: preferredBabyAge,
+          preferIngredients: Array.isArray(userInfo?.preferences?.prefer_ingredients)
+            ? userInfo?.preferences?.prefer_ingredients
+            : typeof userInfo?.preferences?.prefer_ingredients === 'string'
+              ? userInfo.preferences.prefer_ingredients.split(/[,，、]/).map((item) => item.trim()).filter(Boolean)
+              : [],
+          excludeIngredients: Array.isArray(userInfo?.preferences?.exclude_ingredients)
+            ? userInfo?.preferences?.exclude_ingredients
+            : [],
+          cookingTimeLimit: userInfo?.preferences?.cooking_time_limit ?? userInfo?.preferences?.max_prep_time,
+          difficultyPreference: userInfo?.preferences?.difficulty_preference,
+        },
+        backendExplain: Array.isArray((currentRecipe as any)?.recommendation_explain)
+          ? (currentRecipe as any).recommendation_explain
+          : [],
+        backendReasons: Array.isArray((currentRecipe as any)?.ranking_reasons)
+          ? (currentRecipe as any).ranking_reasons
+          : [],
         limit: 3,
       }),
-    [currentRecipe, currentStage, preferredCategories],
+    [currentRecipe, currentStage, preferredCategories, preferredBabyAge, userInfo?.preferences],
   );
 
   // Swap recipe handler

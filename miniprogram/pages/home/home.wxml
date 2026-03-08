@@ -69,6 +69,15 @@
         <view class="desc" wx:if="{{currentVersion === 'baby' ? (recommendation.baby_version && recommendation.baby_version.description) : recommendation.description}}">
           {{currentVersion === 'baby' ? (recommendation.baby_version && recommendation.baby_version.description) : recommendation.description}}
         </view>
+
+        <view class="baby-info" wx:if="{{recommendation.preference_tip || preferenceSummaryText}}">
+          <view class="baby-tips" wx:if="{{recommendation.preference_tip}}">
+            推荐依据：{{recommendation.preference_tip}}
+          </view>
+          <view class="baby-age" wx:if="{{preferenceSummaryText}}">
+            当前偏好：{{preferenceSummaryText}}
+          </view>
+        </view>
         
         <!-- 宝宝版额外信息 -->
         <view class="baby-info" wx:if="{{currentVersion === 'baby' && recommendation.baby_version}}">

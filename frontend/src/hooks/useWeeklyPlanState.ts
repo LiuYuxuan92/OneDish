@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Colors } from '../styles/theme';
+import { useUserInfo } from './useUsers';
 
 export const WEEKDAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 export const MEAL_TYPES = ['breakfast', 'lunch', 'dinner'] as const;
@@ -57,6 +58,7 @@ export interface WeeklyPlanState {
 }
 
 export function useWeeklyPlanState(): WeeklyPlanState {
+  const { data: userInfo } = useUserInfo();
   const [selectedWeek, setSelectedWeek] = useState(new Date());
   const [refreshingMeals, setRefreshingMeals] = useState<Set<string>>(new Set());
   const [isGenerating, setIsGenerating] = useState(false);
@@ -69,6 +71,11 @@ export function useWeeklyPlanState(): WeeklyPlanState {
   const [rejectReason, setRejectReason] = useState('');
   const [weeklyInviteCode, setWeeklyInviteCode] = useState('');
   const [activeShareId, setActiveShareId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const preferredBabyAge = userInfo?.preferences?.default_baby_age ?? userInfo?.baby_age ?? null;
+    setGenBabyAge((prev) => (prev == null ? preferredBabyAge : prev));
+  }, [userInfo?.preferences?.default_baby_age, userInfo?.baby_age]);
 
   const formatDate = (date: Date): string => date.toISOString().split('T')[0];
 
