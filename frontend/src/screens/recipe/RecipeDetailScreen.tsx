@@ -43,6 +43,7 @@ import { CookingTimerModal } from '../../components/common/CookingTimerModal';
 import { ImageCarousel } from '../../components/common/ImageCarousel';
 import { TimelineView } from '../../components/recipe/TimelineView';
 import { useTimeline } from '../../hooks/useTimeline';
+import { useCreateFeedingFeedback, useRecentFeedingFeedback } from '../../hooks/useFeedingFeedback';
 
 type Props = NativeStackScreenProps<RecipeStackParamList, 'RecipeDetail'>;
 
@@ -65,6 +66,8 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
   const [selectedBabyAge, setSelectedBabyAge] = useState<number>(12);
   const addRecipeToShoppingList = useAddRecipeToShoppingList();
   const { data: user } = useUserInfo();
+  const { data: recentFeedbacks = [] } = useRecentFeedingFeedback({ limit: 3, recipe_id: recipeId });
+  const createFeedingFeedback = useCreateFeedingFeedback();
 
   // AI 宝宝版本生成相关状态
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
@@ -125,6 +128,21 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
       setIsFavorite(!isFavorite);
     } catch (err: any) {
       Alert.alert('提示', err?.message || (isFavorite ? '取消收藏失败' : '收藏失败'));
+    }
+  };
+
+  const handleSubmitFeedingFeedback = async (acceptedLevel: 'like' | 'ok' | 'reject') => {
+    try {
+      await createFeedingFeedback.mutateAsync({
+        recipe_id: recipeId,
+        accepted_level: acceptedLevel,
+        baby_age_at_that_time: user?.baby_age || null,
+        allergy_flag: false,
+        note: acceptedLevel === 'reject' ? '最小版快捷反馈：本次未接受' : '',
+      });
+      Alert.alert('已记录', acceptedLevel === 'like' ? '已记录为喜欢' : acceptedLevel === 'ok' ? '已记录为一般接受' : '已记录为暂时拒绝');
+    } catch (error: any) {
+      Alert.alert('提示', error?.message || '提交反馈失败');
     }
   };
 
@@ -684,6 +702,34 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
             </TouchableOpacity>
           </>
         )}
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionIcon}>🍼</Text>
+            <Text style={styles.sectionTitle}>用餐反馈</Text>
+          </View>
+          <View style={styles.detailCard}>
+            <Text style={styles.tipsText}>先收口一个最小闭环：快速记录宝宝这次对这道菜的接受程度，后面再用于成长视角沉淀。</Text>
+            <View style={styles.feedbackActionRow}>
+              <TouchableOpacity style={styles.feedbackChipLike} onPress={() => handleSubmitFeedingFeedback('like')} disabled={createFeedingFeedback.isPending}>
+                <Text style={styles.feedbackChipText}>喜欢</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.feedbackChipNeutral} onPress={() => handleSubmitFeedingFeedback('ok')} disabled={createFeedingFeedback.isPending}>
+                <Text style={styles.feedbackChipText}>一般</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.feedbackChipReject} onPress={() => handleSubmitFeedingFeedback('reject')} disabled={createFeedingFeedback.isPending}>
+                <Text style={styles.feedbackChipText}>拒绝</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.feedbackRecentTitle}>最近反馈</Text>
+            {recentFeedbacks.length ? recentFeedbacks.map((item: any) => (
+              <View key={item.id} style={styles.feedbackRecentItem}>
+                <Text style={styles.feedbackRecentText}>• {item.accepted_level === 'like' ? '喜欢' : item.accepted_level === 'ok' ? '一般' : '拒绝'} · {new Date(item.created_at).toLocaleDateString()}</Text>
+                {!!item.note && <Text style={styles.feedbackRecentNote}>{item.note}</Text>}
+              </View>
+            )) : <Text style={styles.feedbackEmptyText}>还没有这道菜的反馈记录。</Text>}
+          </View>
+        </View>
 
         {/* 烹饪小贴士 */}
         {parsedTips && Array.isArray(parsedTips) && parsedTips.length > 0 && (
@@ -1991,4 +2037,59 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.medium,
     marginLeft: Spacing.xs,
   },
+  feedbackActionRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  feedbackChipLike: {
+    flex: 1,
+    backgroundColor: '#E8F5E9',
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+  },
+  feedbackChipNeutral: {
+    flex: 1,
+    backgroundColor: '#FFF8E1',
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+  },
+  feedbackChipReject: {
+    flex: 1,
+    backgroundColor: '#FFEBEE',
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+  },
+  feedbackChipText: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.text.primary,
+  },
+  feedbackRecentTitle: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.text.secondary,
+    marginBottom: Spacing.xs,
+  },
+  feedbackRecentItem: {
+    marginBottom: Spacing.xs,
+  },
+  feedbackRecentText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.primary,
+  },
+  feedbackRecentNote: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
+    marginLeft: Spacing.sm,
+  },
+  feedbackEmptyText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.tertiary,
+  },
+
 });

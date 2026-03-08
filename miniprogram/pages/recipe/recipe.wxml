@@ -76,6 +76,34 @@
           <view class="baby-desc">{{detail.baby_version.description}}</view>
         </view>
 
+
+        <view class="baby-section">
+          <view class="baby-title">用餐反馈</view>
+          <view class="baby-desc">先做一个最小记录：喜欢 / 一般 / 拒绝，可顺手标记是否过敏。</view>
+          <view class="ai-age-selector">
+            <view class="ai-age-option {{feedingAcceptedLevel === 'like' ? 'active' : ''}}" bindtap="onFeedingAcceptedLevelSelect" data-level="like">喜欢</view>
+            <view class="ai-age-option {{feedingAcceptedLevel === 'ok' ? 'active' : ''}}" bindtap="onFeedingAcceptedLevelSelect" data-level="ok">一般</view>
+            <view class="ai-age-option {{feedingAcceptedLevel === 'reject' ? 'active' : ''}}" bindtap="onFeedingAcceptedLevelSelect" data-level="reject">拒绝</view>
+          </view>
+          <checkbox-group bindchange="onFeedingAllergyChange">
+            <label style="display:flex;align-items:center;margin:12rpx 0;">
+              <checkbox value="1" checked="{{feedingAllergyFlag}}" />
+              <text style="margin-left:12rpx;font-size:26rpx;color:#666;">这次有过敏反应</text>
+            </label>
+          </checkbox-group>
+          <textarea placeholder="备注（可选）" value="{{feedingNote}}" bindinput="onFeedingNoteInput" style="width:100%;min-height:120rpx;background:#F7F8FA;border-radius:16rpx;padding:20rpx;box-sizing:border-box;font-size:26rpx;" />
+          <button class="ai-generate-btn" bindtap="submitFeedingFeedback" style="margin-top:20rpx;">提交用餐反馈</button>
+          <view wx:if="{{recentFeedingFeedbacks.length}}" style="margin-top:20rpx;">
+            <view class="baby-title" style="font-size:28rpx;">最近反馈</view>
+            <block wx:for="{{recentFeedingFeedbacks}}" wx:key="id">
+              <view style="padding:12rpx 0;border-bottom:1rpx solid #F0F0F0;">
+                <text style="font-size:24rpx;color:#333;">{{item.accepted_level === 'like' ? '喜欢' : item.accepted_level === 'ok' ? '一般' : '拒绝'}}{{item.allergy_flag ? ' · 过敏' : ''}}</text>
+                <text wx:if="{{item.note}}" style="display:block;font-size:22rpx;color:#999;margin-top:6rpx;">{{item.note}}</text>
+              </view>
+            </block>
+          </view>
+        </view>
+
         <!-- AI 生成宝宝版本按钮 -->
         <view class="ai-generate-section">
           <button class="ai-generate-btn" bindtap="openAIGenerateModal">

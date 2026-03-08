@@ -51,7 +51,11 @@ Page({
     selectedBabyAge: 12,
     generateUseAI: true,
     isGenerating: false,
-    aiResult: null
+    aiResult: null,
+    feedingAcceptedLevel: 'like',
+    feedingAllergyFlag: false,
+    feedingNote: '',
+    recentFeedingFeedbacks: []
   },
 
   onShow() {
@@ -80,6 +84,7 @@ Page({
       const detail = await api.getRecipeDetail(id);
       const adaptedDetail = adaptRecipeData(detail);
       this.setData({ detail: adaptedDetail });
+      this.loadRecentFeedingFeedbacks(id);
       cache.setCache(`recipe_${id}`, adaptedDetail);
     } catch (err) {
       const cached = cache.getCache(`recipe_${id}`);
@@ -170,6 +175,48 @@ Page({
     await this.openRecipeDetail(id);
   },
 
+
+  async loadRecentFeedingFeedbacks(recipeId) {
+    try {
+      const result = await api.getRecentFeedingFeedback({ recipe_id: recipeId, limit: 3 });
+      this.setData({ recentFeedingFeedbacks: result.items || [] });
+    } catch (_err) {
+      this.setData({ recentFeedingFeedbacks: [] });
+    }
+  },
+
+  onFeedingAcceptedLevelSelect(e) {
+    this.setData({ feedingAcceptedLevel: e.currentTarget.dataset.level });
+  },
+
+  onFeedingAllergyChange(e) {
+    this.setData({ feedingAllergyFlag: !!e.detail.value.length });
+  },
+
+  onFeedingNoteInput(e) {
+    this.setData({ feedingNote: e.detail.value || '' });
+  },
+
+  async submitFeedingFeedback() {
+    const { detail, feedingAcceptedLevel, feedingAllergyFlag, feedingNote } = this.data;
+    if (!detail?.id) return;
+
+    try {
+      await api.createFeedingFeedback({
+        recipe_id: detail.id,
+        accepted_level: feedingAcceptedLevel,
+        allergy_flag: feedingAllergyFlag,
+        note: feedingNote,
+      });
+      wx.showToast({ title: '反馈已记录', icon: 'success' });
+      this.setData({ feedingNote: '' });
+      this.loadRecentFeedingFeedbacks(detail.id);
+    } catch (err) {
+      console.error('[recipe] submit feeding feedback failed:', err);
+      wx.showToast({ title: '反馈失败', icon: 'none' });
+    }
+  },
+
   closeDetail() {
     this.setData({ detail: null });
   },
@@ -229,7 +276,11 @@ Page({
   closeAIGenerateModal() {
     this.setData({ 
       showAIGenerateModal: false,
-      aiResult: null
+      aiResult: null,
+    feedingAcceptedLevel: 'like',
+    feedingAllergyFlag: false,
+    feedingNote: '',
+    recentFeedingFeedbacks: []
     });
   },
 

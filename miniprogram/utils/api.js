@@ -200,6 +200,23 @@ async function updateUserPreferences(config) {
   return normalizeUserPreferences(result && result.preferences ? result.preferences : normalized);
 }
 
+
+function createFeedingFeedback(payload) {
+  return request({
+    url: '/feeding-feedbacks',
+    method: 'POST',
+    data: payload,
+    withAuth: true
+  });
+}
+
+function getRecentFeedingFeedback(params = {}) {
+  return request({
+    url: '/feeding-feedbacks/recent',
+    data: params,
+    withAuth: true
+  });
+}
 module.exports = {
   getTodayRecommendation,
   getRecipeList,
@@ -218,5 +235,7 @@ module.exports = {
   getMealPlans,
   generateAIBabyVersion,
   getUserPreferences,
-  updateUserPreferences
+  updateUserPreferences,
+  createFeedingFeedback,
+  getRecentFeedingFeedback
 };
