@@ -5,7 +5,7 @@ import { favoritesApi } from '../api/favorites';
 export function useFavorites(params?: { page?: number; limit?: number }) {
   return useQuery({
     queryKey: ['favorites', params],
-    queryFn: () => favoritesApi.getFavorites(params).then(res => res.data),
+    queryFn: () => favoritesApi.getFavorites(params).then(res => res.data || res),
     staleTime: 2 * 60 * 1000, // 2分钟
   });
 }

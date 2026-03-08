@@ -40,8 +40,9 @@ export class AuthService {
     email?: string;
     password: string;
     phone?: string;
+    preferences?: Record<string, any>;
   }) {
-    const { username, email, password, phone } = data;
+    const { username, email, password, phone, preferences } = data;
 
     // 生成密码哈希
     const password_hash = await bcrypt.hash(password, 10);
@@ -53,7 +54,7 @@ export class AuthService {
         password_hash,
         phone,
         family_size: 2,
-        preferences: {},
+        preferences: preferences || {},
       })
       .returning(['id', 'username', 'email', 'phone', 'created_at']);
 

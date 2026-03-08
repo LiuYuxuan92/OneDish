@@ -7,7 +7,7 @@ Page({
     babyAgeText: '',
     showPicker: false,
     ageOptions: [],
-    // AI 配置相关
+    // 用户偏好配置相关
     showAIConfigModal: false,
     aiConfig: {
       default_baby_age: 12,
@@ -113,15 +113,21 @@ Page({
     };
   },
 
-  // ========== AI 配置 ==========
+  // ========== 用户偏好配置 ==========
   async loadAIConfig() {
+    const token = wx.getStorageSync('token');
+    if (!token) {
+      console.log('[profile] skip loading preferences before login');
+      return;
+    }
+
     try {
-      const config = await api.getAIConfig();
+      const config = await api.getUserPreferences();
       if (config) {
         this.setData({ aiConfig: { ...this.data.aiConfig, ...config } });
       }
     } catch (err) {
-      console.log('[profile] load AI config failed, using defaults');
+      console.log('[profile] load user preferences failed, using defaults');
     }
   },
 
@@ -135,7 +141,13 @@ Page({
 
   onAIConfigInput(e) {
     const field = e.currentTarget.dataset.field;
-    const value = e.detail.value;
+    const rawValue = e.detail && e.detail.value !== undefined
+      ? e.detail.value
+      : e.currentTarget.dataset.value;
+
+    const numericFields = ['default_baby_age', 'cooking_time_limit'];
+    const value = numericFields.includes(field) ? Number(rawValue) : rawValue;
+
     this.setData({
       [`aiConfig.${field}`]: value
     });
@@ -149,14 +161,24 @@ Page({
   },
 
   async saveAIConfig() {
+    const token = wx.getStorageSync('token');
+    if (!token) {
+      wx.showToast({ title: '请先登录后再保存', icon: 'none' });
+      return;
+    }
+
     this.setData({ isSavingAI: true });
 
     try {
-      await api.updateAIConfig(this.data.aiConfig);
-      wx.showToast({ title: '配置已保存', icon: 'success' });
-      this.setData({ showAIConfigModal: false, isSavingAI: false });
+      const saved = await api.updateUserPreferences(this.data.aiConfig);
+      this.setData({
+        aiConfig: { ...this.data.aiConfig, ...saved },
+        showAIConfigModal: false,
+        isSavingAI: false
+      });
+      wx.showToast({ title: '偏好已保存', icon: 'success' });
     } catch (err) {
-      console.error('[profile] save AI config failed:', err);
+      console.error('[profile] save user preferences failed:', err);
       this.setData({ isSavingAI: false });
       wx.showToast({ title: err.message || '保存失败', icon: 'none' });
     }

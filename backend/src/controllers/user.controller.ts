@@ -92,11 +92,32 @@ export class UserController {
     }
   };
 
+  // 获取当前用户偏好
+  getPreferences = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const preferences = await this.userService.getPreferences(userId);
+
+      res.json({
+        code: 200,
+        message: 'success',
+        data: { preferences },
+      });
+    } catch (error) {
+      logger.error('Failed to get preferences', { error });
+      res.status(500).json({
+        code: 500,
+        message: '获取偏好失败',
+        data: null,
+      });
+    }
+  };
+
   // 更新用户偏好
   updatePreferences = async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.user_id;
-      const preferences = req.body;
+      const preferences = req.body?.preferences ?? req.body ?? {};
 
       const user = await this.userService.updatePreferences(userId, preferences);
 

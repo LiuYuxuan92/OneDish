@@ -5,7 +5,7 @@ import { usersApi, UserInfo, UpdateUserInfoRequest, UserPreferences } from '../a
 export function useUserInfo() {
   return useQuery({
     queryKey: ['users', 'me'],
-    queryFn: () => usersApi.getUserInfo().then(res => res.data),
+    queryFn: () => usersApi.getUserInfo().then(res => res.data || res),
     staleTime: 5 * 60 * 1000, // 5分钟
   });
 }

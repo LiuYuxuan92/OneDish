@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
@@ -344,23 +345,30 @@ export class AuthController {
   // 游客登录（用于Web开发测试）
   guestLogin = async (req: Request, res: Response) => {
     try {
-      // 查找或创建游客用户
-      let guestUser = await this.authService.findByUsernameOrEmail('guest');
+      const rawDeviceId = String(req.body?.device_id || req.headers['x-device-id'] || '').trim();
+      const normalizedDeviceId = rawDeviceId || `anonymous_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      const guestSeed = crypto.createHash('sha256').update(normalizedDeviceId).digest('hex').slice(0, 16);
+      const guestUsername = `guest_${guestSeed}`;
+      const guestEmail = `${guestUsername}@jianjiachu.local`;
+
+      // 每台设备绑定独立 guest 账号，避免游客之间串号
+      let guestUser = await this.authService.findByUsernameOrEmail(guestUsername, guestEmail);
 
       if (!guestUser) {
-        // 生成随机密码（16位，包含字母和数字）
         const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
 
-        // 创建游客用户
         guestUser = await this.authService.createUser({
-          username: 'guest',
-          email: 'guest@jianjiachu.local',
+          username: guestUsername,
+          email: guestEmail,
           password: randomPassword,
+          preferences: {
+            is_guest: true,
+            guest_device_id: normalizedDeviceId,
+          },
         });
-        logger.info('Guest user created', { userId: guestUser.id });
+        logger.info('Guest user created', { userId: guestUser.id, guestUsername });
       }
 
-      // 生成Token
       const token = this.authService.generateToken(guestUser);
       const refreshToken = this.authService.generateRefreshToken(guestUser);
 

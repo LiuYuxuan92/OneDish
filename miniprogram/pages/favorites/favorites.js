@@ -3,11 +3,14 @@ const api = require('../../utils/api');
 // 后端数据适配器
 function adaptRecipeData(recipe) {
   if (!recipe) return null;
+
+  const source = recipe.recipe || recipe;
   return {
-    ...recipe,
-    title: recipe.name || recipe.title,
-    cover_url: recipe.image_url || recipe.cover_url,
-    cook_time: recipe.cook_time || recipe.total_time,
+    ...source,
+    favorite_id: recipe.id,
+    title: source.name || source.title,
+    cover_url: source.image_url || source.cover_url,
+    cook_time: source.cook_time || source.total_time || source.prep_time,
   };
 }
 
@@ -58,7 +61,8 @@ Page({
 
   goToRecipe(e) {
     const id = e.currentTarget.dataset.id;
-    wx.navigateTo({ url: `/pages/recipe/recipe?id=${id}` });
+    wx.setStorageSync('pending_recipe_detail_id', id);
+    wx.switchTab({ url: '/pages/recipe/recipe' });
   },
 
   removeFavorite(e) {

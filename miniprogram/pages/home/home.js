@@ -1,5 +1,7 @@
 const api = require('../../utils/api');
 
+const RECIPE_DETAIL_PENDING_KEY = 'pending_recipe_detail_id';
+
 // 后端数据适配器 - 将后端返回的数据转成前端期望的格式
 function adaptRecipeData(recipe) {
   if (!recipe) return null;
@@ -103,14 +105,20 @@ Page({
   },
 
   goRecipe() {
-    // 跳转到菜谱详情页
-    if (this.data.recommendation?.id) {
-      wx.navigateTo({
-        url: `/pages/recipe/recipe?id=${this.data.recommendation.id}`
-      });
-    } else {
+    const recipeId = this.data.recommendation?.id;
+    if (!recipeId) {
       wx.switchTab({ url: '/pages/recipe/recipe' });
+      return;
     }
+
+    // recipe 是 tabBar 页面，不能 navigateTo，改为 switchTab + storage 透传目标详情
+    wx.setStorageSync(RECIPE_DETAIL_PENDING_KEY, recipeId);
+    wx.switchTab({
+      url: '/pages/recipe/recipe',
+      success: () => {
+        wx.showToast({ title: '正在打开菜谱', icon: 'none' });
+      }
+    });
   },
 
   goToSearch() {

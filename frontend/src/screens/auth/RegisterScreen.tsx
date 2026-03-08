@@ -50,15 +50,13 @@ export function RegisterScreen({ navigation }: any) {
     setLoading(true);
     try {
       const response = await authApi.register({ username, email, password });
-      if (response.data?.token) {
+      const payload = response?.data || response;
+      if (payload?.token) {
         // 注册成功，自动登录
-        await login(response.data.token, response.data.refresh_token);
-      } else if (response.data?.code === 200 || response.data?.code === 201) {
-        // 注册成功但需要手动登录
+        await login(payload.token, payload.refresh_token);
+      } else {
         Alert.alert('注册成功', '请登录');
         navigation.goBack();
-      } else {
-        Alert.alert('注册失败', response.data?.message || '未知错误');
       }
     } catch (error: any) {
       const message = error?.message || error?.response?.data?.message || '注册失败，请稍后重试';

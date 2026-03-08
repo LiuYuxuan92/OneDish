@@ -38,14 +38,13 @@ export function LoginScreen({ navigation }: any) {
     setLoading(true);
     try {
       const response = await authApi.login({ email, password });
+      const payload = response?.data || response;
 
-      if (response.data?.token) {
-        await login(response.data.token, response.data.refresh_token);
+      if (payload?.token) {
+        await login(payload.token, payload.refresh_token);
         // RootNavigator will automatically switch to MainNavigator
-      } else if (response.data?.code === 200) {
-        await login(response.data.data.token, response.data.data.refresh_token);
       } else {
-        Alert.alert('登录失败', response.data?.message || '未知错误');
+        Alert.alert('登录失败', response?.message || '未知错误');
       }
     } catch (error: any) {
       const message = error?.message || error?.response?.data?.message || '网络错误，请稍后重试';

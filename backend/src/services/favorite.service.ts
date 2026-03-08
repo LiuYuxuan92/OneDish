@@ -51,7 +51,8 @@ export class FavoriteService {
         'recipes.id as recipe_id',
         'recipes.name',
         'recipes.prep_time',
-        'recipes.image_url'
+        'recipes.image_url',
+        'recipes.category'
       )
       .orderBy('favorites.created_at', 'desc')
       .limit(limit)
@@ -68,6 +69,7 @@ export class FavoriteService {
           name: item.name,
           prep_time: item.prep_time,
           image_url: item.image_url,
+          category: item.category,
         },
         created_at: item.created_at,
       })),

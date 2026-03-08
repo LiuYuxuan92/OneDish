@@ -8,7 +8,8 @@ export function useAllRecipes() {
   return useQuery({
     queryKey: ['recipes', 'all'],
     queryFn: async () => {
-      const result = await recipesApi.getAll() as unknown as PaginationResult<RecipeSummary>;
+      const response = await recipesApi.getAll();
+      const result = (response?.data || response) as PaginationResult<RecipeSummary>;
       if (!result || !result.items) {
         return { total: 0, page: 1, limit: 20, items: [] };
       }
@@ -25,7 +26,8 @@ export function useDailyRecipe(params?: { type?: string; max_time?: number }) {
   return useQuery({
     queryKey: ['recipes', 'daily', params],
     queryFn: async () => {
-      const result = await recipesApi.getDaily(params);
+      const response = await recipesApi.getDaily(params);
+      const result = response?.data || response;
       if (!result) {
         return { date: '', recipe: null };
       }
@@ -58,7 +60,8 @@ export function useSearchRecipes(params: {
   return useQuery({
     queryKey: ['recipes', 'search', params],
     queryFn: async () => {
-      const result = await recipesApi.search(params) as unknown as PaginationResult<RecipeSummary>;
+      const response = await recipesApi.search(params);
+      const result = (response?.data || response) as PaginationResult<RecipeSummary>;
       if (!result || !result.items) {
         return { total: 0, page: 1, limit: 20, items: [] };
       }
@@ -73,8 +76,8 @@ export function useCategories() {
   return useQuery({
     queryKey: ['recipes', 'categories'],
     queryFn: async () => {
-      const result = await recipesApi.getCategories();
-      return result || [];
+      const response = await recipesApi.getCategories();
+      return response?.data || response || [];
     },
     staleTime: 7 * 24 * 60 * 60 * 1000,
   });
@@ -101,8 +104,8 @@ export function useSuggestByInventory(enabled: boolean = true) {
   return useQuery({
     queryKey: ['recipes', 'suggest-by-inventory'],
     queryFn: async () => {
-      const result = await recipesApi.suggestByInventory();
-      return result || [];
+      const response = await recipesApi.suggestByInventory();
+      return response?.data || response || [];
     },
     enabled,
     staleTime: 5 * 60 * 1000,

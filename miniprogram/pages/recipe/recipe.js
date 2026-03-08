@@ -2,6 +2,7 @@ const api = require('../../utils/api');
 const cache = require('../../utils/cache');
 
 const CACHE_KEY_RECIPES = 'recipes_list';
+const RECIPE_DETAIL_PENDING_KEY = 'pending_recipe_detail_id';
 
 // 后端数据适配器
 function adaptRecipeData(recipe) {
@@ -56,11 +57,40 @@ Page({
   onShow() {
     this.checkNetworkStatus();
     this.loadRecipes();
+    this.consumePendingRecipeDetail();
   },
 
   async checkNetworkStatus() {
     const isOnline = await cache.checkNetworkStatus();
     this.setData({ isOffline: !isOnline });
+  },
+
+  consumePendingRecipeDetail() {
+    const pendingId = wx.getStorageSync(RECIPE_DETAIL_PENDING_KEY);
+    if (!pendingId) return;
+
+    wx.removeStorageSync(RECIPE_DETAIL_PENDING_KEY);
+    this.openRecipeDetail(pendingId);
+  },
+
+  async openRecipeDetail(id) {
+    if (!id) return;
+
+    try {
+      const detail = await api.getRecipeDetail(id);
+      const adaptedDetail = adaptRecipeData(detail);
+      this.setData({ detail: adaptedDetail });
+      cache.setCache(`recipe_${id}`, adaptedDetail);
+    } catch (err) {
+      const cached = cache.getCache(`recipe_${id}`);
+      if (cached) {
+        this.setData({ detail: cached });
+        wx.showToast({ title: '网络不可用，显示缓存', icon: 'none' });
+      } else {
+        console.error('[recipe] open detail failed:', err);
+        wx.showToast({ title: '获取详情失败', icon: 'none' });
+      }
+    }
   },
 
   async loadRecipes(refresh = false) {
@@ -137,24 +167,7 @@ Page({
 
   async selectRecipe(e) {
     const id = e.currentTarget.dataset.id;
-    if (!id) return;
-    
-    // 尝试加载详情
-    try {
-      const detail = await api.getRecipeDetail(id);
-      // 使用适配器转换详情数据
-      const adaptedDetail = adaptRecipeData(detail);
-      this.setData({ detail: adaptedDetail });
-    } catch (err) {
-      // 尝试从缓存加载
-      const cached = cache.getCache(`recipe_${id}`);
-      if (cached) {
-        this.setData({ detail: cached });
-        wx.showToast({ title: '网络不可用', icon: 'none' });
-      } else {
-        wx.showToast({ title: '获取详情失败', icon: 'none' });
-      }
-    }
+    await this.openRecipeDetail(id);
   },
 
   closeDetail() {

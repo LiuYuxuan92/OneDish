@@ -1,13 +1,26 @@
 import { db } from '../config/database';
 
 export class UserService {
+  private normalizePreferences(raw: any) {
+    if (!raw) return {};
+    if (typeof raw === 'string') {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return {};
+      }
+    }
+    if (typeof raw === 'object') {
+      return raw;
+    }
+    return {};
+  }
+
   // 根据ID查找用户
   async findById(userId: string) {
     const user = await db('users').where('id', userId).first();
     if (!user) return user;
-    if (typeof user.preferences === 'string') {
-      try { user.preferences = JSON.parse(user.preferences); } catch { user.preferences = {}; }
-    }
+    user.preferences = this.normalizePreferences(user.preferences);
     return user;
   }
 
@@ -28,6 +41,11 @@ export class UserService {
     return user;
   }
 
+  async getPreferences(userId: string) {
+    const user = await this.findById(userId);
+    return this.normalizePreferences(user?.preferences);
+  }
+
   // 更新用户偏好
   async updatePreferences(userId: string, preferences: any) {
     const current = await this.findById(userId);
@@ -41,8 +59,8 @@ export class UserService {
       })
       .returning('*');
 
-    if (user && typeof user.preferences === 'string') {
-      try { user.preferences = JSON.parse(user.preferences); } catch {}
+    if (user) {
+      user.preferences = this.normalizePreferences(user.preferences);
     }
     return user;
   }

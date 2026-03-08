@@ -1,6 +1,19 @@
 const app = getApp();
 const api = require('../../utils/api');
 
+const GUEST_DEVICE_ID_KEY = 'guest_device_id';
+
+function getOrCreateGuestDeviceId() {
+  let deviceId = wx.getStorageSync(GUEST_DEVICE_ID_KEY);
+  if (deviceId) {
+    return deviceId;
+  }
+
+  deviceId = `wx_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
+  wx.setStorageSync(GUEST_DEVICE_ID_KEY, deviceId);
+  return deviceId;
+}
+
 Page({
   data: {
     loading: false,
@@ -76,7 +89,9 @@ Page({
     
     this.setData({ loading: true });
     
-    api.guestLogin().then((data) => {
+    const deviceId = getOrCreateGuestDeviceId();
+
+    api.guestLogin(deviceId).then((data) => {
       wx.setStorageSync('token', data.token);
       wx.setStorageSync('refresh_token', data.refresh_token);
       wx.setStorageSync('userInfo', data.user);

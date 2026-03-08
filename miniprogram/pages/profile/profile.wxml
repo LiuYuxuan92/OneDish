@@ -66,36 +66,42 @@
           <view 
             class="config-age-option {{aiConfig.default_baby_age === 6 ? 'active' : ''}}" 
             data-field="default_baby_age"
+            data-value="6"
             bindtap="onAIConfigInput">
             6月
           </view>
           <view 
             class="config-age-option {{aiConfig.default_baby_age === 8 ? 'active' : ''}}" 
             data-field="default_baby_age"
+            data-value="8"
             bindtap="onAIConfigInput">
             8月
           </view>
           <view 
             class="config-age-option {{aiConfig.default_baby_age === 10 ? 'active' : ''}}" 
             data-field="default_baby_age"
+            data-value="10"
             bindtap="onAIConfigInput">
             10月
           </view>
           <view 
             class="config-age-option {{aiConfig.default_baby_age === 12 ? 'active' : ''}}" 
             data-field="default_baby_age"
+            data-value="12"
             bindtap="onAIConfigInput">
             12月
           </view>
           <view 
             class="config-age-option {{aiConfig.default_baby_age === 18 ? 'active' : ''}}" 
             data-field="default_baby_age"
+            data-value="18"
             bindtap="onAIConfigInput">
             18月
           </view>
           <view 
             class="config-age-option {{aiConfig.default_baby_age === 24 ? 'active' : ''}}" 
             data-field="default_baby_age"
+            data-value="24"
             bindtap="onAIConfigInput">
             24月
           </view>
@@ -133,24 +139,28 @@
           <view 
             class="config-time-option {{aiConfig.cooking_time_limit === 15 ? 'active' : ''}}"
             data-field="cooking_time_limit"
+            data-value="15"
             bindtap="onAIConfigInput">
             15分钟
           </view>
           <view 
             class="config-time-option {{aiConfig.cooking_time_limit === 30 ? 'active' : ''}}"
             data-field="cooking_time_limit"
+            data-value="30"
             bindtap="onAIConfigInput">
             30分钟
           </view>
           <view 
             class="config-time-option {{aiConfig.cooking_time_limit === 45 ? 'active' : ''}}"
             data-field="cooking_time_limit"
+            data-value="45"
             bindtap="onAIConfigInput">
             45分钟
           </view>
           <view 
             class="config-time-option {{aiConfig.cooking_time_limit === 60 ? 'active' : ''}}"
             data-field="cooking_time_limit"
+            data-value="60"
             bindtap="onAIConfigInput">
             60分钟
           </view>

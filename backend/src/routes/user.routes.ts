@@ -14,7 +14,8 @@ router.get('/me', userController.getUserInfo);
 // 更新用户信息
 router.put('/me', userController.updateUserInfo);
 
-// 更新用户偏好
+// 当前用户偏好
+router.get('/me/preferences', userController.getPreferences);
 router.put('/me/preferences', userController.updatePreferences);
 router.put('/me/profile-tags', userController.updateProfileTags);
 

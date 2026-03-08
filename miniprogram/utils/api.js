@@ -21,13 +21,13 @@ async function swapRecommendation(currentId) {
       data: { current_recipe_id: currentId },
       withAuth: true  // 尝试认证以获取个性化推荐
     });
-    
-    if (result && result.code === 200 && result.data && result.data.recipe) {
-      return result.data.recipe;
+
+    if (result && result.recipe) {
+      return result.recipe;
     }
-    
+
     // 如果API失败，fallback到随机逻辑
-    console.warn('[api] swap API fallback to random');
+    console.warn('[api] swap API fallback to random', result);
     return swapRecommendationFallback(currentId);
   } catch (err) {
     console.error('[api] swapRecommendation error:', err);
@@ -62,10 +62,11 @@ function wechatLogin(code, userInfo) {
   });
 }
 
-function guestLogin() {
+function guestLogin(deviceId) {
   return request({
     url: '/auth/guest',
-    method: 'POST'
+    method: 'POST',
+    data: deviceId ? { device_id: deviceId } : {}
   });
 }
 
@@ -130,22 +131,37 @@ function generateAIBabyVersion(recipeId, babyAgeMonths, useAI = true) {
   });
 }
 
-// 获取用户 AI 配置
-function getAIConfig() {
-  return request({
-    url: '/ai-configs',
-    withAuth: true
-  });
+function normalizeUserPreferences(config = {}) {
+  return {
+    default_baby_age: Number(config.default_baby_age) || 12,
+    prefer_ingredients: typeof config.prefer_ingredients === 'string' ? config.prefer_ingredients : '',
+    exclude_ingredients: typeof config.exclude_ingredients === 'string' ? config.exclude_ingredients : '',
+    cooking_time_limit: Number(config.cooking_time_limit) || 30,
+    difficulty_preference: typeof config.difficulty_preference === 'string' ? config.difficulty_preference : 'medium'
+  };
 }
 
-// 更新用户 AI 配置
-function updateAIConfig(config) {
-  return request({
-    url: '/ai-configs',
-    method: 'PUT',
-    data: config,
+// 获取当前用户偏好配置（后端 users.preferences）
+async function getUserPreferences() {
+  const result = await request({
+    url: '/users/me/preferences',
     withAuth: true
   });
+
+  return normalizeUserPreferences(result && result.preferences ? result.preferences : result);
+}
+
+// 更新当前用户偏好配置（后端 users.preferences）
+async function updateUserPreferences(config) {
+  const normalized = normalizeUserPreferences(config);
+  const result = await request({
+    url: '/users/me/preferences',
+    method: 'PUT',
+    data: { preferences: normalized },
+    withAuth: true
+  });
+
+  return normalizeUserPreferences(result && result.preferences ? result.preferences : normalized);
 }
 
 module.exports = {
@@ -163,6 +179,6 @@ module.exports = {
   generateMealPlanFromPrompt,
   getMealPlans,
   generateAIBabyVersion,
-  getAIConfig,
-  updateAIConfig
+  getUserPreferences,
+  updateUserPreferences
 };

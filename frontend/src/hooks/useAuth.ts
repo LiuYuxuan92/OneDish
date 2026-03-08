@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Platform } from 'react-native';
+
+type WebStorageLike = {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+};
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import { apiClient } from '../api/client';
 
 // 存储键名
 const TOKEN_KEY = 'access_token';
@@ -9,25 +16,29 @@ const REFRESH_TOKEN_KEY = 'refresh_token';
 
 // Web平台使用localStorage，移动端使用AsyncStorage
 const isWeb = Platform.OS === 'web';
+const webStorage: WebStorageLike | null =
+  typeof globalThis !== 'undefined' && 'localStorage' in globalThis
+    ? ((globalThis as typeof globalThis & { localStorage: WebStorageLike }).localStorage)
+    : null;
 
 const tokenStorage = {
   async getToken(): Promise<string | null> {
     if (isWeb) {
-      return localStorage.getItem(TOKEN_KEY);
+      return webStorage?.getItem(TOKEN_KEY) || null;
     }
     return AsyncStorage.getItem(TOKEN_KEY);
   },
   async setToken(token: string): Promise<void> {
     if (isWeb) {
-      localStorage.setItem(TOKEN_KEY, token);
+      webStorage?.setItem(TOKEN_KEY, token);
     } else {
       await AsyncStorage.setItem(TOKEN_KEY, token);
     }
   },
   async removeToken(): Promise<void> {
     if (isWeb) {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(REFRESH_TOKEN_KEY);
+      webStorage?.removeItem(TOKEN_KEY);
+      webStorage?.removeItem(REFRESH_TOKEN_KEY);
     } else {
       await AsyncStorage.removeItem(TOKEN_KEY);
       await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
@@ -35,11 +46,23 @@ const tokenStorage = {
   },
 };
 
+// 共享认证状态，避免每个 useAuth 实例各自维护导致登录后界面不切换
+let authState = {
+  isAuthenticated: false,
+  isLoading: true,
+};
+
+const authListeners = new Set<(state: typeof authState) => void>();
+
+function emitAuthState(nextState: Partial<typeof authState>) {
+  authState = { ...authState, ...nextState };
+  authListeners.forEach(listener => listener(authState));
+}
+
 // Web平台游客登录
 async function guestLoginForAuth(): Promise<string | null> {
   try {
-    const baseUrl = 'http://localhost:3000/api/v1';
-    const response = await axios.post(`${baseUrl}/auth/guest`);
+    const response = await axios.post(`${(apiClient as any).client?.defaults?.baseURL || 'http://localhost:3000/api/v1'}/auth/guest`);
     const token = response.data?.data?.token;
     if (token) {
       await tokenStorage.setToken(token);
@@ -53,30 +76,34 @@ async function guestLoginForAuth(): Promise<string | null> {
 }
 
 export function useAuth() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [state, setState] = useState(authState);
 
   useEffect(() => {
+    authListeners.add(setState);
     checkAuth();
+    return () => {
+      authListeners.delete(setState);
+    };
   }, []);
 
   async function checkAuth() {
+    emitAuthState({ isLoading: true });
     try {
       const token = await tokenStorage.getToken();
       if (token) {
-        setIsAuthenticated(true);
+        emitAuthState({ isAuthenticated: true });
       } else if (isWeb) {
         // Web平台无token时，自动游客登录
         const guestToken = await guestLoginForAuth();
-        setIsAuthenticated(!!guestToken);
+        emitAuthState({ isAuthenticated: !!guestToken });
       } else {
-        setIsAuthenticated(false);
+        emitAuthState({ isAuthenticated: false });
       }
     } catch (error) {
       console.error('Failed to check auth:', error);
-      setIsAuthenticated(false);
+      emitAuthState({ isAuthenticated: false });
     } finally {
-      setIsLoading(false);
+      emitAuthState({ isLoading: false });
     }
   }
 
@@ -84,18 +111,18 @@ export function useAuth() {
     await tokenStorage.setToken(token);
     if (refreshToken) {
       if (isWeb) {
-        localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+        webStorage?.setItem(REFRESH_TOKEN_KEY, refreshToken);
       } else {
         await AsyncStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
       }
     }
-    setIsAuthenticated(true);
+    emitAuthState({ isAuthenticated: true, isLoading: false });
   }
 
   async function logout(): Promise<void> {
     await tokenStorage.removeToken();
-    setIsAuthenticated(false);
+    emitAuthState({ isAuthenticated: false, isLoading: false });
   }
 
-  return { isAuthenticated, isLoading, login, logout };
+  return { isAuthenticated: state.isAuthenticated, isLoading: state.isLoading, login, logout, checkAuth };
 }
