@@ -182,7 +182,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
             <TouchableOpacity style={styles.iconButton} onPress={handleSmartRecommendation} accessibilityLabel="三餐智能推荐"><Text style={{ color: Colors.primary.main, fontWeight: '700' }}>A/B</Text></TouchableOpacity>
             <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('ShoppingList')} accessibilityLabel="查看购物清单"><ShoppingBagIcon size={20} color={Colors.primary.main} /></TouchableOpacity>
             <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('TemplateDiscovery')} accessibilityLabel="浏览模板"><Text style={{ fontSize: 16 }}>📚</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton} onPress={handleOpenShareTemplate} disabled={!hasPlans} accessibilityLabel="分享为模板"><Text style={{ fontSize: 16 }}>📤</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.iconButton} onPress={handleOpenShareTemplate} disabled={!hasPlans} accessibilityLabel="保存为模板"><Text style={{ fontSize: 16 }}>💾</Text></TouchableOpacity>
           </View>
         </View>
         <View style={styles.tabContainer}>

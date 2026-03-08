@@ -1,76 +1,58 @@
 // @ts-nocheck
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  mealPlanTemplatesApi, 
-  BrowseTemplatesParams, 
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  mealPlanTemplatesApi,
+  BrowseTemplatesParams,
   CreateTemplateInput,
-  MealPlanTemplate 
+  ApplyTemplateInput,
 } from '../api/mealPlanTemplates';
 
-/**
- * 浏览公开模板列表
- */
-export function useBrowseTemplates(params?: BrowseTemplatesParams) {
+export function useMealPlanTemplates(params?: BrowseTemplatesParams) {
   return useQuery({
-    queryKey: ['mealPlanTemplates', 'browse', params],
-    queryFn: () => mealPlanTemplatesApi.browseTemplates(params).then(res => res.data),
-    staleTime: 5 * 60 * 1000, // 5分钟
+    queryKey: ['mealPlanTemplates', params],
+    queryFn: () => mealPlanTemplatesApi.listTemplates(params).then(res => res?.data || res),
+    staleTime: 60 * 1000,
   });
 }
 
-/**
- * 获取单个模板详情
- */
 export function useTemplateDetail(templateId: string) {
   return useQuery({
-    queryKey: ['mealPlanTemplates', templateId],
-    queryFn: () => mealPlanTemplatesApi.getTemplate(templateId).then(res => res.data),
+    queryKey: ['mealPlanTemplates', 'detail', templateId],
+    queryFn: () => mealPlanTemplatesApi.getTemplate(templateId).then(res => res?.data || res),
     enabled: !!templateId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
   });
 }
 
-/**
- * 发布周计划为模板
- */
-export function usePublishTemplate() {
+export function useCreateTemplate() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CreateTemplateInput) => 
-      mealPlanTemplatesApi.publishTemplate(data).then(res => res.data),
+    mutationFn: (data: CreateTemplateInput) => mealPlanTemplatesApi.createTemplate(data).then(res => res?.data || res),
     onSuccess: () => {
-      // 使缓存失效，刷新列表
       queryClient.invalidateQueries({ queryKey: ['mealPlanTemplates'] });
     },
   });
 }
 
-/**
- * 克隆模板到用户本周计划
- */
-export function useCloneTemplate() {
+export function useApplyTemplate() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (templateId: string) => 
-      mealPlanTemplatesApi.cloneTemplate(templateId).then(res => res.data),
+    mutationFn: ({ templateId, input }: { templateId: string; input: ApplyTemplateInput }) =>
+      mealPlanTemplatesApi.applyTemplate(templateId, input).then(res => res?.data || res),
     onSuccess: () => {
-      // 克隆成功后刷新周计划
       queryClient.invalidateQueries({ queryKey: ['mealPlans'] });
+      queryClient.invalidateQueries({ queryKey: ['mealPlanTemplates'] });
     },
   });
 }
 
-/**
- * 删除模板
- */
 export function useDeleteTemplate() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (templateId: string) => 
-      mealPlanTemplatesApi.deleteTemplate(templateId).then(res => res.data),
+    mutationFn: (templateId: string) => mealPlanTemplatesApi.deleteTemplate(templateId).then(res => res?.data || res),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mealPlanTemplates'] });
     },

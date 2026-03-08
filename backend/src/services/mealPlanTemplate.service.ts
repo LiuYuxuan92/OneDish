@@ -1,15 +1,25 @@
 import { db } from '../config/database';
 import { logger } from '../utils/logger';
 import { MealPlanService } from './mealPlan.service';
+import { familyService } from './family.service';
+
+export interface MealTemplateEntry {
+  source_date: string;
+  day_offset: number;
+  meal_type: 'breakfast' | 'lunch' | 'dinner' | string;
+  recipe_id: string;
+  recipe_name_snapshot?: string;
+  servings?: number;
+  status?: 'active' | 'missing_recipe';
+}
 
 export interface MealPlanTemplate {
   id: string;
   creator_user_id: string;
+  family_id?: string | null;
   title: string;
   description?: string;
-  plan_data: Record<string, { breakfast?: string; lunch?: string; dinner?: string }>;
-  baby_age_start_months?: number;
-  baby_age_end_months?: number;
+  plan_data: MealTemplateEntry[];
   tags: string[];
   clone_count: number;
   is_public: boolean;
@@ -21,76 +31,86 @@ export interface CreateTemplateInput {
   userId: string;
   title: string;
   description?: string;
-  planData: Record<string, { breakfast?: string; lunch?: string; dinner?: string }>;
-  babyAgeStartMonths?: number;
-  babyAgeEndMonths?: number;
+  planData?: MealTemplateEntry[];
   tags?: string[];
   isPublic?: boolean;
+  sourceStartDate?: string;
+  sourceEndDate?: string;
 }
 
 export interface BrowseTemplatesFilter {
-  babyAgeMonths?: number;
-  tags?: string[];
   creatorUserId?: string;
   page?: number;
   pageSize?: number;
+  includePublic?: boolean;
+}
+
+export interface ApplyTemplateInput {
+  targetStartDate: string;
+}
+
+export interface ApplyTemplateResult {
+  success: boolean;
+  message: string;
+  appliedCount: number;
+  skippedMissingRecipeCount: number;
+  skippedEntries: Array<{
+    meal_type: string;
+    target_date: string;
+    recipe_id: string;
+    recipe_name_snapshot?: string;
+    reason: 'missing_recipe';
+  }>;
 }
 
 export class MealPlanTemplateService {
-  /**
-   * 发布周计划为模板
-   */
-  async publishTemplate(input: CreateTemplateInput): Promise<MealPlanTemplate> {
+  async createTemplate(input: CreateTemplateInput): Promise<MealPlanTemplate> {
+    const planData = input.planData && input.planData.length > 0
+      ? input.planData
+      : await this.buildPlanDataFromWeeklyPlan(input.userId, input.sourceStartDate, input.sourceEndDate);
+
+    if (!planData.length) {
+      throw new Error('当前周计划为空，无法保存为模板');
+    }
+
+    const familyId = await familyService.getFamilyIdForUser(input.userId);
+
     const [template] = await db('meal_plan_templates')
       .insert({
         creator_user_id: input.userId,
-        title: input.title,
-        description: input.description,
-        plan_data: JSON.stringify(input.planData),
-        baby_age_start_months: input.babyAgeStartMonths,
-        baby_age_end_months: input.babyAgeEndMonths,
-        tags: JSON.stringify(input.tags || []),
-        is_public: input.isPublic ?? true,
+        family_id: familyId || null,
+        title: input.title.trim(),
+        description: input.description?.trim() || null,
+        plan_data: JSON.stringify(planData),
+        tags: JSON.stringify(this.normalizeTags(input.tags || [])),
+        is_public: input.isPublic ?? false,
       })
       .returning('*');
 
     return this.formatTemplate(template);
   }
 
-  /**
-   * 浏览公开模板
-   */
   async browseTemplates(filter: BrowseTemplatesFilter): Promise<{ templates: MealPlanTemplate[]; total: number }> {
-    const { babyAgeMonths, tags, creatorUserId, page = 1, pageSize = 20 } = filter;
+    const { creatorUserId, page = 1, pageSize = 20, includePublic = false } = filter;
 
-    let query = db('meal_plan_templates').where('is_public', true);
+    let query = db('meal_plan_templates');
 
-    // 按宝宝月龄筛选
-    if (babyAgeMonths !== undefined) {
-      query = query.where('baby_age_start_months', '<=', babyAgeMonths)
-        .where('baby_age_end_months', '>=', babyAgeMonths);
-    }
-
-    // 按标签筛选
-    if (tags && tags.length > 0) {
-      tags.forEach((tag) => {
-        query = query.whereRaw("tags::text LIKE ?", [`%"${tag}"%`]);
+    if (creatorUserId && includePublic) {
+      query = query.where((builder) => {
+        builder.where('creator_user_id', creatorUserId).orWhere('is_public', true);
       });
-    }
-
-    // 按创建者筛选
-    if (creatorUserId) {
+    } else if (creatorUserId) {
       query = query.where('creator_user_id', creatorUserId);
+    } else {
+      query = query.where('is_public', true);
     }
 
-    // 获取总数
     const countQuery = query.clone();
     const [{ count }] = await countQuery.count('* as count');
     const total = Number(count);
 
-    // 分页查询
     const templates = await query
-      .orderBy('clone_count', 'desc')
+      .orderBy('updated_at', 'desc')
       .orderBy('created_at', 'desc')
       .offset((page - 1) * pageSize)
       .limit(pageSize)
@@ -102,18 +122,14 @@ export class MealPlanTemplateService {
     };
   }
 
-  /**
-   * 获取单个模板详情
-   */
-  async getTemplate(templateId: string): Promise<MealPlanTemplate | null> {
+  async getTemplate(templateId: string, userId?: string): Promise<MealPlanTemplate | null> {
     const template = await db('meal_plan_templates').where('id', templateId).first();
-    return template ? this.formatTemplate(template) : null;
+    if (!template) return null;
+    if (!template.is_public && template.creator_user_id !== userId) return null;
+    return this.formatTemplate(template);
   }
 
-  /**
-   * 克隆模板到用户本周计划
-   */
-  async cloneTemplate(userId: string, templateId: string): Promise<{ success: boolean; message: string; clonedCount?: number }> {
+  async applyTemplate(userId: string, templateId: string, input: ApplyTemplateInput): Promise<ApplyTemplateResult> {
     const template = await db('meal_plan_templates').where('id', templateId).first();
     if (!template) {
       throw new Error('模板不存在');
@@ -123,83 +139,71 @@ export class MealPlanTemplateService {
       throw new Error('无权访问该模板');
     }
 
-    // 解析模板数据
-    const planData = typeof template.plan_data === 'string' 
-      ? JSON.parse(template.plan_data) 
-      : template.plan_data;
-
-    // 获取本周的起始日期
-    const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay()); // 周日
-    const startDateStr = startOfWeek.toISOString().split('T')[0];
-
-    // 克隆计划到用户的 meal_plan 表
-    let clonedCount = 0;
-    const mealPlanService = new MealPlanService();
-
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(startOfWeek);
-      date.setDate(startOfWeek.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
-      const dayPlan = planData[dateStr];
-
-      if (!dayPlan) continue;
-
-      // 早餐
-      if (dayPlan.breakfast) {
-        await mealPlanService.setMealPlan({
-          user_id: userId,
-          plan_date: dateStr,
-          meal_type: 'breakfast',
-          recipe_id: dayPlan.breakfast,
-          servings: 1,
-        });
-        clonedCount++;
-      }
-
-      // 午餐
-      if (dayPlan.lunch) {
-        await mealPlanService.setMealPlan({
-          user_id: userId,
-          plan_date: dateStr,
-          meal_type: 'lunch',
-          recipe_id: dayPlan.lunch,
-          servings: 1,
-        });
-        clonedCount++;
-      }
-
-      // 晚餐
-      if (dayPlan.dinner) {
-        await mealPlanService.setMealPlan({
-          user_id: userId,
-          plan_date: dateStr,
-          meal_type: 'dinner',
-          recipe_id: dayPlan.dinner,
-          servings: 1,
-        });
-        clonedCount++;
-      }
+    const entries = this.normalizeEntries(typeof template.plan_data === 'string' ? JSON.parse(template.plan_data) : template.plan_data);
+    if (!entries.length) {
+      throw new Error('模板内容为空，无法套用');
     }
 
-    // 增加克隆计数
+    const targetStartDate = this.normalizeDate(input.targetStartDate);
+    const recipeIds = [...new Set(entries.map((entry) => entry.recipe_id).filter(Boolean))];
+    const recipeRows = recipeIds.length
+      ? await db('recipes').whereIn('id', recipeIds).select('id', 'name')
+      : [];
+    const availableRecipeIds = new Set(recipeRows.map((recipe: any) => recipe.id));
+
+    const mealPlanService = new MealPlanService();
+    let appliedCount = 0;
+    const skippedEntries: ApplyTemplateResult['skippedEntries'] = [];
+
+    const sortedEntries = [...entries].sort((a, b) => {
+      if (a.day_offset !== b.day_offset) return a.day_offset - b.day_offset;
+      return String(a.meal_type).localeCompare(String(b.meal_type));
+    });
+
+    for (const entry of sortedEntries) {
+      const targetDate = this.addDays(targetStartDate, entry.day_offset);
+      if (!availableRecipeIds.has(entry.recipe_id)) {
+        skippedEntries.push({
+          meal_type: entry.meal_type,
+          target_date: targetDate,
+          recipe_id: entry.recipe_id,
+          recipe_name_snapshot: entry.recipe_name_snapshot,
+          reason: 'missing_recipe',
+        });
+        continue;
+      }
+
+      await mealPlanService.setMealPlan({
+        user_id: userId,
+        plan_date: targetDate,
+        meal_type: entry.meal_type,
+        recipe_id: entry.recipe_id,
+        servings: entry.servings || 1,
+      });
+      appliedCount += 1;
+    }
+
     await db('meal_plan_templates')
       .where('id', templateId)
-      .increment('clone_count', 1);
+      .increment('clone_count', 1)
+      .update({ updated_at: db.fn.now() });
 
-    logger.info('Template cloned', { userId, templateId, clonedCount });
+    logger.info('Template applied', { userId, templateId, appliedCount, skippedMissingRecipeCount: skippedEntries.length, targetStartDate });
+
+    const messageParts = [`模板已套用到从 ${targetStartDate} 开始的一周`, `成功写入 ${appliedCount} 餐`];
+    if (skippedEntries.length) {
+      messageParts.push(`跳过 ${skippedEntries.length} 个失效菜谱`);
+    }
 
     return {
       success: true,
-      message: `模板克隆成功，已添加 ${clonedCount} 个餐食到本周计划`,
-      clonedCount,
+      message: messageParts.join('，'),
+      appliedCount,
+      skippedMissingRecipeCount: skippedEntries.length,
+      skippedEntries,
     };
   }
 
-  /**
-   * 删除模板（仅创建者可删除）
-   */
   async deleteTemplate(userId: string, templateId: string): Promise<void> {
     const template = await db('meal_plan_templates').where('id', templateId).first();
     if (!template) {
@@ -212,14 +216,94 @@ export class MealPlanTemplateService {
     await db('meal_plan_templates').where('id', templateId).del();
   }
 
-  /**
-   * 格式化模板数据
-   */
+  private async buildPlanDataFromWeeklyPlan(userId: string, sourceStartDate?: string, sourceEndDate?: string): Promise<MealTemplateEntry[]> {
+    const startDate = this.normalizeDate(sourceStartDate || this.getMonday(new Date()));
+    const endDate = this.normalizeDate(sourceEndDate || this.addDays(startDate, 6));
+    const familyId = await familyService.getFamilyIdForUser(userId);
+    const ownerId = await familyService.getOwnerIdForUser(userId);
+
+    let query = db('meal_plans as mp')
+      .leftJoin('recipes as r', 'mp.recipe_id', 'r.id')
+      .whereBetween('mp.plan_date', [startDate, endDate]);
+
+    query = familyId ? query.where('mp.family_id', familyId) : query.where('mp.user_id', ownerId);
+
+    const plans = await query
+      .select(
+        'mp.plan_date',
+        'mp.meal_type',
+        'mp.recipe_id',
+        'mp.servings',
+        'r.name as recipe_name'
+      )
+      .orderBy('mp.plan_date', 'asc')
+      .orderBy('mp.meal_type', 'asc');
+
+    return plans.map((plan: any) => ({
+      source_date: this.normalizeDate(plan.plan_date),
+      day_offset: this.diffDays(startDate, this.normalizeDate(plan.plan_date)),
+      meal_type: plan.meal_type,
+      recipe_id: plan.recipe_id,
+      recipe_name_snapshot: plan.recipe_name || undefined,
+      servings: Number(plan.servings || 1),
+      status: plan.recipe_name ? 'active' : 'missing_recipe',
+    }));
+  }
+
+  private normalizeEntries(raw: any): MealTemplateEntry[] {
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .filter((entry) => entry && entry.recipe_id && entry.meal_type)
+      .map((entry) => ({
+        source_date: this.normalizeDate(entry.source_date || this.addDays(this.getMonday(new Date()), Number(entry.day_offset || 0))),
+        day_offset: Number(entry.day_offset || 0),
+        meal_type: entry.meal_type,
+        recipe_id: entry.recipe_id,
+        recipe_name_snapshot: entry.recipe_name_snapshot,
+        servings: Number(entry.servings || 1),
+        status: entry.status === 'missing_recipe' ? 'missing_recipe' : 'active',
+      }));
+  }
+
+  private normalizeTags(tags: string[]): string[] {
+    return tags
+      .map((tag) => String(tag || '').trim())
+      .filter(Boolean)
+      .filter((tag, index, arr) => arr.indexOf(tag) === index)
+      .slice(0, 10);
+  }
+
   private formatTemplate(template: any): MealPlanTemplate {
     return {
       ...template,
-      plan_data: typeof template.plan_data === 'string' ? JSON.parse(template.plan_data) : template.plan_data,
-      tags: typeof template.tags === 'string' ? JSON.parse(template.tags) : template.tags,
+      plan_data: this.normalizeEntries(typeof template.plan_data === 'string' ? JSON.parse(template.plan_data) : template.plan_data),
+      tags: typeof template.tags === 'string' ? JSON.parse(template.tags) : (template.tags || []),
     };
+  }
+
+  private getMonday(date: Date): string {
+    const value = new Date(date);
+    const day = value.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    value.setDate(value.getDate() + diff);
+    return value.toISOString().split('T')[0];
+  }
+
+  private normalizeDate(value: string | Date): string {
+    if (value instanceof Date) return value.toISOString().split('T')[0];
+    return String(value).split('T')[0];
+  }
+
+  private addDays(dateStr: string, days: number): string {
+    const date = new Date(dateStr);
+    date.setUTCDate(date.getUTCDate() + days);
+    return date.toISOString().split('T')[0];
+  }
+
+  private diffDays(startDate: string, endDate: string): number {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diff = end.getTime() - start.getTime();
+    return Math.round(diff / (24 * 60 * 60 * 1000));
   }
 }

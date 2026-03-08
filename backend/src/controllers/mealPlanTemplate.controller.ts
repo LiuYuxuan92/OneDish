@@ -9,59 +9,59 @@ export class MealPlanTemplateController {
     this.service = new MealPlanTemplateService();
   }
 
-  // 发布周计划为模板
-  publishTemplate = async (req: Request, res: Response) => {
+  createTemplate = async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.user_id;
-      const { title, description, planData, babyAgeStartMonths, babyAgeEndMonths, tags, isPublic } = req.body;
+      const { title, description, planData, tags, isPublic, sourceStartDate, sourceEndDate } = req.body;
 
-      if (!title || !planData) {
+      if (!title) {
         res.status(400).json({
           code: 400,
-          message: '缺少必要参数：title, planData',
+          message: '缺少必要参数：title',
           data: null,
         });
         return;
       }
 
-      const template = await this.service.publishTemplate({
+      const template = await this.service.createTemplate({
         userId,
         title,
         description,
         planData,
-        babyAgeStartMonths,
-        babyAgeEndMonths,
         tags,
         isPublic,
+        sourceStartDate,
+        sourceEndDate,
       });
 
       res.json({
         code: 200,
-        message: '模板发布成功',
+        message: '模板保存成功',
         data: template,
       });
-    } catch (error) {
-      logger.error('Failed to publish template', { error });
+    } catch (error: any) {
+      logger.error('Failed to create template', { error });
       res.status(500).json({
         code: 500,
-        message: '模板发布失败',
+        message: error.message || '模板保存失败',
         data: null,
       });
     }
   };
 
-  // 浏览公开模板
   browseTemplates = async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).user?.user_id; // 可选的认证用户
-      const { babyAgeMonths, tags, creatorUserId, page, pageSize } = req.query;
+      const userId = (req as any).user?.user_id;
+      const { creatorUserId, page, pageSize, mine, includePublic } = req.query;
+
+      const shouldUseMine = String(mine || '').toLowerCase() === 'true';
+      const effectiveCreatorUserId = shouldUseMine ? userId : (creatorUserId as string | undefined);
 
       const result = await this.service.browseTemplates({
-        babyAgeMonths: babyAgeMonths ? Number(babyAgeMonths) : undefined,
-        tags: tags ? (tags as string).split(',') : undefined,
-        creatorUserId: creatorUserId as string,
+        creatorUserId: effectiveCreatorUserId,
         page: page ? Number(page) : 1,
         pageSize: pageSize ? Number(pageSize) : 20,
+        includePublic: String(includePublic || '').toLowerCase() === 'true',
       });
 
       res.json({
@@ -79,11 +79,11 @@ export class MealPlanTemplateController {
     }
   };
 
-  // 获取单个模板详情
   getTemplate = async (req: Request, res: Response) => {
     try {
+      const userId = (req as any).user?.user_id;
       const { templateId } = req.params;
-      const template = await this.service.getTemplate(templateId);
+      const template = await this.service.getTemplate(templateId, userId);
 
       if (!template) {
         res.status(404).json({
@@ -109,13 +109,18 @@ export class MealPlanTemplateController {
     }
   };
 
-  // 克隆模板
-  cloneTemplate = async (req: Request, res: Response) => {
+  applyTemplate = async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.user_id;
       const { templateId } = req.params;
+      const { targetStartDate } = req.body || {};
 
-      const result = await this.service.cloneTemplate(userId, templateId);
+      if (!targetStartDate) {
+        res.status(400).json({ code: 400, message: '缺少必要参数：targetStartDate', data: null });
+        return;
+      }
+
+      const result = await this.service.applyTemplate(userId, templateId, { targetStartDate });
 
       res.json({
         code: 200,
@@ -123,16 +128,15 @@ export class MealPlanTemplateController {
         data: result,
       });
     } catch (error: any) {
-      logger.error('Failed to clone template', { error });
+      logger.error('Failed to apply template', { error });
       res.status(500).json({
         code: 500,
-        message: error.message || '克隆模板失败',
+        message: error.message || '套用模板失败',
         data: null,
       });
     }
   };
 
-  // 删除模板
   deleteTemplate = async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.user_id;

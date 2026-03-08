@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, Modal, TextInput, TouchableOpacity, ActivityIndicator, Alert, Switch, ScrollView } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, Modal, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { Colors, Typography, Spacing, BorderRadius } from '../../styles/theme';
-import { usePublishTemplate } from '../../hooks/useMealPlanTemplates';
-import type { MealPlanTemplate, CreateTemplateInput } from '../../api/mealPlanTemplates';
+import { useCreateTemplate } from '../../hooks/useMealPlanTemplates';
+import type { CreateTemplateInput } from '../../api/mealPlanTemplates';
 
 interface ShareTemplateModalProps {
   visible: boolean;
@@ -17,96 +17,83 @@ interface ShareTemplateModalProps {
 export function ShareTemplateModal({ visible, onClose, weeklyData }: ShareTemplateModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [isPublic, setIsPublic] = useState(true);
   const [tags, setTags] = useState('');
-  
-  const publishMutation = usePublishTemplate();
 
-  const handlePublish = async () => {
+  const createMutation = useCreateTemplate();
+  const dayCount = useMemo(() => Object.keys(weeklyData?.plans || {}).length, [weeklyData]);
+
+  const reset = () => {
+    setTitle('');
+    setDescription('');
+    setTags('');
+  };
+
+  const handleSave = async () => {
     if (!title.trim()) {
       Alert.alert('请输入模板标题');
       return;
     }
 
-    if (!weeklyData || !weeklyData.plans) {
-      Alert.alert('没有可分享的计划数据');
+    if (!weeklyData?.start_date) {
+      Alert.alert('没有可保存的周计划');
       return;
     }
 
     try {
-      // 转换周计划数据为模板格式
-      const planData: Record<string, { breakfast?: string; lunch?: string; dinner?: string }> = {};
-      Object.entries(weeklyData.plans).forEach(([date, dayPlans]: [string, any]) => {
-        planData[date] = {
-          breakfast: dayPlans?.breakfast?.recipe_id || dayPlans?.breakfast?.id,
-          lunch: dayPlans?.lunch?.recipe_id || dayPlans?.lunch?.id,
-          dinner: dayPlans?.dinner?.recipe_id || dayPlans?.dinner?.id,
-        };
-      });
-
       const input: CreateTemplateInput = {
         title: title.trim(),
         description: description.trim() || undefined,
-        planData,
         tags: tags.trim() ? tags.split(/[,，、]/).map(s => s.trim()).filter(Boolean) : [],
-        isPublic,
+        isPublic: false,
+        sourceStartDate: weeklyData.start_date,
+        sourceEndDate: weeklyData.end_date,
       };
 
-      const result = await publishMutation.mutateAsync(input);
-      Alert.alert('发布成功', '模板已发布到社区', [
-        { text: '确定', onPress: () => {
-          setTitle('');
-          setDescription('');
-          setTags('');
-          setIsPublic(true);
-          onClose();
-        }}
+      await createMutation.mutateAsync(input);
+      Alert.alert('已保存', '这个周计划已经保存为模板，可在“我的模板”里再次套用。', [
+        { text: '确定', onPress: () => { reset(); onClose(); } },
       ]);
     } catch (error: any) {
-      Alert.alert('发布失败', error?.message || '请稍后重试');
+      Alert.alert('保存失败', error?.message || '请稍后重试');
     }
   };
 
   const handleClose = () => {
-    if (!publishMutation.isPending) {
-      setTitle('');
-      setDescription('');
-      setTags('');
-      setIsPublic(true);
-      onClose();
-    }
+    if (createMutation.isPending) return;
+    reset();
+    onClose();
   };
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
       <View style={{ flex: 1, backgroundColor: Colors.background.primary }}>
-        <View style={{ 
-          flexDirection: 'row', 
-          justifyContent: 'space-between', 
+        <View style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
           alignItems: 'center',
           padding: Spacing.lg,
           borderBottomWidth: 1,
           borderBottomColor: Colors.border.light,
         }}>
-          <TouchableOpacity onPress={handleClose} disabled={publishMutation.isPending}>
+          <TouchableOpacity onPress={handleClose} disabled={createMutation.isPending}>
             <Text style={{ fontSize: Typography.fontSize.base, color: Colors.primary.main }}>取消</Text>
           </TouchableOpacity>
-          <Text style={{ fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold }}>分享为模板</Text>
-          <TouchableOpacity onPress={handlePublish} disabled={publishMutation.isPending}>
-            {publishMutation.isPending ? (
+          <Text style={{ fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold }}>保存为模板</Text>
+          <TouchableOpacity onPress={handleSave} disabled={createMutation.isPending}>
+            {createMutation.isPending ? (
               <ActivityIndicator size="small" color={Colors.primary.main} />
             ) : (
-              <Text style={{ fontSize: Typography.fontSize.base, color: Colors.primary.main, fontWeight: Typography.fontWeight.semibold }}>发布</Text>
+              <Text style={{ fontSize: Typography.fontSize.base, color: Colors.primary.main, fontWeight: Typography.fontWeight.semibold }}>保存</Text>
             )}
           </TouchableOpacity>
         </View>
 
         <ScrollView style={{ flex: 1, padding: Spacing.lg }}>
-          <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.text.secondary, marginBottom: Spacing.xs }}>模板标题 *</Text>
+          <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.text.secondary, marginBottom: Spacing.xs }}>模板名称 *</Text>
           <TextInput
             value={title}
             onChangeText={setTitle}
-            placeholder="例如：7-9个月宝宝的一周辅食计划"
+            placeholder="例如：工作日快手晚餐"
             style={{
               backgroundColor: Colors.background.secondary,
               borderRadius: BorderRadius.md,
@@ -116,11 +103,11 @@ export function ShareTemplateModal({ visible, onClose, weeklyData }: ShareTempla
             }}
           />
 
-          <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.text.secondary, marginBottom: Spacing.xs }}>简介描述</Text>
+          <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.text.secondary, marginBottom: Spacing.xs }}>模板说明</Text>
           <TextInput
             value={description}
             onChangeText={setDescription}
-            placeholder="分享这个计划的特点..."
+            placeholder="可选，写下这个模板适合什么场景"
             multiline
             numberOfLines={3}
             style={{
@@ -134,11 +121,11 @@ export function ShareTemplateModal({ visible, onClose, weeklyData }: ShareTempla
             }}
           />
 
-          <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.text.secondary, marginBottom: Spacing.xs }}>标签（用逗号分隔）</Text>
+          <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.text.secondary, marginBottom: Spacing.xs }}>标签</Text>
           <TextInput
             value={tags}
             onChangeText={setTags}
-            placeholder="例如：辅食, 7个月, 简单"
+            placeholder="例如：快手, 家庭, 一周复用"
             style={{
               backgroundColor: Colors.background.secondary,
               borderRadius: BorderRadius.md,
@@ -148,33 +135,9 @@ export function ShareTemplateModal({ visible, onClose, weeklyData }: ShareTempla
             }}
           />
 
-          <View style={{ 
-            flexDirection: 'row', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            paddingVertical: Spacing.md,
-            borderTopWidth: 1,
-            borderTopColor: Colors.border.light,
-          }}>
-            <View>
-              <Text style={{ fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.medium }}>公开分享</Text>
-              <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.text.secondary }}>其他人可以浏览和使用</Text>
-            </View>
-            <Switch
-              value={isPublic}
-              onValueChange={setIsPublic}
-              trackColor={{ false: Colors.border.default, true: Colors.primary.light }}
-              thumbColor={isPublic ? Colors.primary.main : Colors.neutral.gray400}
-            />
+          <View style={{ marginTop: Spacing.md, padding: Spacing.md, backgroundColor: Colors.functional.infoLight, borderRadius: BorderRadius.md }}>
+            <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.functional.info }}>📋 将保存 {dayCount} 天计划，后续可一键套用到新的周起始日期。</Text>
           </View>
-
-          {weeklyData && weeklyData.plans && (
-            <View style={{ marginTop: Spacing.lg, padding: Spacing.md, backgroundColor: Colors.functional.infoLight, borderRadius: BorderRadius.md }}>
-              <Text style={{ fontSize: Typography.fontSize.sm, color: Colors.functional.info }}>
-                📋 将分享 {Object.keys(weeklyData.plans).length} 天的膳食计划
-              </Text>
-            </View>
-          )}
         </ScrollView>
       </View>
     </Modal>
