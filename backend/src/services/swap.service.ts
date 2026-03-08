@@ -158,8 +158,7 @@ export class SwapService {
     const allRecipes = await db('recipes')
       .where('is_active', true)
       .whereNot('id', current_recipe_id)
-      .select('id', 'name', 'category', 'type', 'prep_time', 'total_time', 'stage', 'baby_stage', 
-              'age_min', 'age_max', 'baby_age_min', 'baby_age_max', 'image_url')
+      .select('id', 'name', 'category', 'type', 'prep_time', 'total_time', 'stage', 'image_url')
       .limit(100);
 
     if (allRecipes.length === 0) {
