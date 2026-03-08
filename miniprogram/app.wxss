@@ -1,5 +1,4 @@
-/* Vant Weapp Styles */
-@import './miniprogram_npm/@vant/weapp/common/index.wxss';
+/* Vant Weapp 样式已通过 usingComponents 自动引入 */
 
 page {
   background: #f7f8fa;
