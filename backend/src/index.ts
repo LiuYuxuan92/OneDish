@@ -31,6 +31,7 @@ import quotaRoutes from './routes/quota.routes';
 import metricsRoutes from './routes/metrics.routes';
 import wechatRoutes from './routes/wechat.routes';
 import aiConfigRoutes from './routes/ai-config.routes';
+import familyRoutes from './routes/family.routes';
 import { RecipeTransformService } from './services/recipe-transform.service';
 import { MealPlanService } from './services/mealPlan.service';
 import { RecipeCalibrationService } from './services/recipe-calibration.service';
@@ -75,6 +76,7 @@ app.use('/api/v1/quota', quotaRoutes);
 app.use('/api/v1/metrics', metricsRoutes);
 app.use('/api/v1/auth', wechatRoutes);
 app.use('/api/v1/ai-configs', aiConfigRoutes);
+app.use('/api/v1/families', familyRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({

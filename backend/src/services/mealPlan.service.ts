@@ -5,6 +5,7 @@ import { ShoppingListInventoryService } from './shoppingList/shoppingListInvento
 import { AISearchAdapter } from '../adapters/ai.adapter';
 import { logger } from '../utils/logger';
 import { userPreferenceService } from './user-preference.service';
+import { familyService } from './family.service';
 
 interface RecipePool {
   breakfast: any[];
@@ -74,10 +75,19 @@ export class MealPlanService {
   async getWeeklyPlan(userId: string, startDate?: string, endDate?: string) {
     const start = startDate || this.getMonday(new Date());
     const end = endDate || this.getSunday(new Date());
+    const familyId = await familyService.getFamilyIdForUser(userId);
+    const ownerId = await familyService.getOwnerIdForUser(userId);
 
-    const plans = await db('meal_plans')
-      .join('recipes', 'meal_plans.recipe_id', 'recipes.id')
-      .where('meal_plans.user_id', userId)
+    let query = db('meal_plans')
+      .join('recipes', 'meal_plans.recipe_id', 'recipes.id');
+
+    if (familyId) {
+      query = query.where('meal_plans.family_id', familyId);
+    } else {
+      query = query.where('meal_plans.user_id', ownerId);
+    }
+
+    const plans = await query
       .whereBetween('meal_plans.plan_date', [start, end])
       .select(
         'meal_plans.plan_date',
@@ -118,18 +128,33 @@ export class MealPlanService {
     servings: number;
   }) {
     const { user_id, plan_date, meal_type, recipe_id, servings } = data;
+    const familyId = await familyService.getFamilyIdForUser(user_id);
+    const ownerId = await familyService.getOwnerIdForUser(user_id);
+
+    const payload = { user_id: ownerId, family_id: familyId, plan_date, meal_type, recipe_id, servings };
+
+    const existing = familyId
+      ? await db('meal_plans').where({ family_id: familyId, plan_date, meal_type }).first()
+      : await db('meal_plans').where({ user_id: ownerId, plan_date, meal_type }).first();
+
+    if (existing) {
+      const [updated] = await db('meal_plans').where('id', existing.id).update(payload).returning('*');
+      return updated;
+    }
 
     const [plan] = await db('meal_plans')
-      .insert({ user_id, plan_date, meal_type, recipe_id, servings })
-      .onConflict(['user_id', 'plan_date', 'meal_type'])
-      .merge()
+      .insert(payload)
       .returning('*');
 
     return plan;
   }
 
   async deleteMealPlan(userId: string, planId: string) {
-    await db('meal_plans').where('id', planId).where('user_id', userId).delete();
+    const familyId = await familyService.getFamilyIdForUser(userId);
+    const ownerId = await familyService.getOwnerIdForUser(userId);
+    let query = db('meal_plans').where('id', planId);
+    query = familyId ? query.where('family_id', familyId) : query.where('user_id', ownerId);
+    await query.delete();
   }
 
   async generateWeeklyPlan(userId: string, startDate: string, preferences?: any) {
@@ -964,6 +989,18 @@ export class MealPlanService {
   }
 
   async createWeeklyShare(ownerId: string) {
+    const familyContext = await familyService.getFamilyContextByUserId(ownerId);
+    if (familyContext) {
+      return {
+        id: familyContext.family_id,
+        invite_code: familyContext.invite_code,
+        share_link: `onedish://family/join/${familyContext.invite_code}`,
+        family_id: familyContext.family_id,
+        role: familyContext.role,
+        mode: 'family',
+      };
+    }
+
     const existed = await db('meal_plan_shares').where('owner_id', ownerId).first();
     if (existed) return existed;
 
@@ -982,6 +1019,12 @@ export class MealPlanService {
   }
 
   async regenerateWeeklyShareInvite(shareId: string, ownerId: string) {
+    const family = await db('families').where('id', shareId).first();
+    if (family) {
+      const updated = await familyService.regenerateInviteCode(ownerId, shareId);
+      return { ...updated, share_link: `onedish://family/join/${updated.invite_code}` };
+    }
+
     const share = await db('meal_plan_shares').where('id', shareId).first();
     if (!share) throw new Error('共享计划不存在');
     if (share.owner_id !== ownerId) throw new Error('仅 owner 可操作邀请码');
@@ -1012,6 +1055,12 @@ export class MealPlanService {
   }
 
   async joinWeeklyShare(inviteCode: string, userId: string) {
+    const family = await db('families').where('invite_code', inviteCode).first();
+    if (family) {
+      const joined = await familyService.joinFamily(inviteCode, userId);
+      return { share_id: joined?.family_id, owner_id: joined?.owner_id, role: joined?.role, family_id: joined?.family_id, mode: 'family' };
+    }
+
     const share = await db('meal_plan_shares').where('invite_code', inviteCode).first();
     if (!share) {
       const revoked = await db('share_invite_revocations').where('invite_code', inviteCode).where('share_type', 'meal_plan').first();
@@ -1032,6 +1081,11 @@ export class MealPlanService {
   }
 
   async removeWeeklyShareMember(shareId: string, ownerId: string, targetMemberId: string) {
+    const family = await db('families').where('id', shareId).first();
+    if (family) {
+      return familyService.removeMember(ownerId, shareId, targetMemberId);
+    }
+
     const share = await db('meal_plan_shares').where('id', shareId).first();
     if (!share) throw new Error('共享计划不存在');
     if (share.owner_id !== ownerId) throw new Error('仅 owner 可移除成员');
@@ -1042,6 +1096,14 @@ export class MealPlanService {
   }
 
   async getSharedWeeklyPlan(shareId: string, userId: string, startDate?: string, endDate?: string) {
+    const family = await db('families').where('id', shareId).first();
+    if (family) {
+      const familyContext = await familyService.getFamilyContextByUserId(userId);
+      if (!familyContext || familyContext.family_id !== shareId) throw new Error('你已无权访问该共享周计划，可能已被移除');
+      const base = await this.getWeeklyPlan(userId, startDate, endDate);
+      return { ...base, share_id: shareId, owner_id: family.owner_id, family_id: shareId, role: familyContext.role, members: familyContext.members, mode: 'family' };
+    }
+
     const share = await db('meal_plan_shares').where('id', shareId).first();
     if (!share) throw new Error('共享计划不存在');
 
@@ -1072,6 +1134,20 @@ export class MealPlanService {
   }
 
   async markSharedMealCompleted(shareId: string, userId: string, planId: string) {
+    const family = await db('families').where('id', shareId).first();
+    if (family) {
+      const familyContext = await familyService.getFamilyContextByUserId(userId);
+      if (!familyContext || familyContext.family_id !== shareId) throw new Error('你已无权访问该共享周计划，可能已被移除');
+
+      const plan = await db('meal_plans').where('id', planId).where('family_id', shareId).first();
+      if (!plan) throw new Error('餐食计划不存在');
+
+      await db('meal_plans').where('id', planId).update({ is_completed: true });
+      const calibrationService = new RecipeCalibrationService();
+      await calibrationService.updateCompletionStats(plan.recipe_id);
+      return { plan_id: planId, share_id: shareId, completed: true, mode: 'family' };
+    }
+
     const share = await db('meal_plan_shares').where('id', shareId).first();
     if (!share) throw new Error('共享计划不存在');
 

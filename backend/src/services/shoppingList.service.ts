@@ -1,5 +1,6 @@
 import { db } from '../config/database';
 import { logger } from '../utils/logger';
+import { familyService } from './family.service';
 import { ShoppingListShareService } from './shoppingList/share/shoppingListShare.service';
 import { ShoppingListGenerationService } from './shoppingList/shoppingListGeneration.service';
 import { ShoppingListInventoryService } from './shoppingList/shoppingListInventory.service';
@@ -114,7 +115,10 @@ export class ShoppingListService {
    * 获取历史购物清单
    */
   async getShoppingLists(userId: string, startDate?: string, endDate?: string) {
-    let query = db('shopping_lists').where('user_id', userId);
+    const familyId = await familyService.getFamilyIdForUser(userId);
+    let query = familyId
+      ? db('shopping_lists').where('family_id', familyId)
+      : db('shopping_lists').where('user_id', userId);
 
     if (startDate) {
       query = query.where('list_date', '>=', startDate);

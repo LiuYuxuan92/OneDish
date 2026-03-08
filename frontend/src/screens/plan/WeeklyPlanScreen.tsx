@@ -17,6 +17,7 @@ import { ShareTemplateModal } from '../../components/plan/ShareTemplateModal';
 import { TodayDetailTab } from '../../components/plan/TodayDetailTab';
 import { weeklyPlanStyles as styles } from './weeklyPlanStyles';
 import { useUserInfo } from '../../hooks/useUsers';
+import { useCreateFamily, useJoinFamily, useMyFamily, useRegenerateFamilyInvite, useRemoveFamilyMember } from '../../hooks/useFamilies';
 
 type Props = NativeStackScreenProps<PlanStackParamList, 'WeeklyPlan'>;
 
@@ -39,6 +40,11 @@ export function WeeklyPlanScreen({ navigation }: Props) {
   const [showShareTemplate, setShowShareTemplate] = useState(false);
 
   const { data: userInfo } = useUserInfo();
+  const { data: myFamily } = useMyFamily();
+  const createFamilyMutation = useCreateFamily();
+  const joinFamilyMutation = useJoinFamily();
+  const regenerateFamilyInviteMutation = useRegenerateFamilyInvite(myFamily?.family_id);
+  const removeFamilyMemberMutation = useRemoveFamilyMember(myFamily?.family_id);
   const preferredBabyAge = userInfo?.preferences?.default_baby_age ?? userInfo?.baby_age;
   const preferredExcludeIngredients = Array.isArray(userInfo?.preferences?.exclude_ingredients)
     ? userInfo.preferences.exclude_ingredients
@@ -110,34 +116,42 @@ export function WeeklyPlanScreen({ navigation }: Props) {
 
   const handleCreateWeeklyShare = async () => {
     try {
+      if (!myFamily) {
+        await createFamilyMutation.mutateAsync('我的家庭');
+      }
       const share = await createWeeklyShareMutation.mutateAsync();
       setActiveShareId(share.id);
       await trackEvent('share_link_created', { timestamp: new Date().toISOString(), screen: 'WeeklyPlan', source: 'weekly_plan', shareId: share.id });
-      Alert.alert('共享周计划', '邀请码：' + share.invite_code + '\n链接：' + share.share_link);
+      Alert.alert('家庭邀请码', '邀请码：' + share.invite_code + '\n链接：' + share.share_link);
     } catch { Alert.alert('生成失败', '请稍后重试'); }
   };
 
   const handleJoinWeeklyShare = async () => {
     if (!weeklyInviteCode.trim()) { Alert.alert('请输入邀请码'); return; }
     try {
+      const joinedFamily = await joinFamilyMutation.mutateAsync(weeklyInviteCode.trim());
       const joined = await joinWeeklyShareMutation.mutateAsync(weeklyInviteCode.trim());
-      setActiveShareId(joined.share_id);
-      await trackEvent('share_join_success', { timestamp: new Date().toISOString(), screen: 'WeeklyPlan', source: 'weekly_plan', shareId: joined.share_id });
-      await trackEvent('shared_plan_viewed', { timestamp: new Date().toISOString(), screen: 'WeeklyPlan', source: 'weekly_plan', shareId: joined.share_id });
+      setActiveShareId(joined.share_id || joinedFamily.family_id);
+      await trackEvent('share_join_success', { timestamp: new Date().toISOString(), screen: 'WeeklyPlan', source: 'weekly_plan', shareId: joined.share_id || joinedFamily.family_id });
+      await trackEvent('shared_plan_viewed', { timestamp: new Date().toISOString(), screen: 'WeeklyPlan', source: 'weekly_plan', shareId: joined.share_id || joinedFamily.family_id });
     } catch { Alert.alert('加入失败', '邀请码无效或已失效'); }
   };
 
   const handleRegenerateWeeklyInvite = async () => {
     try {
+      const familyInvite = myFamily ? await regenerateFamilyInviteMutation.mutateAsync() : null;
       const share = await regenerateInviteMutation.mutateAsync();
       await trackEvent('share_invite_revoked', { timestamp: new Date().toISOString(), userId: undefined, shareId: share?.id || activeShareId, targetMemberId: undefined, screen: 'WeeklyPlan', source: 'weekly_plan' });
       await trackEvent('share_invite_regenerated', { timestamp: new Date().toISOString(), userId: undefined, shareId: share?.id || activeShareId, targetMemberId: undefined, screen: 'WeeklyPlan', source: 'weekly_plan' });
-      Alert.alert('邀请码已更新', '新邀请码：' + share.invite_code);
+      Alert.alert('邀请码已更新', '新邀请码：' + (familyInvite?.invite_code || share.invite_code));
     } catch (e: unknown) { const err = e as { message?: string }; Alert.alert('操作失败', err?.message || '请稍后重试'); }
   };
 
   const handleRemoveWeeklyMember = async (memberId: string) => {
     try {
+      if (myFamily?.family_id) {
+        await removeFamilyMemberMutation.mutateAsync(memberId);
+      }
       await removeMemberMutation.mutateAsync(memberId);
       await trackEvent('share_member_removed', { timestamp: new Date().toISOString(), userId: undefined, shareId: activeShareId, targetMemberId: memberId, screen: 'WeeklyPlan', source: 'weekly_plan' });
       Alert.alert('成员已移除');

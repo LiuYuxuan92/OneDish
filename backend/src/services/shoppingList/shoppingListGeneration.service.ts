@@ -1,5 +1,6 @@
 import { db } from '../../config/database';
 import { logger } from '../../utils/logger';
+import { familyService } from '../family.service';
 
 export class ShoppingListGenerationService {
   /**
@@ -13,11 +14,18 @@ export class ShoppingListGenerationService {
     merge?: boolean;
   }) {
     const { user_id, date, meal_types, servings, merge = false } = data;
+    const familyId = await familyService.getFamilyIdForUser(user_id);
+    const ownerId = await familyService.getOwnerIdForUser(user_id);
 
     // 获取指定日期的餐食计划
-    const mealPlans = await db('meal_plans')
-      .join('recipes', 'meal_plans.recipe_id', 'recipes.id')
-      .where('meal_plans.user_id', user_id)
+    let mealPlanQuery = db('meal_plans')
+      .join('recipes', 'meal_plans.recipe_id', 'recipes.id');
+
+    mealPlanQuery = familyId
+      ? mealPlanQuery.where('meal_plans.family_id', familyId)
+      : mealPlanQuery.where('meal_plans.user_id', ownerId);
+
+    const mealPlans = await mealPlanQuery
       .where('meal_plans.plan_date', date)
       .whereIn('meal_plans.meal_type', meal_types)
       .select('recipes.*', 'meal_plans.meal_type as plan_meal_type', 'meal_plans.plan_date as source_date', 'meal_plans.recipe_id as plan_recipe_id');
@@ -143,7 +151,8 @@ export class ShoppingListGenerationService {
     // 保存购物清单
     const [list] = await db('shopping_lists')
       .insert({
-        user_id,
+        user_id: ownerId,
+        family_id: familyId,
         list_date: date,
         items: groupedItems,
         total_estimated_cost: totalCost,
@@ -175,6 +184,8 @@ export class ShoppingListGenerationService {
   }) {
     const { user_id, recipe_id, list_date, servings = 2 } = data;
     const date = list_date || new Date().toISOString().split('T')[0];
+    const familyId = await familyService.getFamilyIdForUser(user_id);
+    const ownerId = await familyService.getOwnerIdForUser(user_id);
 
     logger.debug('[Backend Service] addRecipeToShoppingList called:', { user_id, recipe_id, date, servings });
 
@@ -192,10 +203,15 @@ export class ShoppingListGenerationService {
     logger.debug('[Backend Service] Recipe found:', recipe.name);
 
     // 获取或创建今日购物清单（排除已完成的，按创建时间倒序取最新）
-    let list = await db('shopping_lists')
-      .where('user_id', user_id)
+    let listQuery = db('shopping_lists')
       .where('list_date', date)
-      .where('is_completed', false)
+      .where('is_completed', false);
+
+    listQuery = familyId
+      ? listQuery.where('family_id', familyId)
+      : listQuery.where('user_id', ownerId);
+
+    let list = await listQuery
       .orderBy('created_at', 'desc')
       .first();
 
@@ -206,7 +222,8 @@ export class ShoppingListGenerationService {
       logger.debug('[Backend Service] Creating new shopping list for date:', date);
       [list] = await db('shopping_lists')
         .insert({
-          user_id,
+          user_id: ownerId,
+          family_id: familyId,
           list_date: date,
           items: JSON.stringify(ShoppingListGenerationService.DEFAULT_ITEMS_STRUCTURE),
           total_estimated_cost: 0,

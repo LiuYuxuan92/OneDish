@@ -1,4 +1,5 @@
 import { db } from '../../../config/database';
+import { familyService } from '../../family.service';
 
 export class ShoppingListShareService {
   /**
@@ -12,10 +13,10 @@ export class ShoppingListShareService {
    * 获取可访问的清单（自有或已加入的共享清单）
    */
   async getAccessibleListOrThrow(listId: string, userId: string) {
-    const ownList = await db('shopping_lists')
-      .where('id', listId)
-      .where('user_id', userId)
-      .first();
+    const familyId = await familyService.getFamilyIdForUser(userId);
+    const ownList = familyId
+      ? await db('shopping_lists').where('id', listId).where('family_id', familyId).first()
+      : await db('shopping_lists').where('id', listId).where('user_id', userId).first();
 
     if (ownList) {
       return ownList;
@@ -45,6 +46,22 @@ export class ShoppingListShareService {
    * 获取分享上下文信息
    */
   async getShareContextByListId(listId: string, userId: string) {
+    const list = await db('shopping_lists').where('id', listId).first();
+    if (list?.family_id) {
+      const family = await familyService.getFamilyContextByUserId(userId);
+      if (!family || family.family_id !== list.family_id) return null;
+      return {
+        share_id: family.family_id,
+        role: family.role,
+        owner_id: family.owner_id,
+        invite_code: family.invite_code,
+        share_link: `onedish://family/join/${family.invite_code}`,
+        members: family.members,
+        family_id: family.family_id,
+        mode: 'family',
+      };
+    }
+
     const share = await db('shopping_list_shares').where('list_id', listId).first();
     if (!share) return null;
 
@@ -95,6 +112,12 @@ export class ShoppingListShareService {
    * 检查用户是否有写权限
    */
   async canWriteList(listId: string, userId: string) {
+    const familyId = await familyService.getFamilyIdForUser(userId);
+    if (familyId) {
+      const familyList = await db('shopping_lists').where('id', listId).where('family_id', familyId).first();
+      if (familyList) return true;
+    }
+
     const own = await db('shopping_lists').where('id', listId).where('user_id', userId).first();
     if (own) return true;
 
@@ -111,8 +134,27 @@ export class ShoppingListShareService {
    * 创建分享链接
    */
   async createShareLink(listId: string, ownerId: string) {
-    const list = await db('shopping_lists').where('id', listId).where('user_id', ownerId).first();
-    if (!list) {
+    const list = await db('shopping_lists').where('id', listId).first();
+    if (!list) throw new Error('购物清单不存在');
+
+    if (list.family_id) {
+      const family = await familyService.getFamilyContextByUserId(ownerId);
+      if (!family || family.family_id !== list.family_id || family.role !== 'owner') {
+        throw new Error('仅家庭 owner 可发起共享');
+      }
+      return {
+        id: family.family_id,
+        list_id: listId,
+        owner_id: family.owner_id,
+        invite_code: family.invite_code,
+        share_link: `onedish://family/join/${family.invite_code}`,
+        family_id: family.family_id,
+        mode: 'family',
+      };
+    }
+
+    const ownList = await db('shopping_lists').where('id', listId).where('user_id', ownerId).first();
+    if (!ownList) {
       throw new Error('仅清单拥有者可发起共享');
     }
 
@@ -139,6 +181,12 @@ export class ShoppingListShareService {
    * 重新生成分享邀请码
    */
   async regenerateShareInvite(listId: string, ownerId: string) {
+    const list = await db('shopping_lists').where('id', listId).first();
+    if (list?.family_id) {
+      const updated = await familyService.regenerateInviteCode(ownerId, list.family_id);
+      return { ...updated, list_id: listId, share_link: `onedish://family/join/${updated.invite_code}` };
+    }
+
     const share = await db('shopping_list_shares').where('list_id', listId).where('owner_id', ownerId).first();
     if (!share) throw new Error('仅 owner 可操作邀请码');
 
@@ -171,6 +219,11 @@ export class ShoppingListShareService {
    * 移除分享成员
    */
   async removeShareMember(listId: string, ownerId: string, targetMemberId: string) {
+    const list = await db('shopping_lists').where('id', listId).first();
+    if (list?.family_id) {
+      return familyService.removeMember(ownerId, list.family_id, targetMemberId);
+    }
+
     const share = await db('shopping_list_shares').where('list_id', listId).where('owner_id', ownerId).first();
     if (!share) throw new Error('仅 owner 可移除成员');
 
@@ -187,6 +240,13 @@ export class ShoppingListShareService {
    * 通过邀请码加入共享清单
    */
   async joinByInviteCode(inviteCode: string, userId: string) {
+    const family = await db('families').where('invite_code', inviteCode).first();
+    if (family) {
+      const joined = await familyService.joinFamily(inviteCode, userId);
+      const list = await db('shopping_lists').where('family_id', joined?.family_id).orderBy('list_date', 'desc').orderBy('created_at', 'desc').first();
+      return { share_id: joined?.family_id, list_id: list?.id || null, role: joined?.role, family_id: joined?.family_id, mode: 'family' };
+    }
+
     const share = await db('shopping_list_shares').where('invite_code', inviteCode).first();
     if (!share) {
       const revoked = await db('share_invite_revocations').where('invite_code', inviteCode).where('share_type', 'shopping_list').first();

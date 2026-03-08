@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '../../styles/theme';
 import { useJoinShoppingListShare, useShoppingLists } from '../../hooks/useShoppingLists';
+import { useJoinFamily } from '../../hooks/useFamilies';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { PlanStackParamList } from '../../types';
 import { trackEvent } from '../../analytics/sdk';
@@ -37,6 +38,7 @@ export function ShoppingListHistoryScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const joinShareMutation = useJoinShoppingListShare();
+  const joinFamilyMutation = useJoinFamily();
 
   // 获取过去30天的购物清单
   const endDate = new Date().toISOString().split('T')[0];
@@ -68,6 +70,7 @@ export function ShoppingListHistoryScreen({ navigation }: Props) {
     }
 
     try {
+      await joinFamilyMutation.mutateAsync(inviteCode.trim());
       const joined = await joinShareMutation.mutateAsync(inviteCode.trim());
       await trackEvent('share_join_success', {
         timestamp: new Date().toISOString(),
