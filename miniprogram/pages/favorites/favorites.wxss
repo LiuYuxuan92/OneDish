@@ -126,7 +126,3 @@
   padding: 20rpx 60rpx;
   font-size: 28rpx;
 }
-
-goToRecipeList() {
-  wx.switchTab({ url: '/pages/recipe/recipe' });
-}

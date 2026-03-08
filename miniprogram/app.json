@@ -44,7 +44,6 @@
     "van-tabbar-item": "@vant/weapp/tabbar-item/index",
     "van-icon": "@vant/weapp/icon/index",
     "van-tag": "@vant/weapp/tag/index",
-    "van-badge": "@vant/weapp/badge/index",
     "van-dialog": "@vant/weapp/dialog/index",
     "van-toast": "@vant/weapp/toast/index",
     "van-notify": "@vant/weapp/notify/index",

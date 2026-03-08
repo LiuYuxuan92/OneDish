@@ -1,7 +1,4 @@
-<!-- 组件配置 -->
 {
   "component": true,
-  "usingComponents": {
-    "skeleton": "/components/skeleton/skeleton"
-  }
+  "usingComponents": {}
 }

@@ -1,5 +1,5 @@
 /* Vant Weapp Styles */
-@import '@vant/weapp/common/index.wxss';
+@import './miniprogram_npm/@vant/weapp/common/index.wxss';
 
 page {
   background: #f7f8fa;

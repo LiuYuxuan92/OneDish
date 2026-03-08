@@ -428,9 +428,9 @@
 .option-label {
   font-size: 28rpx;
   font-weight: 600;
-  color: #333: block;
- ;
-  display margin-bottom: 12rpx;
+  color: #333;
+  display: block;
+  margin-bottom: 12rpx;
 }
 
 .age-options {

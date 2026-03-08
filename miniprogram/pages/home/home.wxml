@@ -52,13 +52,13 @@
     <view class="card">
       <image 
         class="cover" 
-        src="{{currentVersion === 'baby' && recommendation.baby_version?.cover_url ? recommendation.baby_version.cover_url : recommendation.cover_url || ''}}" 
+        src="{{currentVersion === 'baby' && recommendation.baby_version && recommendation.baby_version.cover_url ? recommendation.baby_version.cover_url : recommendation.cover_url || ''}}" 
         mode="aspectFill"
         bindtap="goRecipe"
       />
       <view class="info">
         <view class="title">
-          {{currentVersion === 'baby' ? recommendation.baby_version?.title || recommendation.title : recommendation.title}}
+          {{currentVersion === 'baby' ? (recommendation.baby_version && recommendation.baby_version.title) || recommendation.title : recommendation.title}}
           <text class="version-badge" wx:if="{{currentVersion === 'baby'}}">宝宝版</text>
         </view>
         <view class="tags">
@@ -66,8 +66,8 @@
           <van-tag type="primary" wx:if="{{recommendation.cook_time}}">{{recommendation.cook_time}}分钟</van-tag>
           <van-tag type="warning" wx:if="{{recommendation.calories}}">{{recommendation.calories}}千卡</van-tag>
         </view>
-        <view class="desc" wx:if="{{currentVersion === 'baby' ? recommendation.baby_version?.description : recommendation.description}}">
-          {{currentVersion === 'baby' ? recommendation.baby_version?.description : recommendation.description}}
+        <view class="desc" wx:if="{{currentVersion === 'baby' ? (recommendation.baby_version && recommendation.baby_version.description) : recommendation.description}}">
+          {{currentVersion === 'baby' ? (recommendation.baby_version && recommendation.baby_version.description) : recommendation.description}}
         </view>
         
         <!-- 宝宝版额外信息 -->
