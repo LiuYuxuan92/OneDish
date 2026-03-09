@@ -33,6 +33,7 @@ import wechatRoutes from './routes/wechat.routes';
 import aiConfigRoutes from './routes/ai-config.routes';
 import familyRoutes from './routes/family.routes';
 import feedingFeedbackRoutes from './routes/feedingFeedback.routes';
+import weeklyReviewRoutes from './routes/weeklyReview.routes';
 import accountMergeRoutes from './routes/account-merge.routes';
 import { RecipeTransformService } from './services/recipe-transform.service';
 import { MealPlanService } from './services/mealPlan.service';
@@ -80,6 +81,7 @@ app.use('/api/v1/auth', wechatRoutes);
 app.use('/api/v1/ai-configs', aiConfigRoutes);
 app.use('/api/v1/families', familyRoutes);
 app.use('/api/v1/feeding-feedbacks', feedingFeedbackRoutes);
+app.use('/api/v1/feeding-reviews', weeklyReviewRoutes);
 app.use('/api/v1/account', accountMergeRoutes);
 
 app.use((_req, res) => {

@@ -376,3 +376,78 @@ export interface MergeJobQueryResponse {
   result?: Record<string, any>;
   created_at: string;
 }
+
+// ============================================
+// Weekly Feeding Review 相关类型
+// ============================================
+
+export type ReviewScopeType = 'user' | 'family';
+export type AcceptedLevel = 'like' | 'ok' | 'reject';
+export type TrendSignal = 'improving' | 'stable' | 'declining' | null;
+export type SuggestionType = 'retry' | 'continue' | 'cautious' | 'explore';
+
+export interface RecipeMeta {
+  recipe_id: string;
+  recipe_name: string;
+  image_url?: string | null;
+  feedback_count: number;
+  accepted_level: AcceptedLevel;
+}
+
+export interface Suggestion {
+  type: SuggestionType;
+  recipe_id?: string;
+  recipe_name?: string;
+  reason: string;
+}
+
+export interface WeeklyReview {
+  // 基础统计
+  total_feedback_count: number;
+  feeding_days_count: number;
+
+  // 食材维度
+  unique_recipes_count: number;
+  new_recipe_count: number;
+
+  // 接受度分布
+  like_count: number;
+  ok_count: number;
+  reject_count: number;
+  allergy_flag_count: number;
+
+  // 推荐 & 谨慎
+  top_accepted_recipes: RecipeMeta[];
+  cautious_recipes: RecipeMeta[];
+
+  // 趋势信号
+  trend_signal: TrendSignal;
+
+  // 建议
+  next_week_suggestions: Suggestion[];
+}
+
+export interface WeeklyFeedingReviewRecord {
+  id: string;
+  scope_type: ReviewScopeType;
+  scope_id: string;
+  child_id?: string | null;
+  week_start: string;
+  week_end: string;
+  review_json: WeeklyReview;
+  generated_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GetWeeklyReviewInput {
+  user_id: string;
+  week_start?: string;
+  child_id?: string;
+}
+
+export interface GenerateWeeklyReviewInput {
+  user_id: string;
+  week_start: string;
+  child_id?: string;
+}
