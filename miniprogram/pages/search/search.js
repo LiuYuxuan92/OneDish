@@ -97,8 +97,9 @@ Page({
       inventoryIngredients: this.data.inventoryFirst ? this.data.inventoryIngredients : [],
       scenario: this.data.selectedScenario || undefined
     }).then(res => {
-      // 使用适配器转换数据
-      const adaptedResults = adaptListData(res.items || []).map(item => ({
+      // 后端返回 results，前端适配器处理数据
+      const rawItems = res.results || res.items || [];
+      const adaptedResults = adaptListData(rawItems).map(item => ({
         ...item,
         preference_hint: buildPreferenceHint(item, this.data.preferenceSummaryText)
       }));
