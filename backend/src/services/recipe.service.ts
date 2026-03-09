@@ -3,6 +3,7 @@ import { Recipe, RecipeSummary, PaginationResult } from '../types';
 import { logger } from '../utils/logger';
 import { RecipeCalibrationService } from './recipe-calibration.service';
 import { userPreferenceService } from './user-preference.service';
+import { feedingFeedbackService, FeedingFeedbackRecipeSummary } from './feedingFeedback.service';
 
 interface DailyRecommendationParams {
   type?: string;
@@ -161,6 +162,20 @@ export class RecipeService {
     const calibrationService = new RecipeCalibrationService();
     const effectiveDifficulty = await calibrationService.getEffectiveDifficulty(recipeId);
 
+    // 获取喂养反馈摘要（仅在用户登录时返回）
+    let feedingFeedbackSummary: FeedingFeedbackRecipeSummary | null = null;
+    if (userId) {
+      try {
+        feedingFeedbackSummary = await feedingFeedbackService.getSummaryByRecipeId({
+          user_id: userId,
+          recipe_id: recipeId,
+        });
+      } catch (error) {
+        // 降级处理：summary 查询失败时不阻塞详情页返回
+        logger.warn('Failed to get feeding feedback summary', { recipeId, userId, error });
+      }
+    }
+
     return {
       ...parsedRecipe,
       is_favorited: isFavorited,
@@ -175,6 +190,8 @@ export class RecipeService {
         completion_rate: recipe.completion_rate,
         last_calibrated_at: recipe.last_calibrated_at,
       },
+      // 返回喂养反馈摘要（仅在用户登录且有记录时返回）
+      ...(feedingFeedbackSummary ? { feeding_feedback_summary: feedingFeedbackSummary } : {}),
     };
   }
 
