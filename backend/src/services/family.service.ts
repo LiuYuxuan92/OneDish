@@ -9,9 +9,86 @@ export type FamilyAccessContext = {
   members: Array<{ user_id: string; display_name?: string; avatar_url?: string | null; role: 'owner' | 'member' }>;
 };
 
+export type Permission =
+  | 'family:manage'        // 管理家庭设置
+  | 'family:invite'        // 邀请成员
+  | 'family:remove_member' // 移除成员
+  | 'meal_plan:read'       // 查看餐食计划
+  | 'meal_plan:write'      // 编辑餐食计划
+  | 'shopping_list:read'   // 查看购物清单
+  | 'shopping_list:write'  // 编辑购物清单
+  | 'feeding:read'         // 查看喂养反馈
+  | 'feeding:write';       // 填写喂养反馈
+
+// 邀请码有效期：7天
+const INVITE_CODE_EXPIRE_DAYS = 7;
+
 export class FamilyService {
   private genInviteCode(prefix = 'FM'): string {
     return `${prefix}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  }
+
+  /**
+   * 检查用户是否有指定权限
+   * @param userId 用户ID
+   * @param familyId 家庭ID
+   * @param permission 权限类型
+   * @param resourceFamilyId 可选，资源所在的家庭ID（用于资源级别校验）
+   */
+  async checkFamilyPermission(
+    userId: string,
+    familyId: string,
+    permission: Permission,
+    resourceFamilyId?: string | null
+  ): Promise<boolean> {
+    const membership = await this.getFamilyByUserId(userId);
+    
+    // 用户不在该家庭
+    if (!membership || membership.family.id !== familyId) {
+      return false;
+    }
+
+    const { role } = membership;
+
+    // 家庭管理权限（仅 owner）
+    if (permission === 'family:manage' || permission === 'family:invite' || permission === 'family:remove_member') {
+      return role === 'owner';
+    }
+
+    // 资源相关权限，需要校验 resourceFamilyId 是否匹配
+    if (resourceFamilyId !== undefined) {
+      // 如果资源不属于该家庭，用户需要是资源创建者（个人 scope）
+      if (resourceFamilyId !== familyId) {
+        // 对于个人资源，只有创建者可以访问
+        return false;
+      }
+    }
+
+    // meal_plan / shopping_list / feeding 读写权限：owner 和 member 都有
+    const resourcePerms = [
+      'meal_plan:read', 'meal_plan:write',
+      'shopping_list:read', 'shopping_list:write',
+      'feeding:read', 'feeding:write'
+    ];
+    
+    return resourcePerms.includes(permission);
+  }
+
+  /**
+   * 获取用户可访问的资源（个人 + 家庭）
+   * 用于 meal_plans / shopping_lists 查询
+   */
+  async getAccessibleResourceQuery(userId: string, resourceType: 'meal_plans' | 'shopping_lists') {
+    const family = await this.getFamilyByUserId(userId);
+    const ownerId = family?.family?.owner_id || userId;
+
+    if (!family) {
+      // 无家庭：仅返回个人资源（user_id = ownerId 且 family_id = null）
+      return { userId: ownerId, familyId: null, isFamilyMode: false };
+    }
+
+    // 有家庭：返回个人 + 家庭资源
+    return { userId: ownerId, familyId: family.family.id, isFamilyMode: true };
   }
 
   async getFamilyByUserId(userId: string) {
@@ -83,6 +160,14 @@ export class FamilyService {
     const family = await db('families').where('invite_code', inviteCode).first();
     if (!family) throw new Error('家庭邀请码无效');
 
+    // 校验邀请码是否过期
+    if (family.invite_code_expire_at) {
+      const expireAt = new Date(family.invite_code_expire_at);
+      if (expireAt < new Date()) {
+        throw new Error('邀请码已过期，请联系家人重新发送');
+      }
+    }
+
     const existingMembership = await this.getFamilyByUserId(userId);
     if (existingMembership) {
       if (existingMembership.family.id === family.id) {
@@ -115,11 +200,21 @@ export class FamilyService {
   async regenerateInviteCode(userId: string, familyId: string) {
     await this.ensureOwner(userId, familyId);
     const inviteCode = this.genInviteCode('FM');
+    const expireAt = new Date();
+    expireAt.setDate(expireAt.getDate() + INVITE_CODE_EXPIRE_DAYS);
+
     const [updated] = await db('families')
       .where('id', familyId)
-      .update({ invite_code: inviteCode, updated_at: new Date().toISOString() })
+      .update({ 
+        invite_code: inviteCode, 
+        invite_code_expire_at: expireAt.toISOString(),
+        updated_at: new Date().toISOString() 
+      })
       .returning('*');
-    return updated;
+    return {
+      invite_code: updated.invite_code,
+      expire_at: updated.invite_code_expire_at,
+    };
   }
 
   async removeMember(ownerId: string, familyId: string, memberId: string) {

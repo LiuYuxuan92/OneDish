@@ -34,7 +34,13 @@ export class FamilyController {
       res.json({ code: 200, message: '加入家庭成功', data: result });
     } catch (error) {
       logger.error('Failed to join family', { error });
-      res.status(500).json({ code: 500, message: (error as Error).message || '加入家庭失败', data: null });
+      const message = (error as Error).message || '加入家庭失败';
+      // 邀请码相关错误返回 400
+      if (message.includes('邀请码') || message.includes('过期')) {
+        res.status(400).json({ code: 400, message, data: null });
+      } else {
+        res.status(500).json({ code: 500, message, data: null });
+      }
     }
   };
 
