@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -52,6 +52,18 @@ const { width } = Dimensions.get('window');
 // 宝宝月龄选项 (6-36个月)
 const BABY_AGE_OPTIONS = Array.from({ length: 31 }, (_, i) => 6 + i);
 
+const normalizeArray = <T,>(value: T[] | T | null | undefined): T[] => {
+  if (Array.isArray(value)) return value.filter(Boolean as any);
+  if (value === null || value === undefined || value === '') return [];
+  return [value as T];
+};
+
+const safeDateText = (value?: string | null) => {
+  if (!value) return '时间未知';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '时间未知' : date.toLocaleDateString();
+};
+
 export function RecipeDetailScreen({ route, navigation }: Props) {
   const { recipeId } = route.params;
   const { data: recipe, isLoading, error } = useRecipeDetail(recipeId);
@@ -67,6 +79,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
   const addRecipeToShoppingList = useAddRecipeToShoppingList();
   const { data: user } = useUserInfo();
   const { data: recentFeedbacks = [] } = useRecentFeedingFeedback({ limit: 3, recipe_id: recipeId });
+  const normalizedRecentFeedbacks = useMemo(() => normalizeArray<any>(recentFeedbacks), [recentFeedbacks]);
   const createFeedingFeedback = useCreateFeedingFeedback();
 
   // AI 宝宝版本生成相关状态
@@ -274,10 +287,10 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
         </View>
 
         {/* 图片轮播 - 如果有图片 */}
-        {recipe.image_url && recipe.image_url.length > 0 && (
+        {normalizeArray<string>(recipe.image_url).length > 0 && (
           <View style={styles.imageSection}>
             <ImageCarousel
-              images={recipe.image_url}
+              images={normalizeArray<string>(recipe.image_url)}
               height={220}
               autoPlay={true}
               autoPlayInterval={4000}
@@ -722,9 +735,9 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
               </TouchableOpacity>
             </View>
             <Text style={styles.feedbackRecentTitle}>最近反馈</Text>
-            {recentFeedbacks.length ? recentFeedbacks.map((item: any) => (
+            {normalizedRecentFeedbacks.length ? normalizedRecentFeedbacks.map((item: any) => (
               <View key={item.id} style={styles.feedbackRecentItem}>
-                <Text style={styles.feedbackRecentText}>• {item.accepted_level === 'like' ? '喜欢' : item.accepted_level === 'ok' ? '一般' : '拒绝'} · {new Date(item.created_at).toLocaleDateString()}</Text>
+                <Text style={styles.feedbackRecentText}>• {item.accepted_level === 'like' ? '喜欢' : item.accepted_level === 'ok' ? '一般' : '拒绝'} · {safeDateText(item.created_at)}</Text>
                 {!!item.note && <Text style={styles.feedbackRecentNote}>{item.note}</Text>}
               </View>
             )) : <Text style={styles.feedbackEmptyText}>还没有这道菜的反馈记录。</Text>}

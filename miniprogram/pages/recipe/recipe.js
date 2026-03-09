@@ -5,26 +5,59 @@ const CACHE_KEY_RECIPES = 'recipes_list';
 const RECIPE_DETAIL_PENDING_KEY = 'pending_recipe_detail_id';
 
 // 后端数据适配器
+function parsePossibleJson(data) {
+  if (!data) return null;
+  if (typeof data === 'string') {
+    try {
+      return JSON.parse(data);
+    } catch (_err) {
+      return null;
+    }
+  }
+  return data;
+}
+
+function normalizeImageList(imageValue) {
+  if (Array.isArray(imageValue)) return imageValue.filter(Boolean);
+  if (typeof imageValue === 'string' && imageValue.trim()) return [imageValue.trim()];
+  return [];
+}
+
+function normalizeFeedbackItems(result) {
+  if (Array.isArray(result)) return result;
+  if (Array.isArray(result?.items)) return result.items;
+  if (Array.isArray(result?.data?.items)) return result.data.items;
+  if (Array.isArray(result?.records)) return result.records;
+  return [];
+}
+
 function adaptRecipeData(recipe) {
   if (!recipe) return null;
-  
+
+  const adultVersion = parsePossibleJson(recipe.adult_version) || {};
+  const babyVersion = parsePossibleJson(recipe.baby_version) || null;
+  const rootIngredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+  const adultIngredients = Array.isArray(adultVersion.ingredients) ? adultVersion.ingredients : rootIngredients;
+
   const adapted = {
     ...recipe,
+    image_url: normalizeImageList(recipe.image_url),
     title: recipe.name || recipe.title,
-    cover_url: recipe.image_url || recipe.cover_url,
-    cook_time: recipe.cook_time || recipe.total_time,
-    ingredients: recipe.adult_version?.ingredients || recipe.ingredients || [],
-    description: recipe.description || '',
+    cover_url: recipe.cover_url || normalizeImageList(recipe.image_url)[0] || '',
+    cook_time: recipe.cook_time || recipe.total_time || recipe.prep_time || 0,
+    adult_version: adultVersion,
+    ingredients: adultIngredients,
+    description: recipe.description || adultVersion.description || '',
   };
   
-  if (recipe.baby_version) {
+  if (babyVersion) {
     adapted.baby_version = {
-      ...recipe.baby_version,
-      title: recipe.baby_version.name || (recipe.name ? `${recipe.name}（宝宝版）` : ''),
-      description: recipe.baby_version.description || '',
-      age_range: recipe.baby_version.age_range || recipe.baby_version.ageRange || '',
-      tips: recipe.baby_version.tips || recipe.baby_version.nutrition_tips || '',
-      ingredients: recipe.baby_version.ingredients || [],
+      ...babyVersion,
+      title: babyVersion.name || (recipe.name ? `${recipe.name}（宝宝版）` : ''),
+      description: babyVersion.description || '',
+      age_range: babyVersion.age_range || babyVersion.ageRange || '',
+      tips: babyVersion.tips || babyVersion.nutrition_tips || '',
+      ingredients: Array.isArray(babyVersion.ingredients) ? babyVersion.ingredients : [],
     };
   }
   
@@ -179,7 +212,7 @@ Page({
   async loadRecentFeedingFeedbacks(recipeId) {
     try {
       const result = await api.getRecentFeedingFeedback({ recipe_id: recipeId, limit: 3 });
-      this.setData({ recentFeedingFeedbacks: result.items || [] });
+      this.setData({ recentFeedingFeedbacks: normalizeFeedbackItems(result) });
     } catch (_err) {
       this.setData({ recentFeedingFeedbacks: [] });
     }
