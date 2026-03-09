@@ -307,3 +307,72 @@ export interface TimelinePhase {
   parallel_with?: number;
   timer_required?: boolean;
 }
+
+// ============================================
+// 账号合并相关类型
+// ============================================
+
+export type MergeJobStatus = 'pending' | 'running' | 'succeeded' | 'failed' | 'rolled_back';
+
+export interface MergeJob {
+  id: string;
+  source_guest_id: string;
+  target_user_id: string;
+  status: MergeJobStatus;
+  idempotency_key: string;
+  conflict_policy: Record<string, any>;
+  started_at: Date | null;
+  finished_at: Date | null;
+  error_code: string | null;
+  error_message: string | null;
+  result_summary: Record<string, any> | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface MergePreviewResult {
+  has_mergeable_data: boolean;
+  guest_profile: {
+    guest_id: string;
+    device_id: string;
+    created_at: string;
+    last_active_at: string;
+  };
+  mergeable_summary: {
+    preferences: { has_data: boolean; fields: string[] };
+    favorites: { count: number };
+    feeding_feedbacks: { count: number };
+    meal_plans: { count: number };
+    shopping_lists: { count: number; open_items: number };
+    inventory: { count: number };
+    templates: { count: number };
+    recommendation_feedbacks: { count: number };
+  };
+  recommended_conflict_policy: Record<string, string>;
+}
+
+export interface MergeRequest {
+  target_user_id: string;
+  conflict_policy?: Record<string, string>;
+  idempotency_key?: string;
+}
+
+export interface MergeResponse {
+  job_id: string;
+  status: MergeJobStatus;
+  estimated_duration_seconds: number;
+  result?: Record<string, any>;
+}
+
+export interface MergeJobQueryResponse {
+  job_id: string;
+  status: MergeJobStatus;
+  source_guest_id: string;
+  target_user_id: string;
+  started_at: string | null;
+  finished_at: string | null;
+  error_code?: string;
+  error_message?: string;
+  result?: Record<string, any>;
+  created_at: string;
+}
