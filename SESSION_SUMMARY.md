@@ -17,6 +17,7 @@
   - `POST /feeding-feedbacks` 创建反馈 ✅
   - `/families` create/join 家庭创建和加入 ✅
   - 家庭态喂养反馈：A创建家庭并写入反馈后，B加入家庭再查 `/feeding-feedbacks/recent`，可看到A的反馈 ✅
+- 已修复小程序搜索页 API 响应适配问题：后端 `/search` 返回 `results`，原代码错误使用 `items`，已修复并提交推送（commit `c8df67e`）
 
 未完成
 - 小程序端真实页面（需在微信开发者工具或真机上）UI 回归验证尚未执行
@@ -24,6 +25,7 @@
 风险/注意
 - 本次验证通过 `npm run build` + `npm run start`（生产构建）完成，避免了 `tsx watch` 热更新导致的进程不稳定问题
 - 当前 `127.0.0.1:6379` 的 Redis 仍不可用，但后端已有内存 fallback；功能可继续验证，只有缓存/分布式幂等/跨进程配额精度会退化
+- 代码审阅发现：小程序端暂无家庭管理 UI 入口（profile 页面无 family 相关功能），但后端家庭 API 已验证可用
 
 下一步
 - 如需小程序端 UI 回归，需在微信开发者工具中加载 miniprogram 目录，配置 baseURL 为 `http://localhost:3000/api/v1`，然后手动测试搜索页、推荐页、详情页和家庭态喂养反馈流程
