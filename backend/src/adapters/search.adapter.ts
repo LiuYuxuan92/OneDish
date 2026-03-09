@@ -18,6 +18,22 @@ export interface SearchResult {
   category?: string[];
   recommendation_explain?: string[];
   ranking_reasons?: Array<{ code?: string; label?: string; detail?: string; contribution?: number }>;
+  // 喂养反馈解释（可选字段，不存在时表示无历史数据或服务降级）
+  feeding_explanation?: {
+    summary: {
+      feedback_count: number;
+      like_count: number;
+      ok_count: number;
+      reject_count: number;
+      allergy_count: number;
+      latest_feedback_at?: string;
+      latest_accepted_level?: 'like' | 'ok' | 'reject';
+    };
+    signal_level: 'positive' | 'neutral' | 'cautious';
+    tags: Array<{ code: string; label: string }>;
+    reasons: Array<{ code: string; label: string; detail: string; contribution?: number }>;
+    caution_note?: string;
+  } | null;
 }
 
 // 搜索适配器接口

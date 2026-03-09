@@ -7,6 +7,8 @@ import { quotaService } from './quota.service';
 import { metricsService } from './metrics.service';
 import { redisService } from './redis.service';
 import { searchRankingService } from './search-ranking.service';
+import { feedingFeedbackService } from './feedingFeedback.service';
+import { feedingExplanationGenerator, FeedingExplanation } from './feeding-explanation-generator.service';
 
 export interface ResolveRequest {
   query: string;
@@ -107,11 +109,15 @@ export class SearchService {
       scenario: options?.scenario,
       source: result.route_used,
     });
+
+    // 注入 feeding_explanation（可降级）
+    const enriched = await this.enrichWithFeedingExplanation(ranked, options?.userId);
+
     return {
-      results: ranked,
+      results: enriched,
       source: result.route_used === 'web' ? 'tianxing' : result.route_used,
       route_source: result.route_used,
-      total: ranked.length,
+      total: enriched.length,
     } as UnifiedSearchResult;
   }
 
@@ -133,12 +139,76 @@ export class SearchService {
         results = [];
     }
 
-    return await searchRankingService.rank(results, {
+    const ranked = await searchRankingService.rank(results, {
       userId: options?.userId,
       keyword,
       inventoryIngredients: options?.inventoryIngredients,
       scenario: options?.scenario,
       source,
+    });
+
+    // 注入 feeding_explanation（可降级）
+    return await this.enrichWithFeedingExplanation(ranked, options?.userId);
+  }
+
+  /**
+   * 为搜索结果注入喂养反馈解释
+   * 批量获取 feeding summary 并生成 explanation
+   * 降级策略：服务异常时不阻断搜索主流程
+   */
+  private async enrichWithFeedingExplanation(
+    results: SearchResult[],
+    userId?: string
+  ): Promise<SearchResult[]> {
+    // 无用户ID或无结果，直接返回
+    if (!userId || !results.length) {
+      return results;
+    }
+
+    // 提取 recipe_id 列表（支持 id 或 recipe_id 字段）
+    const recipeIds = results
+      .map((r) => r.id || (r as any).recipe_id)
+      .filter((id): id is string => Boolean(id))
+      .slice(0, 50); // 最多50个
+
+    if (!recipeIds.length) {
+      return results;
+    }
+
+    // 尝试批量获取 feeding summary（500ms 超时降级）
+    let feedingSummaryMap: Map<string, any> = new Map();
+    try {
+      const timeoutMs = 500;
+      feedingSummaryMap = await Promise.race([
+        feedingFeedbackService.batchGetRecipeSummaries({ user_id: userId, recipe_ids: recipeIds }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('TIMEOUT')), timeoutMs)
+        ),
+      ]);
+    } catch (error) {
+      logger.warn('Failed to get feeding summary, fallback to no explanation', {
+        error: error?.message,
+        recipeCount: results.length,
+        userId,
+      });
+      // 降级：返回无 feeding_explanation 的结果
+      return results;
+    }
+
+    // 为每个结果生成 feeding_explanation
+    return results.map((recipe) => {
+      const recipeId = recipe.id || (recipe as any).recipe_id;
+      const summary = recipeId ? feedingSummaryMap.get(recipeId) || null : null;
+      const explanation: FeedingExplanation | null = summary
+        ? feedingExplanationGenerator.generate(summary)
+        : null;
+
+      return {
+        ...recipe,
+        // feeding_explanation: null 表示无历史数据，undefined 表示服务降级
+        // 为保持一致，明确返回 null 而非 undefined
+        feeding_explanation: explanation === null ? null : explanation,
+      };
     });
   }
 
