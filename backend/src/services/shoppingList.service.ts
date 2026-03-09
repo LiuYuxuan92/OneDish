@@ -4,6 +4,8 @@ import { familyService } from './family.service';
 import { ShoppingListShareService } from './shoppingList/share/shoppingListShare.service';
 import { ShoppingListGenerationService } from './shoppingList/shoppingListGeneration.service';
 import { ShoppingListInventoryService } from './shoppingList/shoppingListInventory.service';
+import { shoppingFeedbackService, ShoppingFeedbackEvent } from './shoppingFeedback.service';
+import { idempotencyService } from './idempotency.service';
 
 export class ShoppingListService {
   private static readonly DEFAULT_ITEMS_STRUCTURE: Record<string, any[]> = {
@@ -221,7 +223,7 @@ export class ShoppingListService {
   }
 
   /**
-   * 更新购物清单项状态
+   * 更新购物清单项状态（带乐观锁支持）
    */
   async updateListItem(data: {
     list_id: string;
@@ -230,11 +232,29 @@ export class ShoppingListService {
     ingredient_id: string;
     checked?: boolean;
     assignee?: string | null;
-    status?: 'todo' | 'doing' | 'done' | null;
+    status?: 'todo' | 'doing' | 'done' | 'out_of_stock' | 'substituted' | 'skipped' | null;
+    expectedVersion?: number;
+    clientOperationId?: string;
+    substitute_ingredient_key?: string;
+    substitute_ingredient_name?: string;
+    substitute_reason?: 'out_of_stock' | 'personal_preference' | 'price' | 'other';
   }) {
-    const { list_id, user_id, area, ingredient_id, checked, assignee, status } = data;
+    const { 
+      list_id, user_id, area, ingredient_id, checked, assignee, status, 
+      expectedVersion, clientOperationId, substitute_ingredient_key, 
+      substitute_ingredient_name, substitute_reason 
+    } = data;
 
-    logger.debug('[Backend] updateListItem called:', { list_id, user_id, area, ingredient_id, checked });
+    // 幂等检查
+    if (clientOperationId) {
+      const replay = await idempotencyService.replay('shopping_item_update', clientOperationId);
+      if (replay) {
+        logger.info('[Backend] updateListItem idempotent replay:', { list_id, clientOperationId });
+        return replay;
+      }
+    }
+
+    logger.debug('[Backend] updateListItem called:', { list_id, user_id, area, ingredient_id, checked, status });
 
     const list = await this.shareService.getAccessibleListOrThrow(list_id, user_id);
     const canWrite = await this.shareService.canWriteList(list_id, user_id);
@@ -250,6 +270,10 @@ export class ShoppingListService {
     const normalizedArea = this.normalizeArea(area);
 
     logger.debug('[Backend] Items before update:', JSON.stringify(items, null, 2));
+
+    let itemUpdated = false;
+    let oldStatus = null;
+    let ingredientKey = '';
 
     if (items[normalizedArea]) {
       // 首先尝试通过 ingredient_id 查找
@@ -267,11 +291,25 @@ export class ShoppingListService {
       }
 
       if (item) {
-        const oldChecked = item.checked;
+        ingredientKey = item.ingredient_id || item.name;
+        oldStatus = item.status || (item.checked ? 'done' : 'todo');
+        
         if (typeof checked === 'boolean') item.checked = checked;
         if (typeof assignee !== 'undefined') item.assignee = assignee;
-        if (typeof status === 'string') item.status = status;
-        logger.debug('[Backend] Updated item:', { ingredient_id, oldChecked, newChecked: checked, assignee, status });
+        if (typeof status === 'string') {
+          item.status = status;
+          // 记录替代品信息
+          if (status === 'substituted') {
+            item.substitute_ingredient_key = substitute_ingredient_key;
+            item.substitute_ingredient_name = substitute_ingredient_name;
+            item.substitute_reason = substitute_reason;
+          }
+        }
+        item.last_operated_by = user_id;
+        item.last_operated_at = new Date().toISOString();
+        
+        itemUpdated = true;
+        logger.debug('[Backend] Updated item:', { ingredient_id, oldStatus, newStatus: status, checked, assignee });
       } else {
         logger.debug('[Backend] ERROR: Item not found!');
       }
@@ -279,12 +317,32 @@ export class ShoppingListService {
       logger.debug('[Backend] ERROR: Area not found in items:', normalizedArea);
     }
 
+    if (!itemUpdated) {
+      throw new Error('项目不存在');
+    }
+
     logger.debug('[Backend] Items after update:', JSON.stringify(items, null, 2));
+
+    const currentVersion = list.version || 1;
+
+    // 乐观锁检查
+    if (expectedVersion !== undefined && expectedVersion !== currentVersion) {
+      throw new Error('VERSION_CONFLICT: 清单已被其他用户修改，请刷新后重试');
+    }
 
     const [updated] = await db('shopping_lists')
       .where('id', list_id)
-      .update({ items: JSON.stringify(items) })
+      .where('version', currentVersion)
+      .update({ 
+        items: JSON.stringify(items),
+        version: currentVersion + 1,
+        updated_at: new Date(),
+      })
       .returning('*');
+
+    if (!updated) {
+      throw new Error('VERSION_CONFLICT: 清单已被其他用户修改，请刷新后重试');
+    }
 
     logger.debug('[Backend] Updated from DB:', updated);
 
@@ -293,18 +351,79 @@ export class ShoppingListService {
       updated.items = this.normalizeShoppingItems(JSON.parse(updated.items));
     }
 
+    // 记录反馈事件（仅对于需要记录的状态变更）
+    const newStatus = status || (checked ? 'doing' : 'todo');
+    if (oldStatus !== newStatus && (newStatus === 'out_of_stock' || newStatus === 'substituted' || newStatus === 'skipped')) {
+      // 映射状态到事件类型
+      const eventTypeMap: Record<string, 'out_of_stock' | 'substitute' | 'skip'> = {
+        out_of_stock: 'out_of_stock',
+        substituted: 'substitute',
+        skipped: 'skip',
+      };
+      
+      await shoppingFeedbackService.recordFeedbackEvent({
+        user_id: user_id,
+        list_id: list_id,
+        item_id: itemUpdated ? (items[normalizedArea]?.find((i: any) => i.ingredient_id === ingredient_id || i.name === ingredient_id)?.id || ingredientKey) : ingredientKey,
+        event_type: eventTypeMap[newStatus] || newStatus as any,
+        ingredient_key: ingredientKey,
+        substitute_key: substitute_ingredient_key,
+        substitute_name: substitute_ingredient_name,
+        reason: substitute_reason,
+        actor_user_id: user_id,
+      });
+    }
+
     logger.debug('[Backend] Final result:', updated);
-    return updated;
+
+    // 记录幂等结果
+    const response = { 
+      item: updated,
+      triggered_events: {
+        feedback_recorded: oldStatus !== newStatus && (newStatus === 'out_of_stock' || newStatus === 'substituted' || newStatus === 'skipped'),
+      },
+      version: updated.version,
+    };
+    
+    if (clientOperationId) {
+      await idempotencyService.complete('shopping_item_update', clientOperationId, data, response, 86400);
+    }
+
+    return response;
   }
 
   /**
-   * 标记清单为完成，并将已勾选食材自动入库
+   * 标记清单为完成（带乐观锁和幂等支持）
    */
-  async markComplete(listId: string, userId: string) {
+  async markComplete(data: {
+    listId: string;
+    userId: string;
+    clientOperationId?: string;
+    includeInventoryRestock?: boolean;
+  }) {
+    const { listId, userId, clientOperationId, includeInventoryRestock = true } = data;
+
+    // 幂等检查：如果 clientOperationId 已存在且已完成，直接返回
+    if (clientOperationId) {
+      const replay = await idempotencyService.replay('shopping_list_complete', clientOperationId);
+      if (replay) {
+        logger.info('[Backend] markComplete idempotent replay:', { listId, clientOperationId });
+        return replay;
+      }
+    }
+
     const list = await this.shareService.getAccessibleListOrThrow(listId, userId);
     const canWrite = await this.shareService.canWriteList(listId, userId);
     if (!canWrite) {
       throw new Error('无权限修改该购物清单');
+    }
+
+    // 状态检查：只有 open/in_progress 可以完成
+    if (list.status === 'completed') {
+      throw new Error('清单已完成');
+    }
+    if (list.status === 'archived') {
+      throw new Error('清单已归档');
     }
 
     let items;
@@ -315,14 +434,149 @@ export class ShoppingListService {
       items = this.normalizeShoppingItems(null);
     }
 
-    await db.transaction(async (trx) => {
-      await this.inventoryService.restockCheckedShoppingItems(userId, items, trx);
-      await trx('shopping_lists')
+    // 统计各类状态
+    let purchasedCount = 0;
+    let outOfStockCount = 0;
+    let substitutedCount = 0;
+    let skippedCount = 0;
+    const feedbackEvents: Omit<ShoppingFeedbackEvent, 'id' | 'created_at'>[] = [];
+
+    for (const area in items) {
+      for (const item of items[area]) {
+        const itemStatus = item.status || (item.checked ? 'done' : 'todo');
+        const ingredientKey = item.ingredient_id || item.name;
+
+        if (itemStatus === 'done' || item.checked) {
+          purchasedCount++;
+          // 记录购买事件
+          feedbackEvents.push({
+            user_id: userId,
+            list_id: listId,
+            item_id: item.id || ingredientKey,
+            event_type: 'purchase',
+            ingredient_key: ingredientKey,
+            actor_user_id: userId,
+            source_meal_plan_id: item.source_meal_plan_id || null,
+            source_recipe_ids: item.source_recipe_id ? [item.source_recipe_id] : null,
+          });
+        } else if (item.status === 'out_of_stock') {
+          outOfStockCount++;
+          feedbackEvents.push({
+            user_id: userId,
+            list_id: listId,
+            item_id: item.id || ingredientKey,
+            event_type: 'out_of_stock',
+            ingredient_key: ingredientKey,
+            reason: item.out_of_stock_reason || null,
+            actor_user_id: userId,
+          });
+        } else if (item.status === 'substituted') {
+          substitutedCount++;
+          feedbackEvents.push({
+            user_id: userId,
+            list_id: listId,
+            item_id: item.id || ingredientKey,
+            event_type: 'substitute',
+            ingredient_key: ingredientKey,
+            substitute_key: item.substitute_ingredient_key || null,
+            substitute_name: item.substitute_ingredient_name || null,
+            reason: item.substitute_reason || null,
+            actor_user_id: userId,
+          });
+        } else if (item.status === 'skipped') {
+          skippedCount++;
+          feedbackEvents.push({
+            user_id: userId,
+            list_id: listId,
+            item_id: item.id || ingredientKey,
+            event_type: 'skip',
+            ingredient_key: ingredientKey,
+            actor_user_id: userId,
+          });
+        }
+      }
+    }
+
+    const currentVersion = list.version || 1;
+
+    // 使用事务确保原子性
+    const result = await db.transaction(async (trx) => {
+      // 乐观锁更新
+      const updated = await trx('shopping_lists')
         .where('id', listId)
-        .update({ is_completed: true });
+        .where('version', currentVersion)
+        .update({
+          is_completed: true,
+          status: 'completed',
+          completed_at: new Date(),
+          completed_by: userId,
+          version: currentVersion + 1,
+          updated_at: new Date(),
+        })
+        .returning('*');
+
+      if (updated.length === 0) {
+        throw new Error('VERSION_CONFLICT: 清单已被其他用户修改，请刷新后重试');
+      }
+
+      // 入库（如果包含入库）
+      if (includeInventoryRestock) {
+        await this.inventoryService.restockCheckedShoppingItems(userId, items, trx);
+      }
+
+      // 记录反馈事件
+      if (feedbackEvents.length > 0) {
+        await shoppingFeedbackService.batchRecordFeedbackEvents(feedbackEvents);
+      }
+
+      return updated[0];
     });
 
+    // 记录幂等结果
+    if (clientOperationId) {
+      const response = {
+        list: {
+          id: listId,
+          status: 'completed',
+          completed_at: result.completed_at,
+          completed_by: userId,
+          version: result.version,
+        },
+        restocked_items: includeInventoryRestock ? this.extractRestockedItems(items) : [],
+        feedback_summary: {
+          purchased_count: purchasedCount,
+          out_of_stock_count: outOfStockCount,
+          substituted_count: substitutedCount,
+          skipped_count: skippedCount,
+        },
+      };
+      
+      await idempotencyService.complete('shopping_list_complete', clientOperationId, {}, response, 86400);
+      return response;
+    }
+
     return this.getShoppingListById(listId, userId);
+  }
+
+  /**
+   * 从已购项目中提取入库信息
+   */
+  private extractRestockedItems(items: Record<string, any[]>): { ingredient_key: string; quantity: number; unit: string }[] {
+    const restocked: { ingredient_key: string; quantity: number; unit: string }[] = [];
+    
+    for (const area in items) {
+      for (const item of items[area]) {
+        if (item.status === 'done' || item.checked) {
+          restocked.push({
+            ingredient_key: item.ingredient_id || item.name,
+            quantity: parseFloat(item.amount) || 1,
+            unit: item.unit || '个',
+          });
+        }
+      }
+    }
+    
+    return restocked;
   }
 
   /**

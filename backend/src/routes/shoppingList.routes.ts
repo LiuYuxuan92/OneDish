@@ -17,6 +17,9 @@ router.post('/add-recipe', shoppingListController.addRecipeToShoppingList);
 // 获取历史购物清单
 router.get('/', shoppingListController.getShoppingLists);
 
+// 获取购物反馈事件
+router.get('/feedback-events', shoppingListController.getFeedbackEvents);
+
 // 获取单个购物清单详情
 router.get('/:listId', shoppingListController.getShoppingListById);
 

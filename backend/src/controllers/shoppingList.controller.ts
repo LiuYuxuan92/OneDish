@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { ShoppingListService } from '../services/shoppingList.service';
+import { shoppingFeedbackService } from '../services/shoppingFeedback.service';
 import { logger } from '../utils/logger';
 
 export class ShoppingListController {
@@ -94,7 +95,11 @@ export class ShoppingListController {
     try {
       const userId = (req as any).user.user_id;
       const { listId } = req.params;
-      const { area, ingredient_id, checked, assignee, status } = req.body;
+      const { 
+        area, ingredient_id, checked, assignee, status,
+        expected_version, client_operation_id,
+        substitute_ingredient_key, substitute_ingredient_name, substitute_reason
+      } = req.body;
 
       const result = await this.shoppingListService.updateListItem({
         list_id: listId,
@@ -104,6 +109,11 @@ export class ShoppingListController {
         checked,
         assignee,
         status,
+        expectedVersion: expected_version,
+        clientOperationId: client_operation_id,
+        substitute_ingredient_key,
+        substitute_ingredient_name,
+        substitute_reason,
       });
 
       res.json({
@@ -112,10 +122,19 @@ export class ShoppingListController {
         data: result,
       });
     } catch (error) {
+      const errorMessage = (error as Error).message || '';
+      if (errorMessage.includes('VERSION_CONFLICT')) {
+        res.status(409).json({
+          code: 409,
+          message: errorMessage,
+          data: null,
+        });
+        return;
+      }
       logger.error('Failed to update list item', { error });
       res.status(500).json({
         code: 500,
-        message: '更新购物清单项失败',
+        message: errorMessage || '更新购物清单项失败',
         data: null,
       });
     }
@@ -180,8 +199,31 @@ export class ShoppingListController {
     try {
       const userId = (req as any).user.user_id;
       const { listId } = req.params;
+      const { 
+        client_operation_id, 
+        include_inventory_restock = true,
+        expected_version 
+      } = req.body;
 
-      const result = await this.shoppingListService.markComplete(listId, userId);
+      // 版本冲突检查
+      if (expected_version !== undefined) {
+        const list = await this.shoppingListService.getShoppingListById(listId, userId);
+        if (list.version !== expected_version) {
+          res.status(409).json({
+            code: 409,
+            message: 'VERSION_CONFLICT: 清单已被其他用户修改，请刷新后重试',
+            data: null,
+          });
+          return;
+        }
+      }
+
+      const result = await this.shoppingListService.markComplete({
+        listId,
+        userId,
+        clientOperationId: client_operation_id,
+        includeInventoryRestock: include_inventory_restock,
+      });
 
       res.json({
         code: 200,
@@ -189,10 +231,19 @@ export class ShoppingListController {
         data: result,
       });
     } catch (error) {
+      const errorMessage = (error as Error).message || '';
+      if (errorMessage.includes('VERSION_CONFLICT')) {
+        res.status(409).json({
+          code: 409,
+          message: errorMessage,
+          data: null,
+        });
+        return;
+      }
       logger.error('Failed to mark list complete', { error });
       res.status(500).json({
         code: 500,
-        message: '标记完成失败',
+        message: errorMessage || '标记完成失败',
         data: null,
       });
     }
@@ -313,6 +364,36 @@ export class ShoppingListController {
       res.status(500).json({
         code: 500,
         message: '操作失败',
+        data: null,
+      });
+    }
+  };
+
+  // 获取购物反馈事件
+  getFeedbackEvents = async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.user_id;
+      const { ingredient_key, event_type, since, limit, cursor } = req.query;
+
+      const result = await shoppingFeedbackService.getFeedbackEvents({
+        userId,
+        ingredientKey: ingredient_key as string,
+        eventType: event_type as any,
+        since: since as string,
+        limit: limit ? parseInt(limit as string, 10) : 50,
+        cursor: cursor as string,
+      });
+
+      res.json({
+        code: 200,
+        message: 'success',
+        data: result,
+      });
+    } catch (error) {
+      logger.error('Failed to get feedback events', { error });
+      res.status(500).json({
+        code: 500,
+        message: '获取反馈事件失败',
         data: null,
       });
     }
