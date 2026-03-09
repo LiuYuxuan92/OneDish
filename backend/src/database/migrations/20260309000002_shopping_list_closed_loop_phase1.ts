@@ -52,7 +52,7 @@ export async function up(knex: Knex): Promise<void> {
   const hasFeedbackTable = await knex.schema.hasTable('shopping_feedback_events');
   if (!hasFeedbackTable) {
     await knex.schema.createTable('shopping_feedback_events', (table) => {
-      table.string('id', 36).primary().defaultTo(knex.raw("lower(hex(randomblob(16)))"));
+      table.string('id', 36).primary().defaultTo(knex.raw("(lower(hex(randomblob(16))))"));
       table.string('user_id', 36).notNullable().references('id').inTable('users').onDelete('CASCADE');
       table.string('family_id', 36).nullable().references('id').inTable('families').onDelete('SET NULL');
       table.string('list_id', 36).notNullable().references('id').inTable('shopping_lists').onDelete('CASCADE');

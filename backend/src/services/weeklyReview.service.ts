@@ -132,7 +132,7 @@ export class WeeklyReviewService {
 
     // 清除缓存
     const cacheKey = `weekly_review:${scope.scope_type}:${scope.scope_id}:${normalizedChildId || 'none'}:${normalizedWeekStart}`;
-    await redisService.setRaw(cacheKey, '', -1); // 立即过期
+    await redisService.deleteRaw(cacheKey);
 
     return {
       week_start: normalizedWeekStart,

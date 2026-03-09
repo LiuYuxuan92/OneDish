@@ -251,18 +251,13 @@ export class RecipeService {
         'id',
         'name',
         'type',
+        'category',
         'prep_time',
         'image_url',
         'difficulty',
         'calibrated_difficulty',
         'adult_version',
         'baby_version',
-        'baby_age_range',
-        'suitable_baby_age',
-        'age_min',
-        'age_max',
-        'baby_age_min',
-        'baby_age_max',
         'stage',
         'created_at'
       );
@@ -284,15 +279,23 @@ export class RecipeService {
 
     if (effectiveMaxTime) {
       query = query.where('prep_time', '<=', effectiveMaxTime);
-    }
-
-    if (category) {
-      query = query.whereRaw('? = ANY(category)', [category]);
-    }
-
-    const rawItems = await query;
+    }    const rawItems = await query;
 
     const filteredItems = (rawItems as any[]).filter((item) => {
+      if (category) {
+        const categories = Array.isArray(item.category)
+          ? item.category
+          : (() => {
+              try {
+                return JSON.parse(item.category || '[]');
+              } catch {
+                return [];
+              }
+            })();
+        if (!categories.includes(category)) {
+          return false;
+        }
+      }
       if (userPreferenceService.recipeContainsExcludedIngredient(item, userPrefs.exclude_ingredients)) {
         return false;
       }

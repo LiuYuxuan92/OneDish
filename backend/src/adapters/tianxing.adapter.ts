@@ -46,7 +46,10 @@ export class TianxingSearchAdapter implements SearchAdapter {
         num: '10',
       });
 
-      const response = await fetch(`${url}?${params}`);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), Number(process.env.SEARCH_WEB_TIMEOUT_MS || 1500));
+      const response = await fetch(`${url}?${params}`, { signal: controller.signal })
+        .finally(() => clearTimeout(timeout));
 
       if (!response.ok) {
         logger.warn('Tianxing API HTTP error:', response.status);
@@ -72,6 +75,10 @@ export class TianxingSearchAdapter implements SearchAdapter {
       // 转换API结果为统一格式
       return this.convertResults(data.result?.list || []);
     } catch (error) {
+      if ((error as Error)?.name === 'AbortError') {
+        logger.warn('Tianxing search timeout');
+        return [];
+      }
       logger.error('Tianxing search error:', error);
       return [];
     }

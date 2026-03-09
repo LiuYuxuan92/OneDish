@@ -43,6 +43,15 @@ export class AISearchAdapter implements SearchAdapter {
     return getAIProviderConfig(this.provider);
   }
 
+  private createTimeoutSignal(timeoutMs: number) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    return {
+      signal: controller.signal,
+      clear: () => clearTimeout(timeout),
+    };
+  }
+
   async search(keyword: string): Promise<SearchResult[]> {
     // 延迟获取配置
     const config = this.getConfig();
@@ -102,6 +111,7 @@ export class AISearchAdapter implements SearchAdapter {
       // 使用 Anthropic 兼容模式
       const baseUrl = config.anthropicBaseUrl || config.baseUrl;
 
+      const request = this.createTimeoutSignal(Number(process.env.SEARCH_AI_TIMEOUT_MS || 1800));
       const response = await fetch(`${baseUrl}/text/chatcompletion_v2`, {
         method: 'POST',
         headers: {
@@ -116,7 +126,8 @@ export class AISearchAdapter implements SearchAdapter {
           ],
           temperature: 0.7,
         }),
-      });
+        signal: request.signal,
+      }).finally(() => request.clear());
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -133,6 +144,10 @@ export class AISearchAdapter implements SearchAdapter {
 
       return [];
     } catch (error) {
+      if ((error as Error)?.name === 'AbortError') {
+        logger.warn('MiniMax search timeout');
+        return [];
+      }
       logger.error('MiniMax search error:', error);
       return [];
     }
@@ -140,6 +155,7 @@ export class AISearchAdapter implements SearchAdapter {
 
   private async searchWithOpenAI(prompt: string, config: { apiKey: string; baseUrl: string; model: string }): Promise<SearchResult[]> {
     try {
+      const request = this.createTimeoutSignal(Number(process.env.SEARCH_AI_TIMEOUT_MS || 1800));
       const response = await fetch(`${config.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -154,7 +170,8 @@ export class AISearchAdapter implements SearchAdapter {
           ],
           temperature: 0.7,
         }),
-      });
+        signal: request.signal,
+      }).finally(() => request.clear());
 
       if (!response.ok) {
         logger.error('OpenAI API error:', response.status);
@@ -170,6 +187,10 @@ export class AISearchAdapter implements SearchAdapter {
 
       return [];
     } catch (error) {
+      if ((error as Error)?.name === 'AbortError') {
+        logger.warn('OpenAI search timeout');
+        return [];
+      }
       logger.error('OpenAI search error:', error);
       return [];
     }

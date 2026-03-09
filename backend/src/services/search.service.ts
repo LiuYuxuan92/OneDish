@@ -32,6 +32,23 @@ export class SearchService {
     this.aiAdapter = new AISearchAdapter('minimax');
   }
 
+  private async withTimeout<T>(task: Promise<T>, timeoutMs: number, fallbackValue: T, label: string): Promise<T> {
+    let timer: NodeJS.Timeout | null = null;
+    try {
+      return await Promise.race([
+        task,
+        new Promise<T>((resolve) => {
+          timer = setTimeout(() => {
+            logger.warn(`${label} timed out`, { timeout_ms: timeoutMs });
+            resolve(fallbackValue);
+          }, timeoutMs);
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
   async resolve(req: ResolveRequest): Promise<{ items: SearchResult[]; route_used: 'local' | 'cache' | 'web' | 'ai'; cache_hit: boolean; degrade_level: number }> {
     const query = (req.query || '').trim();
     const tier = req.user_tier || 'free';
@@ -63,7 +80,12 @@ export class SearchService {
     const webQuota = await quotaService.consume(userId, tier, 'web');
     if (webQuota.allowed) {
       const webStart = Date.now();
-      const webResults = await this.tianxingAdapter.search(query);
+      const webResults = await this.withTimeout(
+        this.tianxingAdapter.search(query),
+        Number(process.env.SEARCH_WEB_TIMEOUT_MS || 1500),
+        [],
+        'Tianxing search'
+      );
       metricsService.inc('onedish_quota_user_used_total', { channel: 'search', type: 'web', tier });
       metricsService.inc('onedish_quota_global_used_total', { type: 'web' });
       metricsService.inc('onedish_upstream_requests_total', { provider: 'tianxing', endpoint: 'search', status: String(webResults.length > 0 ? 200 : 204) });
@@ -80,7 +102,12 @@ export class SearchService {
     const aiQuota = await quotaService.consume(userId, tier, 'ai');
     if (aiQuota.allowed) {
       const aiStart = Date.now();
-      const aiResults = await this.aiAdapter.search(query);
+      const aiResults = await this.withTimeout(
+        this.aiAdapter.search(query),
+        Number(process.env.SEARCH_AI_TIMEOUT_MS || 1800),
+        [],
+        'AI search'
+      );
       metricsService.inc('onedish_quota_user_used_total', { channel: 'search', type: 'ai', tier });
       metricsService.inc('onedish_quota_global_used_total', { type: 'ai' });
       // 最小可行预算指标：按每次 AI 请求估算固定成本（USD）
@@ -130,10 +157,20 @@ export class SearchService {
         results = await this.localAdapter.search(trimmedKeyword);
         break;
       case 'tianxing':
-        results = await this.tianxingAdapter.search(trimmedKeyword);
+        results = await this.withTimeout(
+          this.tianxingAdapter.search(trimmedKeyword),
+          Number(process.env.SEARCH_WEB_TIMEOUT_MS || 1500),
+          [],
+          'Tianxing search'
+        );
         break;
       case 'ai':
-        results = await this.aiAdapter.search(trimmedKeyword);
+        results = await this.withTimeout(
+          this.aiAdapter.search(trimmedKeyword),
+          Number(process.env.SEARCH_AI_TIMEOUT_MS || 1800),
+          [],
+          'AI search'
+        );
         break;
       default:
         results = [];

@@ -104,7 +104,7 @@ export class QuotaService {
     const userLimit = type === 'web' ? tierConf.web_limit : tierConf.ai_limit;
     const globalLimit = type === 'web' ? this.globalLimit.web_limit : this.globalLimit.ai_limit;
 
-    if (redisService.isRedisReady() || process.env.REDIS_ENABLED !== 'false') {
+    if (redisService.shouldUseRedis()) {
       const redisResult = await redisService.evalQuotaConsume([userKey, globalKey], [userLimit, globalLimit], retryAfter);
       if (redisResult.allowed) {
         return { allowed: true };

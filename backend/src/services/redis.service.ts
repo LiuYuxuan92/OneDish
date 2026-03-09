@@ -33,6 +33,10 @@ class RedisService {
       return null;
     }
 
+    if (this.mode === 'fallback' || this.mode === 'disabled') {
+      return null;
+    }
+
     if (this.client?.isOpen) {
       return this.client;
     }
@@ -53,7 +57,8 @@ class RedisService {
       const client = createClient({
         url: this.redisUrl,
         socket: {
-          reconnectStrategy: () => 1000,
+          connectTimeout: Number(process.env.REDIS_CONNECT_TIMEOUT_MS || 300),
+          reconnectStrategy: () => false,
         },
       });
 
@@ -80,6 +85,17 @@ class RedisService {
     if (this.mode !== 'fallback') {
       logger.warn('Redis unavailable, fallback to in-memory mode', { reason, error: error instanceof Error ? error.message : String(error || '') });
     }
+
+    if (this.client) {
+      try {
+        this.client.disconnect();
+      } catch {
+        // ignore cleanup errors during fallback
+      }
+      this.client = null;
+    }
+
+    this.connecting = null;
     this.mode = 'fallback';
     metricsService.inc('onedish_redis_fallback_total', { reason });
   }
@@ -101,6 +117,10 @@ class RedisService {
       this.maybeInjectFault('set');
       const client = await this.getClient();
       if (!client) return false;
+      if (ttlSec <= 0) {
+        await client.del(key);
+        return true;
+      }
       await client.set(key, value, { EX: ttlSec });
       return true;
     } catch (error) {
@@ -122,6 +142,19 @@ class RedisService {
 
   async setJson(key: string, value: unknown, ttlSec: number): Promise<boolean> {
     return this.setRaw(key, JSON.stringify(value), ttlSec);
+  }
+
+  async deleteRaw(key: string): Promise<boolean> {
+    try {
+      this.maybeInjectFault('set');
+      const client = await this.getClient();
+      if (!client) return false;
+      await client.del(key);
+      return true;
+    } catch (error) {
+      this.enterFallback('redis_set_failed', error);
+      return false;
+    }
   }
 
   async mget(keys: string[]): Promise<(string | null)[] | null> {
@@ -239,6 +272,10 @@ class RedisService {
 
   isRedisReady(): boolean {
     return this.mode === 'ready';
+  }
+
+  shouldUseRedis(): boolean {
+    return this.redisEnabled && this.mode !== 'fallback' && this.mode !== 'disabled';
   }
 }
 
