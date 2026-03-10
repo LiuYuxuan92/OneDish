@@ -1,5 +1,4 @@
 import React from 'react';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
@@ -13,6 +12,8 @@ import { MyRecipesScreen } from '../screens/profile/MyRecipesScreen';
 import { FamilyScreen } from '../screens/profile/FamilyScreen';
 import { WeeklyPlanScreen } from '../screens/plan/WeeklyPlanScreen';
 import { ShoppingListScreen } from '../screens/plan/ShoppingListScreen';
+import { ShoppingListHistoryScreen } from '../screens/plan/ShoppingListHistoryScreen';
+import { ShoppingListDetailScreen } from '../screens/plan/ShoppingListDetailScreen';
 import { FeedingFeedbackScreen } from '../screens/feedback/FeedingFeedbackScreen';
 import { WeeklyReviewScreen } from '../screens/feedback/WeeklyReviewScreen';
 import { RecipeDetailScreen } from '../screens/recipe/RecipeDetailScreen';
@@ -22,17 +23,6 @@ import { useTheme } from '../contexts/ThemeContext';
 import { buildHeaderOptions } from './headerOptions';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
-
-type FamilyWeeklyPlanWrapperProps = NativeStackScreenProps<ProfileStackParamList, 'FamilyWeeklyPlan'>;
-type FamilyShoppingListWrapperProps = NativeStackScreenProps<ProfileStackParamList, 'FamilyShoppingList'>;
-
-function FamilyWeeklyPlanWrapper({ navigation }: FamilyWeeklyPlanWrapperProps) {
-  return <WeeklyPlanScreen navigation={navigation as any} route={{ key: 'FamilyWeeklyPlan', name: 'WeeklyPlan' } as any} />;
-}
-
-function FamilyShoppingListWrapper({ navigation }: FamilyShoppingListWrapperProps) {
-  return <ShoppingListScreen navigation={navigation as any} route={{ key: 'FamilyShoppingList', name: 'ShoppingList' } as any} />;
-}
 
 export function ProfileNavigator() {
   const { theme } = useTheme();
@@ -87,13 +77,23 @@ export function ProfileNavigator() {
       />
       <Stack.Screen
         name="FamilyWeeklyPlan"
-        component={FamilyWeeklyPlanWrapper}
+        component={WeeklyPlanScreen as any}
         options={{ title: '家庭周计划' }}
       />
       <Stack.Screen
         name="FamilyShoppingList"
-        component={FamilyShoppingListWrapper}
+        component={ShoppingListScreen as any}
         options={{ title: '家庭购物清单' }}
+      />
+      <Stack.Screen
+        name="ShoppingListHistory"
+        component={ShoppingListHistoryScreen as any}
+        options={{ title: '历史清单' }}
+      />
+      <Stack.Screen
+        name="ShoppingListDetail"
+        component={ShoppingListDetailScreen as any}
+        options={{ title: '清单详情' }}
       />
       <Stack.Screen
         name="FeedingFeedback"

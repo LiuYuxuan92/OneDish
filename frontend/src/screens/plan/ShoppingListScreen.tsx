@@ -12,6 +12,7 @@ import {
   TextInput,
   Modal,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '../../styles/theme';
@@ -595,6 +596,7 @@ export function ShoppingListScreen({ navigation }: Props) {
 
       <ScrollView
         style={styles.content}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -778,7 +780,7 @@ export function ShoppingListScreen({ navigation }: Props) {
         )}
 
         {/* 底部占位 */}
-        <View style={{ height: 100 }} />
+        <View style={styles.bottomSpacer} />
       </ScrollView>
 
       {/* 底部操作按钮 */}
@@ -902,6 +904,13 @@ const styles = StyleSheet.create({
     color: Colors.text.inverse,
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: Platform.OS === 'web' ? 144 : 120,
   },
 
   // 头部
@@ -1562,11 +1571,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: Spacing.md,
+    paddingBottom: Platform.OS === 'web' ? Spacing.lg : Spacing.md,
     backgroundColor: Colors.background.primary,
     borderTopWidth: 1,
     borderTopColor: Colors.border.light,
     flexDirection: 'row',
     gap: Spacing.sm,
+  },
+  bottomSpacer: {
+    height: Platform.OS === 'web' ? 140 : 110,
   },
   actionButton: {
     flex: 1,

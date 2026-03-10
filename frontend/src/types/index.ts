@@ -285,6 +285,8 @@ export type ProfileStackParamList = {
   Family: undefined;
   FamilyWeeklyPlan: undefined;
   FamilyShoppingList: undefined;
+  ShoppingListHistory: undefined;
+  ShoppingListDetail: { listId: string };
   FeedingFeedback: undefined;
   WeeklyReview: undefined;
   RecipeDetail: { recipeId: string };
