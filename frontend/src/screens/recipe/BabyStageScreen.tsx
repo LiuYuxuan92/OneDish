@@ -65,7 +65,7 @@ export function BabyStageScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.heroCard}>
-          <Text style={styles.eyebrow}>Baby stages</Text>
+          <Text style={styles.eyebrow}>月龄阶段</Text>
           <Text style={styles.title}>先按月龄找阶段，再看更稳妥的辅食建议</Text>
           <Text style={styles.subtitle}>把阶段要点、重点营养和入口卡片收在一起，减少从菜谱列表里反复试错。</Text>
           <View style={styles.overviewRow}>

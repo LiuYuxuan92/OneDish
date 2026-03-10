@@ -126,7 +126,7 @@ export function StageDetailScreen({ route, navigation }: Props) {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.heroCard}>
-          <Text style={styles.eyebrow}>Stage detail</Text>
+          <Text style={styles.eyebrow}>阶段详情</Text>
           <Text style={styles.heroTitle}>{stageName || stage}</Text>
           <Text style={styles.heroSubtitle}>先看这个阶段的喂养重点，再根据场景筛具体食谱，避免一上来就从全量列表里盲选。</Text>
           <View style={styles.summaryRow}>
