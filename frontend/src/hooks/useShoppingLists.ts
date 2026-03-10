@@ -1,14 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Platform } from 'react-native';
 import { shoppingListsApi, ShoppingList, GenerateShoppingListParams } from '../api/shoppingLists';
-import { shouldUseWebMockFallback } from '../mock/webFallback';
+import { buildMockShoppingList, shouldUseWebMockFallback } from '../mock/webFallback';
 
 // 获取所有购物清单
 export function useShoppingLists(params?: { start_date?: string; end_date?: string }) {
   return useQuery({
     queryKey: ['shoppingLists', params],
-    queryFn: () => shoppingListsApi.getAll(params).then(res => res.data),
+    queryFn: async () => {
+      try {
+        return await shoppingListsApi.getAll(params).then(res => res.data);
+      } catch (error) {
+        if (Platform.OS === 'web' && shouldUseWebMockFallback(error)) {
+          return { items: [buildMockShoppingList()] };
+        }
+        throw error;
+      }
+    },
     staleTime: 2 * 60 * 1000, // 2分钟
+    retry: Platform.OS === 'web' ? 0 : 1,
   });
 }
 
@@ -27,7 +37,7 @@ export function useLatestShoppingList() {
         return unfinishedList || null;
       } catch (error) {
         if (Platform.OS === 'web' && shouldUseWebMockFallback(error)) {
-          return null;
+          return buildMockShoppingList();
         }
         throw error;
       }
@@ -159,10 +169,20 @@ export function useMarkShoppingListComplete() {
 export function useShoppingListDetail(listId: string) {
   return useQuery({
     queryKey: ['shoppingLists', 'detail', listId],
-    queryFn: () => shoppingListsApi.getById(listId).then(res => res.data),
+    queryFn: async () => {
+      try {
+        return await shoppingListsApi.getById(listId).then(res => res.data);
+      } catch (error) {
+        if (Platform.OS === 'web' && shouldUseWebMockFallback(error)) {
+          return buildMockShoppingList();
+        }
+        throw error;
+      }
+    },
     enabled: !!listId,
     staleTime: 15 * 1000,
-    refetchInterval: 15 * 1000,
+    refetchInterval: Platform.OS === 'web' ? false : 15 * 1000,
+    retry: Platform.OS === 'web' ? 0 : 1,
   });
 }
 

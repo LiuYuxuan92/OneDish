@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
@@ -231,7 +232,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background.secondary,
   },
   scrollContent: {
-    paddingBottom: Spacing.xl,
+    flexGrow: 1,
+    paddingBottom: Platform.OS === 'web' ? 96 : Spacing.xl,
   },
   centerContent: {
     flex: 1,

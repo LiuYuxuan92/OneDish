@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Platform } from 'react-native';
 import { familiesApi } from '../api/families';
-import { shouldUseWebMockFallback } from '../mock/webFallback';
+import { buildMockFamily, shouldUseWebMockFallback } from '../mock/webFallback';
 
 export function useMyFamily() {
   return useQuery({
@@ -12,7 +12,7 @@ export function useMyFamily() {
         return res || null;
       } catch (error) {
         if (Platform.OS === 'web' && shouldUseWebMockFallback(error)) {
-          return null;
+          return buildMockFamily();
         }
         throw error;
       }

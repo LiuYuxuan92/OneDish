@@ -9,6 +9,8 @@ import {
   Alert,
   TextInput,
   Modal,
+  Platform,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -33,6 +35,7 @@ const activityEmoji: Record<string, string> = {
 
 export function FamilyScreen({ navigation }: Props) {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [familyName, setFamilyName] = useState('我的家庭');
   const [inviteCode, setInviteCode] = useState('');
@@ -174,6 +177,15 @@ export function FamilyScreen({ navigation }: Props) {
     }
   };
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.allSettled([refetch()]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handleRemoveMember = (memberId: string, displayName?: string) => {
     Alert.alert('移除成员', `确认移除 ${displayName || '该成员'} 吗？`, [
       { text: '取消', style: 'cancel' },
@@ -217,7 +229,19 @@ export function FamilyScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[Colors.primary.main]}
+            tintColor={Colors.primary.main}
+          />
+        }
+        contentContainerStyle={styles.scrollContent}
+      >
         <View style={styles.headerCard}>
           <Text style={styles.headerEyebrow}>Family space</Text>
           <Text style={styles.headerTitle}>{myFamily?.name || '家庭协作'}</Text>
@@ -422,6 +446,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: Platform.OS === 'web' ? 96 : Spacing.xl,
   },
   centerContent: {
     flex: 1,
