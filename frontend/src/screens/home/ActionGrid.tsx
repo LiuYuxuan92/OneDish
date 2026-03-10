@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
+import { Colors, Typography, Spacing, BorderRadius } from '../../styles/theme';
 
 interface ActionItem {
   icon: string;
@@ -16,7 +16,12 @@ export interface ActionGridProps {
 export function ActionGrid({ actions }: ActionGridProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.eyebrow}>Quick entry</Text>
+      <View style={styles.headerRow}>
+        <View>
+          <Text style={styles.title}>Quick actions</Text>
+          <Text style={styles.caption}>轻量直达，不打断主流程</Text>
+        </View>
+      </View>
       <View style={styles.grid}>
         {actions.map((action, index) => (
           <TouchableOpacity
@@ -40,12 +45,20 @@ const styles = StyleSheet.create({
   container: {
     gap: Spacing.sm,
   },
-  eyebrow: {
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  title: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.primary,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  caption: {
+    marginTop: 2,
     fontSize: Typography.fontSize.xs,
     color: Colors.text.tertiary,
-    fontWeight: Typography.fontWeight.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
   },
   grid: {
     flexDirection: 'row',
@@ -55,27 +68,28 @@ const styles = StyleSheet.create({
   button: {
     flex: 1,
     minWidth: 0,
-    backgroundColor: Colors.background.primary,
+    backgroundColor: 'rgba(255,255,255,0.52)',
     borderRadius: BorderRadius.xl,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: 6,
     alignItems: 'center',
-    ...Shadows.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(240,216,191,0.72)',
   },
   icon: {
-    width: 44,
-    height: 44,
+    width: 38,
+    height: 38,
     borderRadius: BorderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconText: {
-    fontSize: 22,
+    fontSize: 18,
   },
   text: {
     fontSize: Typography.fontSize.xs,
     color: Colors.text.primary,
-    marginTop: Spacing.sm,
+    marginTop: 6,
     fontWeight: Typography.fontWeight.medium,
     textAlign: 'center',
   },

@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { Platform } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { mealPlansApi } from '../../api/mealPlans';
-import { shoppingListsApi } from '../../api/shoppingLists';
 import { feedingFeedbackApi } from '../../api/feedingFeedback';
 import {
   buildMockFeedingFeedback,
@@ -66,6 +65,7 @@ export function useHomeDashboardViewModel() {
   const todayKey = getTodayDateKey();
   const weekStart = startOfWeek(new Date()).toISOString().slice(0, 10);
   const weekEnd = endOfWeek(new Date()).toISOString().slice(0, 10);
+  const shoppingData = buildShoppingFallback();
 
   const weeklyQuery = useQuery({
     queryKey: ['home-dashboard', 'weekly-plan', weekStart, weekEnd],
@@ -74,16 +74,6 @@ export function useHomeDashboardViewModel() {
         const res = await mealPlansApi.getWeekly({ start_date: weekStart, end_date: weekEnd });
         return (res as any)?.data ?? res ?? buildMockWeeklyPlan();
       }, buildMockWeeklyPlan),
-    retry: isWeb ? 0 : 1,
-  });
-
-  const shoppingQuery = useQuery({
-    queryKey: ['home-dashboard', 'shopping-lists', weekStart, weekEnd],
-    queryFn: async () =>
-      runHomeQueryWithFallback(async () => {
-        const res = await shoppingListsApi.getAll({ start_date: weekStart, end_date: weekEnd });
-        return (res as any)?.data ?? res ?? buildShoppingFallback();
-      }, buildShoppingFallback),
     retry: isWeb ? 0 : 1,
   });
 
@@ -113,7 +103,7 @@ export function useHomeDashboardViewModel() {
     const undecidedCount = Math.max(0, 3 - plannedCount);
     const nextMeal = todayMeals.find((meal) => !meal.done) || todayMeals[0] || null;
 
-    const shoppingLists = shoppingQuery.data?.items || [];
+    const shoppingLists = shoppingData.items || [];
     const latestShopping = shoppingLists[0];
     const unchecked = latestShopping?.unchecked_items ?? latestShopping?.inventory_summary?.missing_count ?? 0;
     const totalItems = latestShopping?.total_items ?? latestShopping?.inventory_summary?.total_required_items ?? 0;
@@ -147,6 +137,18 @@ export function useHomeDashboardViewModel() {
           ? `还有 ${undecidedCount} 餐待决定`
           : '可以直接去搜索补一顿';
 
+    const quickEntries = [
+      { key: 'search', label: '找共享菜', hint: '从一菜两吃开始，先把下一顿定下来', target: 'search' as const },
+      { key: 'plan', label: '补今天安排', hint: plannedCount > 0 ? '继续完善今天和本周计划' : '先把今天至少定一顿', target: 'plan' as const },
+      { key: 'shopping', label: '看采购缺口', hint: unchecked > 0 ? `还有 ${unchecked} 项未处理` : '采购准备度不错，顺手再确认一次', target: 'shopping' as const },
+    ];
+
+    const todaySummaryCards = [
+      { key: 'planned', label: '已计划', value: plannedCount, tone: 'warm' as const },
+      { key: 'cooked', label: '已完成', value: cookedCount, tone: 'soft' as const },
+      { key: 'undecided', label: '待决定', value: undecidedCount, tone: 'plain' as const },
+    ];
+
     return {
       header: {
         greeting: '今天吃点什么？',
@@ -165,7 +167,7 @@ export function useHomeDashboardViewModel() {
       },
       reminders: [
         unloggedFeedingCount > 0 ? { key: 'feeding', tone: 'warning' as const, title: `还有 ${unloggedFeedingCount} 条喂养待记录`, cta: '去记录' } : null,
-        unchecked > 0 ? { key: 'shopping', tone: 'accent' as const, title: `购物清单还有 ${unchecked} 项未处理`, cta: `${readiness}% 已准备` } : null,
+        unchecked > 0 ? { key: 'shopping', tone: 'accent' as const, title: `购物准备还有 ${unchecked} 项缺口`, cta: `${readiness}% 已准备` } : null,
         retrySuggestedCount > 0 ? { key: 'retry', tone: 'success' as const, title: `${retrySuggestedCount} 道菜建议后续重试`, cta: '查看线索' } : null,
       ].filter(Boolean),
       quickFilters: [
@@ -180,11 +182,14 @@ export function useHomeDashboardViewModel() {
         totalItems,
         readiness,
       },
+      quickEntries,
+      todaySummaryCards,
       isLoading: recommendation.isLoading || weeklyQuery.isLoading,
       refresh: recommendation.onRefresh,
       recommendation,
+      isShoppingRequestShortCircuitedOnHome: true,
     };
-  }, [weeklyQuery.data, shoppingQuery.data, feedingQuery.data, recommendation, todayKey]);
+  }, [weeklyQuery.data, feedingQuery.data, recommendation, todayKey, shoppingData]);
 
   return viewModel;
 }
