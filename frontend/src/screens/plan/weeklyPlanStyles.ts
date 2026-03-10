@@ -15,8 +15,8 @@ export const weeklyPlanStyles = StyleSheet.create({
   header: {
     backgroundColor: Colors.background.primary,
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.md,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.light,
   },
@@ -68,11 +68,11 @@ export const weeklyPlanStyles = StyleSheet.create({
     fontSize: 16,
   },
   heroCard: {
-    marginTop: Spacing.md,
+    marginTop: Spacing.sm,
     padding: Spacing.md,
     borderRadius: BorderRadius.xl,
     backgroundColor: Colors.background.card,
-    ...Shadows.md,
+    ...Shadows.sm,
   },
   heroHeader: {
     flexDirection: 'row',
@@ -150,6 +150,25 @@ export const weeklyPlanStyles = StyleSheet.create({
     gap: Spacing.xs,
     marginTop: Spacing.xs,
   },
+  planningToolsPanel: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+  },
+  toolChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.background.secondary,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  toolChipText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.primary,
+    fontWeight: Typography.fontWeight.medium,
+  },
   progressStripBlock: {
     marginBottom: Spacing.md,
   },
@@ -214,7 +233,7 @@ export const weeklyPlanStyles = StyleSheet.create({
     lineHeight: 20,
   },
   todayHighlightStrip: {
-    marginTop: Spacing.md,
+    marginTop: Spacing.sm,
   },
   todayHighlightLabel: {
     fontSize: Typography.fontSize.sm,
@@ -419,7 +438,7 @@ export const weeklyPlanStyles = StyleSheet.create({
   // Tab styles
   tabContainer: {
     flexDirection: 'row',
-    marginTop: Spacing.md,
+    marginTop: Spacing.sm,
     backgroundColor: Colors.background.secondary,
     borderRadius: BorderRadius.md,
     padding: 2,

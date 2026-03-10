@@ -41,6 +41,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
 
   const [showShareTemplate, setShowShareTemplate] = useState(false);
   const [isHeaderExpanded, setIsHeaderExpanded] = useState(false);
+  const [showPlanningTools, setShowPlanningTools] = useState(false);
 
   const { data: userInfo } = useUserInfo();
   const { data: myFamily } = useMyFamily();
@@ -257,9 +258,11 @@ export function WeeklyPlanScreen({ navigation }: Props) {
             <Text style={styles.headerDate}>{start.getMonth() + 1}月{start.getDate()}日 - {end.getMonth() + 1}月{end.getDate()}日</Text>
           </View>
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.iconButton} onPress={handleGenerate} disabled={isGenerating || generateMutation.isPending} accessibilityLabel="刷新计划"><RefreshCwIcon size={20} color={Colors.primary.main} /></TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton} onPress={handleSmartRecommendation} accessibilityLabel="三餐智能推荐"><Text style={styles.iconButtonText}>A/B</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton} onPress={handleOpenShareTemplate} disabled={!hasPlans} accessibilityLabel="保存为模板"><Text style={styles.iconButtonEmoji}>💾</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.iconButton} onPress={() => setShowPlanningTools((prev) => !prev)} accessibilityLabel="更多操作"><Text style={styles.iconButtonEmoji}>{showPlanningTools ? '−' : '+'}</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.heroShoppingButton} onPress={() => navigation.navigate('ShoppingList')}>
+              <ShoppingBagIcon size={16} color={Colors.text.inverse} />
+              <Text style={styles.heroShoppingButtonText}>去清单</Text>
+            </TouchableOpacity>
           </View>
         </View>
         <View style={styles.heroCard}>
@@ -269,10 +272,6 @@ export function WeeklyPlanScreen({ navigation }: Props) {
               <Text style={styles.heroSubtitle} numberOfLines={isHeaderExpanded ? 3 : 1}>{preferenceHint}</Text>
             </View>
             <View style={styles.heroActionsColumn}>
-              <TouchableOpacity style={styles.heroShoppingButton} onPress={() => navigation.navigate('ShoppingList')}>
-                <ShoppingBagIcon size={16} color={Colors.text.inverse} />
-                <Text style={styles.heroShoppingButtonText}>去清单</Text>
-              </TouchableOpacity>
               <TouchableOpacity style={styles.heroCollapseButton} onPress={() => setIsHeaderExpanded((prev) => !prev)}>
                 <Text style={styles.heroCollapseButtonText}>{isHeaderExpanded ? '收起重点 ↑' : '展开重点 ↓'}</Text>
               </TouchableOpacity>
@@ -323,12 +322,19 @@ export function WeeklyPlanScreen({ navigation }: Props) {
                   <Text style={styles.quickEntrySubtitle}>还有 {shoppingSummary.uncheckedItems} 项待买，库存已覆盖 {shoppingSummary.coveredCount} 项</Text>
                 </View>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.quickEntryCard} onPress={() => navigation.navigate('TemplateDiscovery')}>
-                <Text style={styles.quickEntryIcon}>📚</Text>
-                <View style={styles.quickEntryTextBlock}>
-                  <Text style={styles.quickEntryTitle}>模板灵感</Text>
-                  <Text style={styles.quickEntrySubtitle}>把这一周好用的组合沉淀成下次可复用模板</Text>
-                </View>
+            </View>
+          )}
+
+          {showPlanningTools && (
+            <View style={styles.planningToolsPanel}>
+              <TouchableOpacity style={styles.toolChip} onPress={handleGenerate} disabled={isGenerating || generateMutation.isPending}>
+                <Text style={styles.toolChipText}>{isGenerating || generateMutation.isPending ? '生成中...' : '✨ 智能生成'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.toolChip} onPress={handleSmartRecommendation}>
+                <Text style={styles.toolChipText}>A/B 智能推荐</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.toolChip} onPress={handleOpenShareTemplate} disabled={!hasPlans}>
+                <Text style={styles.toolChipText}>💾 保存模板</Text>
               </TouchableOpacity>
             </View>
           )}
