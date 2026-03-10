@@ -183,7 +183,7 @@ export function PreferenceSettingsScreen({ navigation }: Props) {
           <View style={styles.heroCard}>
             <View style={styles.heroTopRow}>
               <View style={styles.heroTextBlock}>
-                <Text style={styles.heroEyebrow}>Preference settings</Text>
+                <Text style={styles.heroEyebrow}>偏好设置</Text>
                 <Text style={styles.heroTitle}>先把默认偏好设好，后面的推荐会轻很多</Text>
                 <Text style={styles.pageHint}>用于推荐菜谱、智能周计划和替换建议。</Text>
               </View>
