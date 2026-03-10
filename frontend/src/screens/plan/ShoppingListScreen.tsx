@@ -31,7 +31,6 @@ import { trackEvent } from '../../analytics/sdk';
 
 type Props = NativeStackScreenProps<PlanStackParamList, 'ShoppingList'>;
 
-// 存储区域显示标签
 const AREA_LABELS: Record<string, { label: string; icon: string; color: string }> = {
   produce: { label: '生鲜蔬果', icon: '🥬', color: Colors.functional.success },
   protein: { label: '肉蛋水产豆制品', icon: '🥩', color: Colors.primary.main },
@@ -44,11 +43,9 @@ const AREA_LABELS: Record<string, { label: string; icon: string; color: string }
 
 const AREA_ORDER = ['produce', 'protein', 'staple', 'seasoning', 'snack_dairy', 'household', 'other'];
 
-// 筛选类型
 type FilterType = 'all' | 'meal_plan' | 'recipe' | 'manual';
 
 export function ShoppingListScreen({ navigation }: Props) {
-  // 状态管理
   const [expandedAreas, setExpandedAreas] = useState<Set<string>>(new Set(AREA_ORDER));
   const [showAddModal, setShowAddModal] = useState(false);
   const [newItemName, setNewItemName] = useState('');
@@ -56,7 +53,6 @@ export function ShoppingListScreen({ navigation }: Props) {
   const [selectedArea, setSelectedArea] = useState('other');
   const [refreshing, setRefreshing] = useState(false);
 
-  // 新增筛选状态
   const [searchQuery, setSearchQuery] = useState('');
   const [sourceFilter, setSourceFilter] = useState<FilterType>('all');
   const [mergeEnabled, setMergeEnabled] = useState(false);
@@ -71,7 +67,6 @@ export function ShoppingListScreen({ navigation }: Props) {
   const addMutation = useAddShoppingListItem(shoppingList?.id || '');
   const toggleAllMutation = useToggleAllShoppingListItems(shoppingList?.id || '');
 
-  // 提取所有菜谱名称（用于筛选）
   const allRecipes = useMemo(() => {
     if (!shoppingList?.items) {return [];}
     const recipeSet = new Set<string>();
@@ -84,7 +79,7 @@ export function ShoppingListScreen({ navigation }: Props) {
   }, [shoppingList]);
 
   const summaryChips = useMemo(() => {
-    if (!shoppingList?.items) return [];
+    if (!shoppingList?.items) {return [];}
     const allItems = Object.values(shoppingList.items).flat();
     const babySpecific = allItems.filter((item: any) => item.source === 'baby').length;
     const sharedAcrossMeals = allItems.filter((item: any) => item.is_merged || (item.from_recipes?.length || 0) > 1).length;
@@ -98,7 +93,6 @@ export function ShoppingListScreen({ navigation }: Props) {
     ].filter(Boolean);
   }, [shoppingList]);
 
-  // 筛选后的食材数据
   const filteredItems = useMemo(() => {
     if (!shoppingList?.items) {return {};}
 
@@ -108,17 +102,14 @@ export function ShoppingListScreen({ navigation }: Props) {
       const items = shoppingList.items[area] || [];
 
       result[area] = items.filter((item: any) => {
-        // 按食材名称搜索
         if (searchQuery && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) {
           return false;
         }
 
-        // 按来源筛选（共用/大人/宝宝）
         if (sourceFilter !== 'all') {
           if (item.source !== sourceFilter) {return false;}
         }
 
-        // 按菜谱筛选
         if (selectedRecipe !== 'all') {
           if (!item.recipes?.includes(selectedRecipe)) {return false;}
         }
@@ -130,7 +121,6 @@ export function ShoppingListScreen({ navigation }: Props) {
     return result;
   }, [shoppingList, searchQuery, sourceFilter, selectedRecipe]);
 
-  // 生成今日购物清单
   const handleGenerate = async () => {
     const today = new Date().toISOString().split('T')[0];
     try {
@@ -151,7 +141,6 @@ export function ShoppingListScreen({ navigation }: Props) {
     }
   };
 
-  // 下拉刷新
   const onRefresh = async () => {
     setRefreshing(true);
     try {
@@ -163,7 +152,6 @@ export function ShoppingListScreen({ navigation }: Props) {
     }
   };
 
-  // 切换区域展开/折叠
   const toggleArea = (area: string) => {
     setExpandedAreas(prev => {
       const newSet = new Set(prev);
@@ -176,11 +164,9 @@ export function ShoppingListScreen({ navigation }: Props) {
     });
   };
 
-  // 展开/折叠所有区域
   const expandAll = () => setExpandedAreas(new Set(AREA_ORDER));
   const collapseAll = () => setExpandedAreas(new Set());
 
-  // 切换项目勾选状态
   const handleToggleItem = async (area: string, ingredientId: string, checked: boolean) => {
     if (!shoppingList?.id) {return;}
 
@@ -202,7 +188,6 @@ export function ShoppingListScreen({ navigation }: Props) {
     }
   };
 
-  // 删除购物清单项
   const handleRemoveItem = async (area: string, itemName: string) => {
     if (!shoppingList?.id) {return;}
 
@@ -214,7 +199,6 @@ export function ShoppingListScreen({ navigation }: Props) {
     }
   };
 
-  // 手动添加购物清单项
   const handleAddItem = async () => {
     if (!newItemName.trim()) {
       Alert.alert('提示', '请输入物品名称');
@@ -242,12 +226,11 @@ export function ShoppingListScreen({ navigation }: Props) {
       setNewItemName('');
       setNewItemAmount('');
     } catch (err) {
-      console.error('添加失败:', error);
+      console.error('添加失败', error);
       Alert.alert('添加失败', error instanceof Error ? error.message : '请稍后重试');
     }
   };
 
-  // 全选/取消全选
   const handleToggleAll = async (checked: boolean) => {
     if (!shoppingList?.id) {return;}
 
@@ -259,14 +242,12 @@ export function ShoppingListScreen({ navigation }: Props) {
     }
   };
 
-  // 清除筛选
   const clearFilters = () => {
     setSearchQuery('');
     setSourceFilter('all');
     setSelectedRecipe('all');
   };
 
-  // 渲染购物清单项
   const ListItem = ({ item, area }: { item: any; area: string }) => {
     const isChecked = item.checked || false;
 
@@ -305,7 +286,6 @@ export function ShoppingListScreen({ navigation }: Props) {
               )}
             </View>
             <Text style={styles.itemAmount}>{item.amount}</Text>
-            {/* 显示食材来源：合并显示"来自: 菜谱1、菜谱2"，普通显示"用于: 菜谱1" */}
             {item.is_merged && item.from_recipes && item.from_recipes.length > 1 && (
               <Text style={styles.itemRecipes} numberOfLines={1}>
                 来自: {item.from_recipes.join('、')}
@@ -334,7 +314,6 @@ export function ShoppingListScreen({ navigation }: Props) {
     );
   };
 
-  // 渲染存储区域分组
   const AreaSection = ({ area, items }: { area: string; items: any[] }) => {
     if (!items || items.length === 0) {return null;}
 
@@ -352,11 +331,11 @@ export function ShoppingListScreen({ navigation }: Props) {
           <View style={styles.areaHeaderLeft}>
             <Text style={styles.areaHeaderIcon}>{areaInfo.icon}</Text>
             <Text style={styles.areaHeaderText}>{areaInfo.label}</Text>
-            <Text style={styles.areaItemCount}>({checkedCount}/{items.length})</Text>
+            <Text style={styles.areaItemCount}>{checkedCount}/{items.length}</Text>
           </View>
           <View style={styles.areaHeaderRight}>
             {allChecked && <Text style={styles.areaCompletedBadge}>✓</Text>}
-            <Text style={styles.expandIcon}>{isExpanded ? '▼' : '▶'}</Text>
+            <Text style={styles.expandIcon}>{isExpanded ? '−' : '+'}</Text>
           </View>
         </TouchableOpacity>
 
@@ -371,43 +350,42 @@ export function ShoppingListScreen({ navigation }: Props) {
     );
   };
 
-  // 渲染筛选栏
   const FilterBar = () => (
-    <View style={styles.filterContainer}>
-      {/* 搜索框 */}
-      <View style={styles.searchBox}>
-        <Text style={styles.searchIcon}>🔍</Text>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="搜索食材..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholderTextColor={Colors.text.tertiary}
-        />
-        {searchQuery !== '' && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Text style={styles.clearSearch}>✕</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+    <View style={styles.filterBarWrap}>
+      <View style={styles.filterContainer}>
+        <View style={styles.searchBox}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="搜索食材..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor={Colors.text.tertiary}
+          />
+          {searchQuery !== '' && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Text style={styles.clearSearch}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
-      {/* 筛选按钮 */}
-      <TouchableOpacity
-        style={[styles.filterButton, showFilters && styles.filterButtonActive]}
-        onPress={() => setShowFilters(!showFilters)}
-      >
-        <Text style={styles.filterButtonText}>筛选 ▼</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, showFilters && styles.filterButtonActive]}
+          onPress={() => setShowFilters(!showFilters)}
+        >
+          <Text style={[styles.filterButtonText, showFilters && styles.filterButtonTextActive]}>
+            {showFilters ? '收起筛选' : '更多筛选'}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
-  // 渲染筛选面板
   const FilterPanel = () => {
     if (!showFilters) {return null;}
 
     return (
       <View style={styles.filterPanel}>
-        {/* 按来源筛选 */}
         <View style={styles.filterSection}>
           <Text style={styles.filterLabel}>按来源筛选</Text>
           <View style={styles.filterOptions}>
@@ -437,7 +415,6 @@ export function ShoppingListScreen({ navigation }: Props) {
           </View>
         </View>
 
-        {/* 按菜谱筛选 */}
         {allRecipes.length > 0 && (
           <View style={styles.filterSection}>
             <Text style={styles.filterLabel}>按菜谱筛选</Text>
@@ -479,7 +456,6 @@ export function ShoppingListScreen({ navigation }: Props) {
           </View>
         )}
 
-        {/* 清除筛选 */}
         {(searchQuery || sourceFilter !== 'all' || selectedRecipe !== 'all') && (
           <TouchableOpacity style={styles.clearFiltersButton} onPress={clearFilters}>
             <Text style={styles.clearFiltersText}>清除所有筛选</Text>
@@ -489,7 +465,6 @@ export function ShoppingListScreen({ navigation }: Props) {
     );
   };
 
-  // 加载状态
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -501,7 +476,6 @@ export function ShoppingListScreen({ navigation }: Props) {
     );
   }
 
-  // 错误状态
   if (error) {
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -524,76 +498,15 @@ export function ShoppingListScreen({ navigation }: Props) {
   const mealReadinessReady = shoppingList?.inventory_summary?.covered_count || 0;
   const mealReadinessTotal = (shoppingList?.inventory_summary?.covered_count || 0) + (shoppingList?.inventory_summary?.missing_count || 0);
 
-  // 计算筛选后的统计数据
   const filteredTotal = Object.values(filteredItems).reduce((sum, items) => sum + items.length, 0);
   const filteredChecked = Object.values(filteredItems).reduce(
     (sum, items) => sum + items.filter((i: any) => i.checked).length, 0
   );
 
+  const topVisibleAreas = AREA_ORDER.filter(area => (filteredItems[area] || []).length > 0).slice(0, 3);
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      {/* 头部 */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.headerEyebrow}>Shopping</Text>
-            <Text style={styles.title}>今日购物清单</Text>
-            {shoppingList && (
-              <Text style={styles.dateText}>
-                {new Date(shoppingList.list_date).toLocaleDateString('zh-CN', {
-                  month: 'long',
-                  day: 'numeric',
-                  weekday: 'short',
-                })}
-              </Text>
-            )}
-          </View>
-          <TouchableOpacity
-            style={styles.historyButton}
-            onPress={() => navigation.navigate('ShoppingListHistory')}
-          >
-            <Text style={styles.historyButtonText}>📋 历史</Text>
-          </TouchableOpacity>
-        </View>
-        {hasList && (
-          <>
-            <View style={styles.progressSummaryBlock}>
-              <View style={styles.progressSummaryHeader}>
-                <Text style={styles.progressSummaryTitle}>采购进度</Text>
-                <Text style={styles.progressSummaryValue}>{progress}%</Text>
-              </View>
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${progress}%` }]} />
-              </View>
-              <View style={styles.readinessGrid}>
-                <TouchableOpacity style={styles.readinessCard} onPress={() => navigation.navigate('WeeklyPlan')}>
-                  <Text style={styles.readinessLabel}>Meal readiness</Text>
-                  <Text style={styles.readinessValue}>{mealReadinessReady}/{mealReadinessTotal || mealReadinessReady}</Text>
-                  <Text style={styles.readinessCaption}>已覆盖餐次</Text>
-                </TouchableOpacity>
-                <View style={styles.readinessCard}>
-                  <Text style={styles.readinessLabel}>Still needed</Text>
-                  <Text style={styles.readinessValue}>{totalUnchecked}</Text>
-                  <Text style={styles.readinessCaption}>{totalUnchecked <= 3 ? '快完成了' : '继续补齐缺口'}</Text>
-                </View>
-              </View>
-              {summaryChips.length > 0 && (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.summaryChipRow}>
-                  {summaryChips.map((chip) => (
-                    <View key={chip as string} style={styles.summaryChip}>
-                      <Text style={styles.summaryChipText}>{chip}</Text>
-                    </View>
-                  ))}
-                </ScrollView>
-              )}
-              <TouchableOpacity style={styles.backToPlanButton} onPress={() => navigation.navigate('WeeklyPlan')}>
-                <Text style={styles.backToPlanButtonText}>← 回到周计划</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-      </View>
-
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.scrollContent}
@@ -606,16 +519,73 @@ export function ShoppingListScreen({ navigation }: Props) {
           />
         }
       >
+        <View style={styles.headerShell}>
+          <View style={styles.headerTop}>
+            <View style={styles.headerTextWrap}>
+              <Text style={styles.headerEyebrow}>Shopping list</Text>
+              <Text style={styles.title}>今日购物清单</Text>
+              {shoppingList && (
+                <Text style={styles.dateText}>
+                  {new Date(shoppingList.list_date).toLocaleDateString('zh-CN', {
+                    month: 'long',
+                    day: 'numeric',
+                    weekday: 'short',
+                  })}
+                </Text>
+              )}
+            </View>
+            <TouchableOpacity
+              style={styles.historyButton}
+              onPress={() => navigation.navigate('ShoppingListHistory')}
+            >
+              <Text style={styles.historyButtonText}>历史</Text>
+            </TouchableOpacity>
+          </View>
+
+          {hasList && (
+            <View style={styles.heroCard}>
+              <View style={styles.heroMetaRow}>
+                <Text style={styles.heroMetaText}>{checkedCount} / {totalItems} 已勾选</Text>
+                <Text style={styles.heroMetaText}>{totalUnchecked > 0 ? `还差 ${totalUnchecked} 项` : '已全部买齐'}</Text>
+              </View>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: `${progress}%` }]} />
+              </View>
+
+              <View style={styles.readinessGrid}>
+                <TouchableOpacity style={styles.readinessCard} onPress={() => navigation.navigate('WeeklyPlan')}>
+                  <Text style={styles.readinessLabel}>Meal readiness</Text>
+                  <Text style={styles.readinessValue}>{mealReadinessReady}/{mealReadinessTotal || mealReadinessReady}</Text>
+                  <Text style={styles.readinessCaption}>已覆盖餐次</Text>
+                </TouchableOpacity>
+                <View style={styles.readinessCard}>
+                  <Text style={styles.readinessLabel}>Still needed</Text>
+                  <Text style={styles.readinessValue}>{totalUnchecked}</Text>
+                  <Text style={styles.readinessCaption}>{totalUnchecked <= 3 ? '快完成了' : '继续补齐缺口'}</Text>
+                </View>
+              </View>
+
+              {summaryChips.length > 0 && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.summaryChipRow}>
+                  {summaryChips.map((chip) => (
+                    <View key={chip as string} style={styles.summaryChip}>
+                      <Text style={styles.summaryChipText}>{chip}</Text>
+                    </View>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          )}
+        </View>
+
         {!hasList ? (
-          // 空状态
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>🛒</Text>
             <Text style={styles.emptyTitle}>还没有购物清单</Text>
             <Text style={styles.emptyText}>根据今日餐食计划生成清单</Text>
-            
-            {/* 智能合并开关 */}
+
             <View style={styles.mergeToggle}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.mergeToggleOption}
                 onPress={() => setMergeEnabled(false)}
               >
@@ -624,7 +594,7 @@ export function ShoppingListScreen({ navigation }: Props) {
                   保持原样
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.mergeToggleOption}
                 onPress={() => setMergeEnabled(true)}
               >
@@ -634,7 +604,7 @@ export function ShoppingListScreen({ navigation }: Props) {
                 </Text>
               </TouchableOpacity>
             </View>
-            
+
             <TouchableOpacity
               style={styles.emptyAction}
               onPress={handleGenerate}
@@ -651,93 +621,47 @@ export function ShoppingListScreen({ navigation }: Props) {
           </View>
         ) : (
           <>
-            {/* 统计信息 */}
-            <View style={styles.statsCard}>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{shoppingList.total_items || 0}</Text>
-                <Text style={styles.statLabel}>食材总数</Text>
+            <View style={styles.quickChecklistCard}>
+              <View style={styles.quickChecklistHeader}>
+                <View>
+                  <Text style={styles.quickChecklistTitle}>马上要买</Text>
+                  <Text style={styles.quickChecklistSubtitle}>按区域勾选，先把清单走起来</Text>
+                </View>
+                <View style={styles.quickChecklistActions}>
+                  <TouchableOpacity style={styles.quickActionButton} onPress={expandAll}>
+                    <Text style={styles.quickActionText}>展开</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickActionButton} onPress={collapseAll}>
+                    <Text style={styles.quickActionText}>收起</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: Colors.functional.success }]}>
-                  {shoppingList.total_items - totalUnchecked}
-                </Text>
-                <Text style={styles.statLabel}>已购买</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: totalUnchecked > 0 ? Colors.functional.warning : Colors.functional.success }]}>
-                  {totalUnchecked}
-                </Text>
-                <Text style={styles.statLabel}>待购买</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>
-                  ¥{(shoppingList.total_estimated_cost || 0).toFixed(0)}
-                </Text>
-                <Text style={styles.statLabel}>预计花费</Text>
-              </View>
+
+              {topVisibleAreas.length > 0 && (
+                <View style={styles.topAreaRow}>
+                  {topVisibleAreas.map((area) => {
+                    const items = filteredItems[area] || [];
+                    const areaInfo = AREA_LABELS[area];
+                    const unchecked = items.filter((item: any) => !item.checked).length;
+                    return (
+                      <TouchableOpacity key={area} style={styles.topAreaChip} onPress={() => toggleArea(area)}>
+                        <Text style={styles.topAreaChipText}>{areaInfo.icon} {areaInfo.label} · {unchecked}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
             </View>
 
-            {/* 闭环摘要 */}
-            {!!shoppingList?.inventory_summary && (
-              <View style={styles.pairedStatsCard}>
-                <View style={styles.pairedStatsHeader}>
-                  <Text style={styles.pairedStatsIcon}>🔄</Text>
-                  <Text style={styles.pairedStatsTitle}>本周计划闭环摘要</Text>
-                </View>
-                <View style={styles.pairedStatsRow}>
-                  <View style={[styles.pairedStatItem, styles.pairedStatBoth]}>
-                    <Text style={styles.pairedStatValue}>{shoppingList.inventory_summary.covered_count || 0}</Text>
-                    <Text style={styles.pairedStatLabel}>库存已覆盖</Text>
-                  </View>
-                  <View style={[styles.pairedStatItem, styles.pairedStatAdult]}>
-                    <Text style={styles.pairedStatValue}>{shoppingList.inventory_summary.missing_count || 0}</Text>
-                    <Text style={styles.pairedStatLabel}>仍需采购</Text>
-                  </View>
-                  <View style={[styles.pairedStatItem, styles.pairedStatBaby]}>
-                    <Text style={styles.pairedStatValue}>{shoppingList.inventory_summary.expiring_items?.length || 0}</Text>
-                    <Text style={styles.pairedStatLabel}>临期优先消耗</Text>
-                  </View>
-                </View>
-                <Text style={styles.pairedStatsTip}>
-                  💡 先用库存覆盖，再补缺口；做菜完成会优先扣减最早过期库存。
-                </Text>
-              </View>
-            )}
+            {AREA_ORDER.map(area => {
+              const items = filteredItems[area] || [];
+              if (!items || items.length === 0) {return null;}
+              return <AreaSection key={area} area={area} items={items} />;
+            }).filter(Boolean)}
 
-            {/* 缺口 / 覆盖 */}
-            {!!shoppingList?.inventory_summary && (
-              <View style={styles.coverageCard}>
-                {(shoppingList.inventory_summary.missing_items || []).length > 0 && (
-                  <View style={styles.coverageSection}>
-                    <Text style={styles.coverageTitle}>🛒 本周缺口</Text>
-                    {(shoppingList.inventory_summary.missing_items || []).slice(0, 5).map((item: any) => (
-                      <Text key={`${item.name}-${item.source_recipe_id || item.source_date || ''}`} style={styles.coverageText}>
-                        • {item.name} {item.missing_amount || item.required_amount}
-                      </Text>
-                    ))}
-                  </View>
-                )}
-                {(shoppingList.inventory_summary.covered_items || []).length > 0 && (
-                  <View style={styles.coverageSection}>
-                    <Text style={styles.coverageTitle}>✅ 已被库存覆盖</Text>
-                    {(shoppingList.inventory_summary.covered_items || []).slice(0, 5).map((item: any) => (
-                      <Text key={`${item.name}-${item.source_recipe_id || item.source_date || ''}-covered`} style={styles.coverageText}>
-                        • {item.name} {item.covered_amount || item.required_amount}
-                      </Text>
-                    ))}
-                  </View>
-                )}
-              </View>
-            )}
-
-            {/* 筛选栏 */}
             <FilterBar />
             <FilterPanel />
 
-            {/* 筛选结果提示 */}
             {(searchQuery || sourceFilter !== 'all' || selectedRecipe !== 'all') && (
               <View style={styles.filterResultBar}>
                 <Text style={styles.filterResultText}>
@@ -749,24 +673,94 @@ export function ShoppingListScreen({ navigation }: Props) {
               </View>
             )}
 
-            {/* 展开/折叠全部按钮 */}
-            <View style={styles.expandButtons}>
-              <TouchableOpacity style={styles.expandButton} onPress={expandAll}>
-                <Text style={styles.expandButtonText}>📂 展开全部</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.expandButton} onPress={collapseAll}>
-                <Text style={styles.expandButtonText}>📁 折叠全部</Text>
-              </TouchableOpacity>
+            <View style={styles.compactMetaCard}>
+              <View style={styles.compactMetaHeader}>
+                <Text style={styles.compactMetaTitle}>补充信息</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('WeeklyPlan')}>
+                  <Text style={styles.backToPlanButtonText}>回到周计划</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.statsCard}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{shoppingList.total_items || 0}</Text>
+                  <Text style={styles.statLabel}>食材总数</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={[styles.statValue, { color: Colors.functional.success }]}>
+                    {shoppingList.total_items - totalUnchecked}
+                  </Text>
+                  <Text style={styles.statLabel}>已购买</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={[styles.statValue, { color: totalUnchecked > 0 ? Colors.functional.warning : Colors.functional.success }]}>
+                    {totalUnchecked}
+                  </Text>
+                  <Text style={styles.statLabel}>待购买</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>
+                    ¥{(shoppingList.total_estimated_cost || 0).toFixed(0)}
+                  </Text>
+                  <Text style={styles.statLabel}>预计花费</Text>
+                </View>
+              </View>
+
+              {!!shoppingList?.inventory_summary && (
+                <View style={styles.pairedStatsCard}>
+                  <View style={styles.pairedStatsHeader}>
+                    <Text style={styles.pairedStatsIcon}>🔄</Text>
+                    <Text style={styles.pairedStatsTitle}>本周计划闭环摘要</Text>
+                  </View>
+                  <View style={styles.pairedStatsRow}>
+                    <View style={[styles.pairedStatItem, styles.pairedStatBoth]}>
+                      <Text style={styles.pairedStatValue}>{shoppingList.inventory_summary.covered_count || 0}</Text>
+                      <Text style={styles.pairedStatLabel}>库存已覆盖</Text>
+                    </View>
+                    <View style={[styles.pairedStatItem, styles.pairedStatAdult]}>
+                      <Text style={styles.pairedStatValue}>{shoppingList.inventory_summary.missing_count || 0}</Text>
+                      <Text style={styles.pairedStatLabel}>仍需采购</Text>
+                    </View>
+                    <View style={[styles.pairedStatItem, styles.pairedStatBaby]}>
+                      <Text style={styles.pairedStatValue}>{shoppingList.inventory_summary.expiring_items?.length || 0}</Text>
+                      <Text style={styles.pairedStatLabel}>临期优先消耗</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.pairedStatsTip}>
+                    💡 先用库存覆盖，再补缺口；做菜完成会优先扣减最早过期库存。
+                  </Text>
+                </View>
+              )}
+
+              {!!shoppingList?.inventory_summary && (
+                <View style={styles.coverageCard}>
+                  {(shoppingList.inventory_summary.missing_items || []).length > 0 && (
+                    <View style={styles.coverageSection}>
+                      <Text style={styles.coverageTitle}>🛒 本周缺口</Text>
+                      {(shoppingList.inventory_summary.missing_items || []).slice(0, 5).map((item: any) => (
+                        <Text key={`${item.name}-${item.source_recipe_id || item.source_date || ''}`} style={styles.coverageText}>
+                          • {item.name} {item.missing_amount || item.required_amount}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+                  {(shoppingList.inventory_summary.covered_items || []).length > 0 && (
+                    <View style={styles.coverageSection}>
+                      <Text style={styles.coverageTitle}>✅ 已被库存覆盖</Text>
+                      {(shoppingList.inventory_summary.covered_items || []).slice(0, 5).map((item: any) => (
+                        <Text key={`${item.name}-${item.source_recipe_id || item.source_date || ''}-covered`} style={styles.coverageText}>
+                          • {item.name} {item.covered_amount || item.required_amount}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
             </View>
 
-            {/* 按区域分组的清单项 */}
-            {AREA_ORDER.map(area => {
-              const items = filteredItems[area] || [];
-              if (!items || items.length === 0) {return null;}
-              return <AreaSection key={area} area={area} items={items} />;
-            }).filter(Boolean)}
-
-            {/* 无筛选结果提示 */}
             {filteredTotal === 0 && (
               <View style={styles.noFilterResult}>
                 <Text style={styles.noFilterResultIcon}>🔍</Text>
@@ -779,11 +773,9 @@ export function ShoppingListScreen({ navigation }: Props) {
           </>
         )}
 
-        {/* 底部占位 */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* 底部操作按钮 */}
       {hasList && (
         <View style={styles.bottomActions}>
           <TouchableOpacity
@@ -805,7 +797,6 @@ export function ShoppingListScreen({ navigation }: Props) {
         </View>
       )}
 
-      {/* 添加物品弹窗 */}
       <Modal
         visible={showAddModal}
         transparent
@@ -912,27 +903,28 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: Platform.OS === 'web' ? 144 : 120,
   },
-
-  // 头部
-  header: {
-    backgroundColor: Colors.background.primary,
+  headerShell: {
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border.light,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+  },
+  headerTextWrap: {
+    flex: 1,
+    paddingRight: Spacing.md,
   },
   headerEyebrow: {
     fontSize: Typography.fontSize.xs,
     color: Colors.primary.main,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
     fontWeight: Typography.fontWeight.bold,
-    marginBottom: Spacing.xs,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    marginBottom: 4,
   },
   title: {
     fontSize: Typography.fontSize.xl,
@@ -945,40 +937,37 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   historyButton: {
-    backgroundColor: Colors.primary.light,
+    backgroundColor: Colors.background.card,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
   },
   historyButtonText: {
     fontSize: Typography.fontSize.sm,
-    color: Colors.primary.dark,
+    color: Colors.text.secondary,
     fontWeight: Typography.fontWeight.medium,
   },
-  progressSummaryBlock: {
-    marginTop: Spacing.md,
-    padding: Spacing.md,
+  heroCard: {
+    backgroundColor: Colors.background.primary,
     borderRadius: BorderRadius.xl,
-    backgroundColor: Colors.background.secondary,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
   },
-  progressSummaryHeader: {
+  heroMetaRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: Spacing.sm,
   },
-  progressSummaryTitle: {
+  heroMetaText: {
     fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
     color: Colors.text.secondary,
   },
-  progressSummaryValue: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.primary.main,
-  },
   progressTrack: {
-    height: 8,
+    height: 6,
     borderRadius: BorderRadius.full,
     backgroundColor: Colors.neutral.gray200,
     overflow: 'hidden',
@@ -995,7 +984,7 @@ const styles = StyleSheet.create({
   },
   readinessCard: {
     flex: 1,
-    backgroundColor: Colors.background.card,
+    backgroundColor: Colors.background.secondary,
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
   },
@@ -1023,7 +1012,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.background.card,
+    backgroundColor: Colors.background.secondary,
     borderWidth: 1,
     borderColor: Colors.border.light,
   },
@@ -1031,26 +1020,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.xs,
     color: Colors.text.primary,
   },
-  backToPlanButton: {
-    marginTop: Spacing.md,
-    alignSelf: 'flex-start',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.primary.light,
-  },
-  backToPlanButtonText: {
-    color: Colors.primary.dark,
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
-  },
-
-  // 内容区
-  content: {
-    flex: 1,
-  },
-
-  // 空状态
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -1083,8 +1052,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
   },
-
-  // 智能合并开关
   mergeToggle: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -1117,21 +1084,87 @@ const styles = StyleSheet.create({
     color: Colors.primary.main,
     fontWeight: Typography.fontWeight.medium,
   },
-
-  // 统计卡片
+  quickChecklistCard: {
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+    padding: Spacing.md,
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  quickChecklistHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  quickChecklistTitle: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+  },
+  quickChecklistSubtitle: {
+    marginTop: 2,
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+  },
+  quickChecklistActions: {
+    flexDirection: 'row',
+    gap: Spacing.xs,
+  },
+  quickActionButton: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.background.secondary,
+  },
+  quickActionText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  topAreaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+  },
+  topAreaChip: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.background.secondary,
+  },
+  topAreaChipText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.primary,
+  },
+  compactMetaCard: {
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.sm,
+  },
+  compactMetaHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+  },
+  compactMetaTitle: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  backToPlanButtonText: {
+    color: Colors.primary.main,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+  },
   statsCard: {
     flexDirection: 'row',
-    marginHorizontal: Spacing.lg,
-    marginTop: Spacing.lg,
     marginBottom: Spacing.md,
     padding: Spacing.lg,
     backgroundColor: Colors.background.card,
     borderRadius: BorderRadius.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
   },
   statItem: {
     flex: 1,
@@ -1151,21 +1184,13 @@ const styles = StyleSheet.create({
     width: 1,
     backgroundColor: Colors.neutral.gray200,
   },
-
-  // 一菜两吃统计
   pairedStatsCard: {
-    marginHorizontal: Spacing.lg,
     marginBottom: Spacing.md,
     padding: Spacing.lg,
     backgroundColor: Colors.background.card,
     borderRadius: BorderRadius.lg,
     borderLeftWidth: 4,
     borderLeftColor: Colors.secondary.main,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
   },
   pairedStatsHeader: {
     flexDirection: 'row',
@@ -1219,7 +1244,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   coverageCard: {
-    marginHorizontal: Spacing.lg,
     marginBottom: Spacing.md,
     padding: Spacing.lg,
     backgroundColor: Colors.background.card,
@@ -1239,13 +1263,14 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     lineHeight: 20,
   },
-
-  // 筛选栏
+  filterBarWrap: {
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
   filterContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.sm,
     gap: Spacing.sm,
   },
   searchBox: {
@@ -1256,6 +1281,8 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     paddingHorizontal: Spacing.md,
     height: 44,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
   },
   searchIcon: {
     fontSize: 16,
@@ -1278,17 +1305,21 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     height: 44,
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border.light,
   },
   filterButtonActive: {
     backgroundColor: Colors.primary.light,
+    borderColor: Colors.primary.main,
   },
   filterButtonText: {
     fontSize: Typography.fontSize.sm,
     color: Colors.text.primary,
     fontWeight: Typography.fontWeight.medium,
   },
-
-  // 筛选面板
+  filterButtonTextActive: {
+    color: Colors.primary.dark,
+  },
   filterPanel: {
     marginHorizontal: Spacing.lg,
     marginBottom: Spacing.md,
@@ -1340,14 +1371,12 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     color: Colors.primary.main,
   },
-
-  // 筛选结果提示
   filterResultBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
     padding: Spacing.sm,
     backgroundColor: Colors.primary.light,
     borderRadius: BorderRadius.md,
@@ -1361,53 +1390,31 @@ const styles = StyleSheet.create({
     color: Colors.primary.main,
     fontWeight: Typography.fontWeight.medium,
   },
-
-  // 展开/折叠按钮
-  expandButtons: {
-    flexDirection: 'row',
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.sm,
-    gap: Spacing.sm,
-  },
-  expandButton: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    backgroundColor: Colors.background.card,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-  },
-  expandButtonText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.text.secondary,
-  },
-
-  // 区域分组
   areaSection: {
     marginHorizontal: Spacing.lg,
     marginBottom: Spacing.md,
     backgroundColor: Colors.background.card,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
   },
   areaHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: Spacing.md,
-    backgroundColor: Colors.neutral.gray50,
-    borderLeftWidth: 4,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    backgroundColor: Colors.background.primary,
+    borderLeftWidth: 3,
   },
   areaHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 1,
   },
   areaHeaderIcon: {
-    fontSize: 20,
+    fontSize: 18,
     marginRight: Spacing.xs,
   },
   areaHeaderText: {
@@ -1430,14 +1437,13 @@ const styles = StyleSheet.create({
     marginRight: Spacing.sm,
   },
   expandIcon: {
-    fontSize: 12,
+    fontSize: 16,
     color: Colors.text.tertiary,
   },
   areaItems: {
-    padding: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingBottom: Spacing.sm,
   },
-
-  // 列表项
   listItemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1448,7 +1454,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.md,
     backgroundColor: Colors.background.primary,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     marginBottom: Spacing.xs,
   },
   listItemChecked: {
@@ -1544,8 +1550,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: Colors.functional.error,
   },
-
-  // 无筛选结果
   noFilterResult: {
     alignItems: 'center',
     padding: Spacing.xl,
@@ -1563,8 +1567,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.primary.main,
   },
-
-  // 底部操作
   bottomActions: {
     position: 'absolute',
     bottom: 0,
@@ -1598,8 +1600,6 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.text.inverse,
   },
-
-  // 弹窗
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
