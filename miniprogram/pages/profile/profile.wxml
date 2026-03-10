@@ -16,6 +16,9 @@
 
   <!-- AI 配置 -->
   <van-cell title="✨ AI 配置" value="自定义" is-link bindtap="openAIConfigModal"/>
+
+  <!-- 本周计划 -->
+  <van-cell title="📅 本周计划" value="查看计划与清单" is-link bindtap="goToPlan"/>
   
   <!-- 联系客服 -->
   <button class="contact-btn" open-type="contact">

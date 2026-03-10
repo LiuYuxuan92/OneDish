@@ -106,6 +106,10 @@ Page({
     wx.navigateTo({ url: '/pages/membership/membership' });
   },
 
+  goToPlan() {
+    wx.switchTab({ url: '/pages/plan/plan' });
+  },
+
   onShareAppMessage() {
     return {
       title: '简家厨 - 一鱼两吃',
