@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Colors, Typography, Spacing, BorderRadius } from '../../styles/theme';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
 
 interface ActionItem {
   icon: string;
@@ -16,13 +16,14 @@ export interface ActionGridProps {
 export function ActionGrid({ actions }: ActionGridProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>快捷操作</Text>
+      <Text style={styles.eyebrow}>Quick entry</Text>
       <View style={styles.grid}>
         {actions.map((action, index) => (
           <TouchableOpacity
             key={index}
             style={styles.button}
             onPress={action.onPress}
+            activeOpacity={0.88}
           >
             <View style={[styles.icon, { backgroundColor: action.iconBg }]}>
               <Text style={styles.iconText}>{action.icon}</Text>
@@ -37,39 +38,45 @@ export function ActionGrid({ actions }: ActionGridProps) {
 
 const styles = StyleSheet.create({
   container: {
-    padding: Spacing.lg,
+    gap: Spacing.sm,
   },
-  title: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.text.primary,
-    marginBottom: Spacing.md,
+  eyebrow: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
+    fontWeight: Typography.fontWeight.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   grid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    rowGap: Spacing.lg,
+    gap: Spacing.sm,
   },
   button: {
+    flex: 1,
+    minWidth: 0,
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.xl,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
     alignItems: 'center',
-    width: '25%',
-    minWidth: 72,
+    ...Shadows.sm,
   },
   icon: {
-    width: 56,
-    height: 56,
+    width: 44,
+    height: 44,
     borderRadius: BorderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconText: {
-    fontSize: 24,
+    fontSize: 22,
   },
   text: {
-    fontSize: Typography.fontSize.sm,
+    fontSize: Typography.fontSize.xs,
     color: Colors.text.primary,
     marginTop: Spacing.sm,
     fontWeight: Typography.fontWeight.medium,
+    textAlign: 'center',
   },
 });

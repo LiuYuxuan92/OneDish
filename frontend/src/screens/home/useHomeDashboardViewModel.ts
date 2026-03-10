@@ -111,6 +111,7 @@ export function useHomeDashboardViewModel() {
     const plannedCount = todayMeals.length;
     const cookedCount = todayMeals.filter((meal) => meal.done).length;
     const undecidedCount = Math.max(0, 3 - plannedCount);
+    const nextMeal = todayMeals.find((meal) => !meal.done) || todayMeals[0] || null;
 
     const shoppingLists = shoppingQuery.data?.items || [];
     const latestShopping = shoppingLists[0];
@@ -132,10 +133,29 @@ export function useHomeDashboardViewModel() {
       isPrimary: true,
     }));
 
+    const summaryPrimary = nextMeal
+      ? `下一顿先看${nextMeal.mealLabel}`
+      : plannedCount > 0
+        ? '今天已有安排，先顺着做'
+        : '今天还没定，先挑一道共享菜';
+
+    const summarySecondary = nextMeal?.done
+      ? `${nextMeal.mealLabel} 已完成`
+      : nextMeal
+        ? `${nextMeal.mealLabel}${nextMeal.done ? '已完成' : '还可继续补细节'}`
+        : undecidedCount > 0
+          ? `还有 ${undecidedCount} 餐待决定`
+          : '可以直接去搜索补一顿';
+
     return {
       header: {
         greeting: '今天吃点什么？',
-        subtitle: '把推荐、计划、购物和喂养线索收拢到一屏。',
+        subtitle: '先看今天安排，再决定下一顿。',
+      },
+      todaySummary: {
+        primary: summaryPrimary,
+        secondary: summarySecondary,
+        nextMealLabel: nextMeal?.mealLabel || null,
       },
       dashboard: {
         plannedCount,
