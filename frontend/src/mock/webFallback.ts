@@ -11,6 +11,8 @@ export const isWebLocalDev = Boolean(__DEV__ && Platform.OS === 'web');
 
 export const shouldShortCircuitWebMock = () => isWebLocalDev;
 
+export const isWebLocalGuestMode = () => isWebLocalDev;
+
 const MOCK_RECIPES: SearchResult[] = [
   {
     id: 'mock-1',
