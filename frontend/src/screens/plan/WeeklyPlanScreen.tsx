@@ -330,7 +330,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
         </View>
         <WeeklyShareModal sharedData={sharedWeeklyData as Parameters<typeof WeeklyShareModal>[0]['sharedData']} inviteCode={weeklyInviteCode} onInviteCodeChange={setWeeklyInviteCode} onCreateShare={handleCreateWeeklyShare} onJoinShare={handleJoinWeeklyShare} onRegenerateInvite={handleRegenerateWeeklyInvite} onRemoveMember={handleRemoveWeeklyMember} onMarkSharedMealComplete={handleMarkSharedMealComplete} isCreating={createWeeklyShareMutation.isPending} isJoining={joinWeeklyShareMutation.isPending} />
       </View>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
         {!hasPlans ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIconContainer}><Text style={styles.emptyIcon}>📅</Text></View>

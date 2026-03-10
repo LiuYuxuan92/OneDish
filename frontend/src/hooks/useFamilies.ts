@@ -1,11 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Platform } from 'react-native';
 import { familiesApi } from '../api/families';
+import { shouldUseWebMockFallback } from '../mock/webFallback';
 
 export function useMyFamily() {
   return useQuery({
     queryKey: ['families', 'me'],
-    queryFn: () => familiesApi.getMine().then((res) => res || null),
+    queryFn: async () => {
+      try {
+        const res = await familiesApi.getMine();
+        return res || null;
+      } catch (error) {
+        if (Platform.OS === 'web' && shouldUseWebMockFallback(error)) {
+          return null;
+        }
+        throw error;
+      }
+    },
     staleTime: 30 * 1000,
+    retry: Platform.OS === 'web' ? 0 : 1,
   });
 }
 

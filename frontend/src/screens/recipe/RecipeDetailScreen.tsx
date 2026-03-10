@@ -11,6 +11,7 @@ import {
   Dimensions,
   Modal,
   FlatList,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -292,7 +293,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
         </View>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* 菜谱标题区 */}
         <View style={styles.titleSection}>
           {isPaired && (
@@ -1159,6 +1160,10 @@ const styles = StyleSheet.create({
   // 滚动区域
   scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: Platform.OS === 'web' ? 160 : 140,
+    flexGrow: 1,
   },
   
   // 标题区

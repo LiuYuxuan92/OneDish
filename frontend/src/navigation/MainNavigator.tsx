@@ -7,6 +7,7 @@ import {
   Platform,
   Animated,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBottomTabNavigator, BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { MainTabParamList } from '../types';
 import { HomeNavigator } from './HomeNavigator';
@@ -159,6 +160,7 @@ function TabBarButton({
 // ============================================
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const activeColor = theme.Colors.primary.main;
   const inactiveColor = theme.Colors.neutral.gray400;
   const bgColor = theme.Colors.background.primary;
@@ -171,6 +173,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         {
           backgroundColor: bgColor,
           borderTopColor: borderColor,
+          paddingBottom: Math.max(insets.bottom, Platform.OS === 'ios' ? 20 : 4),
         },
       ]}
     >
@@ -256,7 +259,7 @@ const styles = StyleSheet.create({
         paddingBottom: 4,
       },
       web: {
-        paddingBottom: 4,
+        paddingBottom: 0,
         boxShadow: '0 -2px 12px rgba(0,0,0,0.06)',
       },
       default: {

@@ -226,6 +226,10 @@ export const weeklyPlanStyles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  contentContainer: {
+    paddingBottom: 96,
+    flexGrow: 1,
+  },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',

@@ -4,6 +4,8 @@ import type { WeeklyPlanResponse } from '../api/mealPlans';
 import type { UserInfo, UserPreferences } from '../api/users';
 import type { InventoryResponse } from '../api/ingredientInventory';
 import type { FeedingFeedbackItem } from '../api/feedingFeedback';
+import type { ShoppingList } from '../api/shoppingLists';
+import type { FamilyContext } from '../api/families';
 
 export const isWebLocalDev = Boolean(__DEV__ && Platform.OS === 'web');
 
@@ -213,6 +215,67 @@ export const buildMockInventory = (): InventoryResponse => ({
     },
   ],
   stats: { total: 2, expiring: 0, expired: 0 },
+});
+
+export const buildMockShoppingList = (): ShoppingList => {
+  const listDate = new Date().toISOString().split('T')[0];
+  return {
+    id: 'shopping-web-guest',
+    user_id: 'guest-web',
+    list_date: listDate,
+    is_completed: false,
+    created_at: new Date().toISOString(),
+    total_estimated_cost: 86,
+    total_items: 6,
+    unchecked_items: 4,
+    items: {
+      produce: [
+        { ingredient_id: 'sl-1', name: '番茄', amount: '4个', checked: false, recipes: ['番茄鸡蛋面'], source: 'meal_plan' },
+        { ingredient_id: 'sl-2', name: '西兰花', amount: '1颗', checked: true, recipes: ['西兰花三文鱼蒸蛋'], source: 'recipe' },
+      ],
+      protein: [
+        { ingredient_id: 'sl-3', name: '鸡蛋', amount: '6个', checked: true, recipes: ['番茄鸡蛋面', '西兰花三文鱼蒸蛋'], source: 'meal_plan', is_merged: true, from_recipes: ['番茄鸡蛋面', '西兰花三文鱼蒸蛋'] },
+        { ingredient_id: 'sl-4', name: '三文鱼', amount: '200g', checked: false, recipes: ['西兰花三文鱼蒸蛋'], source: 'recipe' },
+      ],
+      staple: [
+        { ingredient_id: 'sl-5', name: '挂面', amount: '1把', checked: false, recipes: ['番茄鸡蛋面'], source: 'meal_plan' },
+      ],
+      seasoning: [],
+      snack_dairy: [],
+      household: [],
+      other: [
+        { ingredient_id: 'sl-6', name: '厨房纸', amount: '1卷', checked: false, source: 'manual' },
+      ],
+    },
+    inventory_summary: {
+      covered_items: [
+        { name: '鸡蛋', required_amount: '6个', inventory_amount: '6个', covered_amount: '6个', fully_covered: true, coverage_ratio: 1 },
+      ],
+      missing_items: [
+        { name: '三文鱼', required_amount: '200g', inventory_amount: '0g', missing_amount: '200g', fully_covered: false, coverage_ratio: 0 },
+        { name: '挂面', required_amount: '1把', inventory_amount: '0把', missing_amount: '1把', fully_covered: false, coverage_ratio: 0 },
+      ],
+      expiring_items: [
+        { inventory_id: 'inv-2', ingredient_name: '番茄', quantity: 4, unit: '个', expiry_date: null },
+      ],
+      total_required_items: 6,
+      covered_count: 2,
+      missing_count: 4,
+    },
+    share: null,
+  };
+};
+
+export const buildMockFamily = (): FamilyContext => ({
+  family_id: 'family-web-guest',
+  owner_id: 'guest-web',
+  role: 'owner',
+  name: 'Web 本地家庭',
+  invite_code: 'LOCAL88',
+  members: [
+    { user_id: 'guest-web', display_name: 'Web Guest', avatar_url: null, role: 'owner' },
+    { user_id: 'guest-partner', display_name: '搭子', avatar_url: null, role: 'member' },
+  ],
 });
 
 export const buildMockFeedingFeedback = (): { items: FeedingFeedbackItem[] } => ({

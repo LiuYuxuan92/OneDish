@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Platform } from 'react-native';
 import { shoppingListsApi, ShoppingList, GenerateShoppingListParams } from '../api/shoppingLists';
+import { shouldUseWebMockFallback } from '../mock/webFallback';
 
 // 获取所有购物清单
 export function useShoppingLists(params?: { start_date?: string; end_date?: string }) {
@@ -16,15 +18,22 @@ export function useLatestShoppingList() {
   return useQuery({
     queryKey: ['shoppingLists', 'latest', today],
     queryFn: async () => {
-      const res = await shoppingListsApi.getAll({
-        start_date: today,
-        end_date: today,
-      });
-      // 找到第一个未完成的清单
-      const unfinishedList = res.data.items?.find((item: any) => !item.is_completed);
-      return unfinishedList || null;
+      try {
+        const res = await shoppingListsApi.getAll({
+          start_date: today,
+          end_date: today,
+        });
+        const unfinishedList = res.data.items?.find((item: any) => !item.is_completed);
+        return unfinishedList || null;
+      } catch (error) {
+        if (Platform.OS === 'web' && shouldUseWebMockFallback(error)) {
+          return null;
+        }
+        throw error;
+      }
     },
-    staleTime: 0, // 关闭缓存，确保数据实时性
+    staleTime: 0,
+    retry: Platform.OS === 'web' ? 0 : 1,
   });
 }
 

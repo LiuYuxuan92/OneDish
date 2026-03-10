@@ -10,6 +10,7 @@ import {
   ScrollView,
   Dimensions,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -225,7 +226,7 @@ export function SearchScreen({ navigation }: Props) {
           <View style={styles.placeholder} />
         </View>
 
-        <ScrollView style={styles.detailContent} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.detailContent} contentContainerStyle={styles.detailContentContainer} showsVerticalScrollIndicator={false}>
           <View style={styles.detailTitleSection}>
             <View style={styles.sourceTagLarge}><Text style={styles.sourceTagTextLarge}>{selectedRecipe.source === 'tianxing' ? '🌐 联网菜谱' : '🤖 AI推荐'}</Text></View>
             <Text style={styles.detailName}>{selectedRecipe.name}</Text>
@@ -467,7 +468,7 @@ export function SearchScreen({ navigation }: Props) {
       )}
 
       {isLoading ? renderLoading() : (
-        <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {hasSearched && searchResults.length > 0 ? searchResults.map((item, index) => <React.Fragment key={`${item.source}_${item.id}_${index}`}>{renderRecipeCard({ item })}</React.Fragment>) : renderEmptyState()}
         </ScrollView>
       )}
@@ -515,7 +516,11 @@ const styles = StyleSheet.create({
   resultSourceBadgeText: { fontSize: Typography.fontSize.xs, color: Colors.primary.main, fontWeight: Typography.fontWeight.semibold },
   preferenceLeadText: { marginTop: Spacing.sm, fontSize: Typography.fontSize.xs, color: Colors.text.secondary, lineHeight: 18 },
   scrollContainer: { flex: 1 },
-  listContent: { padding: Spacing.md, flexGrow: 1 },
+  listContent: {
+    padding: Spacing.md,
+    paddingBottom: Platform.OS === 'web' ? 96 : Spacing.xl,
+    flexGrow: 1,
+  },
   recipeCard: { flexDirection: 'row', backgroundColor: Colors.background.primary, borderRadius: BorderRadius.lg, marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border.light, ...Shadows.sm },
   recipeImagePlaceholder: { width: 80, height: 80, margin: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: Colors.primary.light, justifyContent: 'center', alignItems: 'center' },
   recipeImagePlaceholderText: { fontSize: 32 },
@@ -554,6 +559,10 @@ const styles = StyleSheet.create({
   detailTitle: { flex: 1, fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold, color: Colors.text.primary, textAlign: 'center' },
   placeholder: { width: 40 },
   detailContent: { flex: 1 },
+  detailContentContainer: {
+    paddingBottom: Platform.OS === 'web' ? 96 : Spacing.xl,
+    flexGrow: 1,
+  },
   sourceTagLarge: { alignSelf: 'flex-start', backgroundColor: Colors.primary.light, paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: BorderRadius.full, marginBottom: Spacing.md },
   sourceTagTextLarge: { fontSize: Typography.fontSize.sm, color: Colors.primary.main, fontWeight: Typography.fontWeight.semibold },
   detailImage: { width: '100%', height: 220 },

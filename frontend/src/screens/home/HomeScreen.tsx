@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { trackMainFlowEvent } from '../../analytics/mainFlow';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -56,6 +56,7 @@ export function HomeScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView
         style={styles.content}
+        contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={false} onRefresh={vm.refresh} colors={[Colors.primary.main]} tintColor={Colors.primary.main} />}
       >
@@ -191,6 +192,10 @@ export function HomeScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background.secondary },
   content: { flex: 1 },
+  contentContainer: {
+    paddingBottom: Platform.OS === 'web' ? 96 : Spacing.xl,
+    flexGrow: 1,
+  },
   hero: { padding: Spacing.lg, paddingBottom: Spacing.md },
   heroTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, marginBottom: Spacing.md },
   greeting: { fontSize: Typography.fontSize['2xl'], fontWeight: Typography.fontWeight.bold, color: Colors.text.primary },
