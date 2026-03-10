@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -27,36 +27,66 @@ const STAGE_COLORS: Record<string, string> = {
 
 export function BabyStageScreen({ navigation }: Props) {
   const { data: stages, isLoading } = useAllBabyStages();
+  const stageList = stages ?? [];
+
+  const overviewCards = useMemo(
+    () => [
+      {
+        label: '阶段入口',
+        value: `${stageList.length}`,
+        helper: '按月龄直接选，不用来回猜',
+      },
+      {
+        label: '起步阶段',
+        value: stageList[0]?.age_range || '6-8 月',
+        helper: stageList[0]?.name || '从初次引入开始',
+      },
+      {
+        label: '使用方式',
+        value: '先看阶段',
+        helper: '再进入详情筛场景菜谱',
+      },
+    ],
+    [stageList]
+  );
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.centered}>
-        <ActivityIndicator size="large" color="#FF7043" />
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color={Colors.primary.main} />
+          <Text style={styles.loadingText}>正在整理月龄阶段...</Text>
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.heroCard}>
           <Text style={styles.eyebrow}>Baby stages</Text>
-          <Text style={styles.title}>先按月龄阶段选，再看更稳妥的辅食建议</Text>
-          <Text style={styles.subtitle}>把阶段、关键营养和对应食谱放在一起，减少来回跳转的成本。</Text>
-          <View style={styles.heroMetaRow}>
-            <View style={styles.heroMetaCard}>
-              <Text style={styles.heroMetaValue}>{(stages ?? []).length}</Text>
-              <Text style={styles.heroMetaLabel}>阶段入口</Text>
-            </View>
-            <View style={styles.heroMetaCard}>
-              <Text style={styles.heroMetaValue}>按月龄</Text>
-              <Text style={styles.heroMetaLabel}>优先筛选</Text>
-            </View>
+          <Text style={styles.title}>先按月龄找阶段，再看更稳妥的辅食建议</Text>
+          <Text style={styles.subtitle}>把阶段要点、重点营养和入口卡片收在一起，减少从菜谱列表里反复试错。</Text>
+          <View style={styles.overviewRow}>
+            {overviewCards.map((card) => (
+              <View key={card.label} style={styles.overviewCard}>
+                <Text style={styles.overviewValue}>{card.value}</Text>
+                <Text style={styles.overviewLabel}>{card.label}</Text>
+                <Text style={styles.overviewHelper}>{card.helper}</Text>
+              </View>
+            ))}
           </View>
         </View>
 
-        {(stages ?? []).map((stage) => {
-          const color = STAGE_COLORS[stage.stage] ?? '#888';
+        <View style={styles.tipCard}>
+          <Text style={styles.tipTitle}>怎么用这个入口</Text>
+          <Text style={styles.tipText}>先按宝宝当前月龄进入对应阶段，再在详情页按“首次引入 / 快手 / 补铁 / 补钙”等场景筛食谱，会比直接翻全量菜谱更稳。</Text>
+        </View>
+
+        {stageList.map((stage) => {
+          const color = STAGE_COLORS[stage.stage] ?? Colors.primary.main;
+          const nutrientPreview = (stage.key_nutrients || []).slice(0, 3);
 
           return (
             <TouchableOpacity
@@ -68,20 +98,26 @@ export function BabyStageScreen({ navigation }: Props) {
                   stageName: stage.name,
                 })
               }
+              activeOpacity={0.88}
             >
-              <View style={[styles.indicator, { backgroundColor: color }]}>
-                <Text style={styles.indicatorText}>
-                  {stage.stage.replace('m', '月')}
-                </Text>
+              <View style={[styles.stageBadge, { backgroundColor: color }]}>
+                <Text style={styles.stageBadgeText}>{stage.age_range}</Text>
               </View>
-              <View style={styles.stageInfo}>
-                <Text style={styles.stageName}>{stage.name}</Text>
-                <Text style={styles.ageRange}>{stage.age_range}</Text>
-                <Text style={styles.nutritionHint}>
-                  重点：{stage.key_nutrients.slice(0, 3).join(' · ')}
-                </Text>
+              <View style={styles.stageBody}>
+                <View style={styles.stageHeaderRow}>
+                  <Text style={styles.stageName}>{stage.name}</Text>
+                  <Text style={styles.stageArrow}>查看详情</Text>
+                </View>
+                <Text style={styles.stageMeta}>建议频次：{stage.meal_frequency}</Text>
+                <Text style={styles.stageTexture}>质地提示：{stage.texture_desc}</Text>
+                <View style={styles.nutrientRow}>
+                  {nutrientPreview.map((item) => (
+                    <View key={`${stage.stage}-${item}`} style={styles.nutrientChip}>
+                      <Text style={styles.nutrientChipText}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
               </View>
-              <Text style={styles.arrow}>›</Text>
             </TouchableOpacity>
           );
         })}
@@ -91,14 +127,30 @@ export function BabyStageScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background.secondary },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content: { padding: Spacing.md, paddingBottom: Spacing['3xl'] },
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background.secondary,
+  },
+  centerContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.xl,
+  },
+  loadingText: {
+    marginTop: Spacing.md,
+    fontSize: Typography.fontSize.base,
+    color: Colors.text.secondary,
+  },
+  content: {
+    padding: Spacing.md,
+    paddingBottom: Spacing['3xl'],
+  },
   heroCard: {
     backgroundColor: Colors.background.primary,
     borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
-    marginBottom: Spacing.md,
+    ...Shadows.sm,
   },
   eyebrow: {
     fontSize: Typography.fontSize.xs,
@@ -107,46 +159,135 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: Spacing.xs,
   },
-  title: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.text.primary, marginBottom: Spacing.xs },
-  subtitle: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, marginBottom: Spacing.md, lineHeight: 20 },
-  heroMetaRow: { flexDirection: 'row', gap: Spacing.sm },
-  heroMetaCard: {
-    flex: 1,
+  title: {
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+    lineHeight: 28,
+  },
+  subtitle: {
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    lineHeight: 20,
+  },
+  overviewRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  overviewCard: {
+    flexGrow: 1,
+    minWidth: '30%',
     backgroundColor: Colors.background.secondary,
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
   },
-  heroMetaValue: {
+  overviewValue: {
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
   },
-  heroMetaLabel: {
+  overviewLabel: {
+    marginTop: Spacing.xs,
     fontSize: Typography.fontSize.xs,
     color: Colors.text.secondary,
+  },
+  overviewHelper: {
+    marginTop: 4,
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
+    lineHeight: 18,
+  },
+  tipCard: {
+    marginTop: Spacing.md,
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    ...Shadows.sm,
+  },
+  tipTitle: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+  },
+  tipText: {
     marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    lineHeight: 20,
   },
   stageCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginTop: Spacing.md,
     backgroundColor: Colors.background.primary,
     borderRadius: BorderRadius.xl,
     padding: Spacing.md,
-    marginBottom: Spacing.sm,
+    flexDirection: 'row',
+    gap: Spacing.md,
     ...Shadows.sm,
   },
-  indicator: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
+  stageBadge: {
+    width: 76,
+    minHeight: 76,
+    borderRadius: BorderRadius.lg,
     alignItems: 'center',
-    marginRight: 14,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.sm,
   },
-  indicatorText: { fontSize: Typography.fontSize.xs, color: Colors.text.inverse, fontWeight: Typography.fontWeight.bold, textAlign: 'center' },
-  stageInfo: { flex: 1 },
-  stageName: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.text.primary },
-  ageRange: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, marginTop: 2 },
-  nutritionHint: { fontSize: Typography.fontSize.xs, color: Colors.primary.dark, marginTop: 4 },
-  arrow: { fontSize: 22, color: Colors.text.tertiary },
+  stageBadgeText: {
+    color: Colors.text.inverse,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.bold,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  stageBody: {
+    flex: 1,
+  },
+  stageHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+  },
+  stageName: {
+    flex: 1,
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.text.primary,
+  },
+  stageArrow: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  stageMeta: {
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+  },
+  stageTexture: {
+    marginTop: 2,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    lineHeight: 20,
+  },
+  nutrientRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+  },
+  nutrientChip: {
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  nutrientChipText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.primary.dark,
+    fontWeight: Typography.fontWeight.medium,
+  },
 });
