@@ -48,10 +48,13 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    rowGap: Spacing.lg,
   },
   button: {
     alignItems: 'center',
-    flex: 1,
+    width: '25%',
+    minWidth: 72,
   },
   icon: {
     width: 56,

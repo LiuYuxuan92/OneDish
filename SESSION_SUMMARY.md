@@ -35,13 +35,27 @@
 - `frontend` 现有 `npm run lint` 失败是仓内历史遗留问题（本次看到 2 errors + 大量 warnings，分布在多个旧文件，不是本次改动独有）；本次新增改动未额外引入已确认的运行时高风险点
 - `miniprogram/package.json` 仍未配置可执行测试脚本，当前无法用 `npm test` 做自动校验
 
+新增进展（2026-03-09 深夜继续推进）
+- 已新增页面/组件映射文档：`docs/plans/2026-03-09-figma-page-component-mapping.md`
+  - 完成现有页面 ↔ 目标 Figma 页面/组件映射总表
+  - 补充组件级映射表（Home / Search / Plan / Recipe / Profile 域）
+  - 明确迁移执行顺序：`首页 -> 周计划/清单 -> 详情页 -> 搜索页 -> 个人中心/设置 -> 深流程页`
+  - 标记今晚已落地的小改动与后续不建议现在动的大项
+- 已直接落地一个小程序小改动：`miniprogram/pages/profile/profile.*`
+  - 个人中心新增“📅 本周计划”入口，直接 `switchTab('/pages/plan/plan')`
+  - 目的：补齐小程序主链路入口，让“个人中心 -> 计划/清单”更顺手
+- 已直接落地一个 React Native 小改动：
+  - `frontend/src/screens/home/HomeScreen.tsx`：首页快捷操作新增“⚙️ 饮食偏好”入口
+  - `frontend/src/screens/home/ActionGrid.tsx`：快捷操作从原先偏 3 项横排，调整为支持 4 项网格布局，更贴近后续 Figma 化方向
+
 下一步
 - 明早联调建议顺序：
   1. 小程序搜索页：验证 `results` 渲染、库存优先、场景词、空结果态。
   2. 小程序推荐页 → 详情页：验证今日推荐、换菜、进入详情、图片/成人版/宝宝版字段展示。
   3. 小程序详情页喂养反馈：验证提交反馈、最近反馈列表、家庭共享后反馈可见性。
-  4. React Native 详情页：验证图片字段为字符串/数组两种情况下都能正常展示，最近反馈日期无报错。
-  5. Weekly plan / family share：验证创建家庭、加入家庭、周计划共享邀请码、成员移除与 invite regenerate。
-  6. Weekly review：最后核对真实页面入口、接口返回结构和空态展示。
-- 如需小程序端 UI 回归，需在微信开发者工具中加载 miniprogram 目录，配置 baseURL 为 `http://localhost:3000/api/v1`，然后手动测试搜索页、推荐页、详情页和家庭态喂养反馈流程
+  4. React Native 首页：验证快捷操作 4 宫格在手机宽度下排布正常，且“饮食偏好”能进入 `PreferenceSettings`。
+  5. 小程序个人中心：验证“本周计划”入口可正常切到计划 tab。
+  6. Weekly plan / family share：验证创建家庭、加入家庭、周计划共享邀请码、成员移除与 invite regenerate。
+  7. Weekly review：最后核对真实页面入口、接口返回结构和空态展示。
+- 如需小程序端 UI 回归，需在微信开发者工具中加载 miniprogram 目录，配置 baseURL 为 `http://localhost:3000/api/v1`，然后手动测试搜索页、推荐页、详情页、个人中心计划入口和家庭态喂养反馈流程
 - 清理临时测试数据（可选）

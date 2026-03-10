@@ -25,6 +25,18 @@ export const weeklyPlanStyles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
+  headerTextBlock: {
+    flex: 1,
+    paddingRight: Spacing.md,
+  },
+  headerEyebrow: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.primary.main,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: Spacing.xs,
+  },
   headerTitle: {
     fontSize: Typography.fontSize['2xl'],
     fontWeight: Typography.fontWeight.bold,
@@ -38,11 +50,178 @@ export const weeklyPlanStyles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     gap: Spacing.sm,
+    alignItems: 'flex-start',
   },
   iconButton: {
     padding: Spacing.sm,
     backgroundColor: Colors.primary.light,
     borderRadius: BorderRadius.md,
+    minWidth: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconButtonText: {
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.bold,
+  },
+  iconButtonEmoji: {
+    fontSize: 16,
+  },
+  heroCard: {
+    marginTop: Spacing.md,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.xl,
+    backgroundColor: Colors.background.card,
+    ...Shadows.md,
+  },
+  heroHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.md,
+    gap: Spacing.md,
+  },
+  heroTitleBlock: {
+    flex: 1,
+  },
+  heroTitle: {
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+    marginBottom: Spacing.xs,
+  },
+  heroSubtitle: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    lineHeight: 20,
+  },
+  heroShoppingButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    backgroundColor: Colors.primary.main,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  heroShoppingButtonText: {
+    color: Colors.text.inverse,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  summaryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  summaryCard: {
+    width: '48%',
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+  },
+  summaryValue: {
+    fontSize: Typography.fontSize['2xl'],
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+  },
+  summaryLabel: {
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+  },
+  quickEntryRow: {
+    gap: Spacing.sm,
+  },
+  progressStripBlock: {
+    marginBottom: Spacing.md,
+  },
+  progressStripHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+  },
+  progressStripLabel: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  progressStripValue: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.bold,
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.neutral.gray200,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.primary.main,
+  },
+  progressCaption: {
+    marginTop: Spacing.sm,
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    lineHeight: 18,
+  },
+  quickEntryCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.neutral.gray50,
+    marginBottom: Spacing.sm,
+  },
+  quickEntryIcon: {
+    fontSize: 20,
+    marginRight: Spacing.sm,
+    marginTop: 2,
+  },
+  quickEntryTextBlock: {
+    flex: 1,
+  },
+  quickEntryTitle: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.text.primary,
+    marginBottom: 2,
+  },
+  quickEntrySubtitle: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    lineHeight: 20,
+  },
+  todayHighlightStrip: {
+    marginTop: Spacing.md,
+  },
+  todayHighlightLabel: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.text.secondary,
+    marginBottom: Spacing.sm,
+  },
+  todayHighlightScrollContent: {
+    paddingRight: Spacing.md,
+  },
+  todayHighlightChip: {
+    marginRight: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.background.secondary,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  todayHighlightChipText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.primary,
   },
   content: {
     flex: 1,
@@ -125,6 +304,13 @@ export const weeklyPlanStyles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
   },
+  sectionBlock: {
+    marginTop: Spacing.lg,
+  },
+  sectionHeaderRow: {
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.sm,
+  },
   planSection: {
     paddingHorizontal: Spacing.lg,
   },
@@ -132,7 +318,11 @@ export const weeklyPlanStyles = StyleSheet.create({
     fontSize: Typography.fontSize.lg,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
-    marginBottom: Spacing.md,
+    marginBottom: 4,
+  },
+  sectionCaption: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
   },
   regenerateButton: {
     flexDirection: 'row',

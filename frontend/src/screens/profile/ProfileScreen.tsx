@@ -72,6 +72,27 @@ export function ProfileScreen({ navigation }: Props) {
       showArrow: true,
     },
     {
+      icon: <UserIcon size={20} color={Colors.secondary.main} />,
+      title: '家庭空间',
+      subtitle: '统一查看家庭成员、共享计划与购物清单',
+      onPress: () => navigation.navigate('Family'),
+      showArrow: true,
+    },
+    {
+      icon: <HeartIcon size={20} color={Colors.secondary.main} />,
+      title: '喂养反馈',
+      subtitle: '查看真实反馈记录与重试建议',
+      onPress: () => navigation.navigate('FeedingFeedback'),
+      showArrow: true,
+    },
+    {
+      icon: <InfoIcon size={20} color={Colors.primary.dark} />,
+      title: '每周回顾',
+      subtitle: '基于真实 weekly review 数据的总结',
+      onPress: () => navigation.navigate('WeeklyReview'),
+      showArrow: true,
+    },
+    {
       icon: <SettingsIcon size={20} color={Colors.text.secondary} />,
       title: '设置',
       subtitle: '偏好设置与账号管理',

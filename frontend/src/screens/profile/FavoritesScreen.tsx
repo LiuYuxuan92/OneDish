@@ -107,7 +107,7 @@ export function FavoritesScreen({ navigation }: Props) {
             <Text style={styles.emptyText}>点击菜谱卡片上的 ♥ 收藏喜欢的菜谱</Text>
             <TouchableOpacity 
               style={styles.browseButton}
-              onPress={() => navigation.navigate('RecipeList' as never)}
+              onPress={() => navigation.navigate('Recipes')}
             >
               <Text style={styles.browseButtonText}>去逛逛菜谱</Text>
             </TouchableOpacity>

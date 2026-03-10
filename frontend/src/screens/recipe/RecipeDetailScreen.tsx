@@ -231,6 +231,25 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
 
   // 获取主食材列表
   const mainIngredients = parsedAdult?.main_ingredients || [];
+  const whyItFits = [
+    isPaired ? '这道菜天然符合“一菜两吃”，能先做家庭主菜，再顺手分出宝宝版本。' : '这道菜可以在现有成人做法上继续延展出宝宝版本。',
+    effectiveBaby?.texture ? `当前宝宝版质地建议：${effectiveBaby.texture}。` : null,
+    recipe?.tags?.length ? `命中标签：${recipe.tags.slice(0, 3).join('、')}。` : null,
+    normalizedRecentFeedbacks[0]?.accepted_level === 'like' ? '最近一次反馈是喜欢，可以放心继续轮换。' : null,
+    normalizedRecentFeedbacks[0]?.accepted_level === 'reject' ? '最近一次反馈是拒绝，建议换质地或搭配后再试。' : null,
+  ].filter(Boolean);
+  const statusTags = [
+    isPaired ? '一菜两吃' : '可转宝宝版',
+    effectiveBaby ? 'adult/baby version 已接通' : null,
+    syncCooking ? 'sync cooking / timeline 已接通' : null,
+    normalizedRecentFeedbacks.length ? '有真实喂养反馈' : '反馈数据积累中',
+  ].filter(Boolean);
+  const adaptationBullets = [
+    effectiveBaby?.texture ? `质地：${effectiveBaby.texture}` : null,
+    effectiveBaby?.preparation_notes ? `处理要点：${effectiveBaby.preparation_notes}` : null,
+    effectiveBaby?.allergy_alert ? `过敏提醒：${effectiveBaby.allergy_alert}` : null,
+    syncCooking?.tips ? `同步烹饪：${syncCooking.tips}` : null,
+  ].filter(Boolean);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -266,7 +285,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
             </View>
           )}
           <Text style={styles.recipeName}>{recipe.name}</Text>
-          
+
           {/* 元信息 */}
           <View style={styles.metaContainer}>
             <View style={styles.metaItem}>
@@ -282,6 +301,45 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
             <View style={styles.metaItem}>
               <UsersIcon size={16} color={Colors.text.secondary} />
               <Text style={styles.metaText}>{recipe.servings}</Text>
+            </View>
+          </View>
+
+          <View style={styles.statusTagRow}>
+            {statusTags.map((tag: string) => (
+              <View key={tag} style={styles.statusTag}>
+                <Text style={styles.statusTagText}>{tag}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.detailCard}>
+            <Text style={styles.detailCardTitle}>Why this fits your household</Text>
+            {whyItFits.map((line: string) => (
+              <View key={line} style={styles.tipItem}>
+                <Text style={styles.tipBullet}>•</Text>
+                <Text style={styles.tipText}>{line}</Text>
+              </View>
+            ))}
+          </View>
+          <View style={styles.detailCard}>
+            <Text style={styles.detailCardTitle}>One Dish, Two Ways 摘要</Text>
+            {adaptationBullets.length ? adaptationBullets.map((line: string) => (
+              <View key={line} style={styles.tipItem}>
+                <Text style={styles.tipBullet}>•</Text>
+                <Text style={styles.tipText}>{line}</Text>
+              </View>
+            )) : (
+              <Text style={styles.tipText}>切到宝宝版后会展示真实适配摘要与同步烹饪信息。</Text>
+            )}
+            <View style={styles.inlineActionRow}>
+              <TouchableOpacity style={styles.inlineActionButton} onPress={() => setActiveTab('baby')}>
+                <Text style={styles.inlineActionButtonText}>看宝宝版</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.inlineActionButtonSecondary} onPress={() => setActiveTab('timeline')}>
+                <Text style={styles.inlineActionButtonSecondaryText}>看同步时间线</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -719,10 +777,10 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionIcon}>🍼</Text>
-            <Text style={styles.sectionTitle}>用餐反馈</Text>
+            <Text style={styles.sectionTitle}>Feeding feedback</Text>
           </View>
           <View style={styles.detailCard}>
-            <Text style={styles.tipsText}>先收口一个最小闭环：快速记录宝宝这次对这道菜的接受程度，后面再用于成长视角沉淀。</Text>
+            <Text style={styles.tipsText}>保留真实反馈接口：这里仍然直接提交 like / ok / reject，并把结果回流到“喂养反馈 / 每周回顾”页面。</Text>
             <View style={styles.feedbackActionRow}>
               <TouchableOpacity style={styles.feedbackChipLike} onPress={() => handleSubmitFeedingFeedback('like')} disabled={createFeedingFeedback.isPending}>
                 <Text style={styles.feedbackChipText}>喜欢</Text>
@@ -741,6 +799,11 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                 {!!item.note && <Text style={styles.feedbackRecentNote}>{item.note}</Text>}
               </View>
             )) : <Text style={styles.feedbackEmptyText}>还没有这道菜的反馈记录。</Text>}
+            <View style={styles.inlineActionRow}>
+              <TouchableOpacity style={styles.inlineActionButton} onPress={() => navigation.getParent()?.navigate('Profile' as never)}>
+                <Text style={styles.inlineActionButtonText}>回个人页看反馈中心</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -2103,6 +2166,56 @@ const styles = StyleSheet.create({
   feedbackEmptyText: {
     fontSize: Typography.fontSize.sm,
     color: Colors.text.tertiary,
+  },
+  statusTagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  statusTag: {
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  statusTagText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  inlineActionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  inlineActionButton: {
+    backgroundColor: Colors.primary.main,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  inlineActionButtonText: {
+    color: Colors.text.inverse,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  inlineActionButtonSecondary: {
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  inlineActionButtonSecondaryText: {
+    color: Colors.text.secondary,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
   },
 
 });

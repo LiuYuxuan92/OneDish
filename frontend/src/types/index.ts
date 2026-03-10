@@ -246,6 +246,13 @@ export type HomeStackParamList = {
   CookingMode: { recipeId: string; babyAgeMonths: number };
 };
 
+export type HomeTabParentParamList = {
+  Home: undefined;
+  Recipes: { screen?: keyof RecipeStackParamList; params?: RecipeStackParamList[keyof RecipeStackParamList] } | undefined;
+  Plan: { screen?: keyof PlanStackParamList; params?: PlanStackParamList[keyof PlanStackParamList] } | undefined;
+  Profile: { screen?: keyof ProfileStackParamList; params?: ProfileStackParamList[keyof ProfileStackParamList] } | undefined;
+};
+
 export type RecipeStackParamList = {
   RecipeList: { ingredient?: string; type?: string; difficulty?: string } | undefined;
   RecipeDetail: { recipeId: string; babyAgeMonths?: number };
@@ -275,6 +282,14 @@ export type ProfileStackParamList = {
   EditProfile: undefined;
   Inventory: undefined;
   MyRecipes: undefined;
+  Family: undefined;
+  FamilyWeeklyPlan: undefined;
+  FamilyShoppingList: undefined;
+  FeedingFeedback: undefined;
+  WeeklyReview: undefined;
+  RecipeDetail: { recipeId: string };
+  Recipes: undefined;
+  Plan: undefined;
 };
 
 // ============================================

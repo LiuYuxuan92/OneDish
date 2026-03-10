@@ -9,14 +9,13 @@ import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles
 import { MEAL_LABELS, MEAL_TYPES } from '../../hooks/useWeeklyPlanState';
 
 interface TodayDetailTabProps {
-  startDate: Date;
+  currentDate: string;
   weeklyData: { plans?: Record<string, Record<string, unknown>> } | undefined;
   navigation: { navigate: (screen: string, params: Record<string, string>) => void };
 }
 
-export function TodayDetailTab({ startDate, weeklyData, navigation }: TodayDetailTabProps) {
-  const todayStr = startDate.toISOString().split('T')[0];
-  const todayPlans = weeklyData?.plans?.[todayStr];
+export function TodayDetailTab({ currentDate, weeklyData, navigation }: TodayDetailTabProps) {
+  const todayPlans = weeklyData?.plans?.[currentDate];
 
   if (!todayPlans || Object.keys(todayPlans).length === 0) {
     return (
@@ -62,7 +61,6 @@ export function TodayDetailTab({ startDate, weeklyData, navigation }: TodayDetai
               </View>
             </View>
 
-            {/* 食材预览 */}
             {plan.ingredients && plan.ingredients.length > 0 && (
               <View style={styles.todayMealIngredients}>
                 <Text style={styles.todayMealIngredientsTitle}>主要食材：</Text>
@@ -144,7 +142,6 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     lineHeight: 20,
   },
-  // Empty state
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',

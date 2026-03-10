@@ -82,6 +82,21 @@ export function ShoppingListScreen({ navigation }: Props) {
     return Array.from(recipeSet).sort();
   }, [shoppingList]);
 
+  const summaryChips = useMemo(() => {
+    if (!shoppingList?.items) return [];
+    const allItems = Object.values(shoppingList.items).flat();
+    const babySpecific = allItems.filter((item: any) => item.source === 'baby').length;
+    const sharedAcrossMeals = allItems.filter((item: any) => item.is_merged || (item.from_recipes?.length || 0) > 1).length;
+    const pantryCovered = shoppingList?.inventory_summary?.covered_count || 0;
+    const lowStock = shoppingList?.inventory_summary?.missing_count || 0;
+    return [
+      pantryCovered > 0 ? `库存覆盖 ${pantryCovered}` : null,
+      lowStock > 0 ? `仍需采购 ${lowStock}` : null,
+      babySpecific > 0 ? `宝宝专项 ${babySpecific}` : null,
+      sharedAcrossMeals > 0 ? `跨餐复用 ${sharedAcrossMeals}` : null,
+    ].filter(Boolean);
+  }, [shoppingList]);
+
   // 筛选后的食材数据
   const filteredItems = useMemo(() => {
     if (!shoppingList?.items) {return {};}
@@ -502,6 +517,11 @@ export function ShoppingListScreen({ navigation }: Props) {
   const hasList = shoppingList && shoppingList.items && Object.keys(shoppingList.items).length > 0;
   const totalUnchecked = shoppingList?.unchecked_items || 0;
   const allCompleted = hasList && totalUnchecked === 0;
+  const totalItems = shoppingList?.total_items || 0;
+  const checkedCount = totalItems - totalUnchecked;
+  const progress = totalItems ? Math.round((checkedCount / totalItems) * 100) : 0;
+  const mealReadinessReady = shoppingList?.inventory_summary?.covered_count || 0;
+  const mealReadinessTotal = (shoppingList?.inventory_summary?.covered_count || 0) + (shoppingList?.inventory_summary?.missing_count || 0);
 
   // 计算筛选后的统计数据
   const filteredTotal = Object.values(filteredItems).reduce((sum, items) => sum + items.length, 0);
@@ -515,6 +535,7 @@ export function ShoppingListScreen({ navigation }: Props) {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View>
+            <Text style={styles.headerEyebrow}>Shopping</Text>
             <Text style={styles.title}>今日购物清单</Text>
             {shoppingList && (
               <Text style={styles.dateText}>
@@ -533,6 +554,43 @@ export function ShoppingListScreen({ navigation }: Props) {
             <Text style={styles.historyButtonText}>📋 历史</Text>
           </TouchableOpacity>
         </View>
+        {hasList && (
+          <>
+            <View style={styles.progressSummaryBlock}>
+              <View style={styles.progressSummaryHeader}>
+                <Text style={styles.progressSummaryTitle}>采购进度</Text>
+                <Text style={styles.progressSummaryValue}>{progress}%</Text>
+              </View>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: `${progress}%` }]} />
+              </View>
+              <View style={styles.readinessGrid}>
+                <TouchableOpacity style={styles.readinessCard} onPress={() => navigation.navigate('WeeklyPlan')}>
+                  <Text style={styles.readinessLabel}>Meal readiness</Text>
+                  <Text style={styles.readinessValue}>{mealReadinessReady}/{mealReadinessTotal || mealReadinessReady}</Text>
+                  <Text style={styles.readinessCaption}>已覆盖餐次</Text>
+                </TouchableOpacity>
+                <View style={styles.readinessCard}>
+                  <Text style={styles.readinessLabel}>Still needed</Text>
+                  <Text style={styles.readinessValue}>{totalUnchecked}</Text>
+                  <Text style={styles.readinessCaption}>{totalUnchecked <= 3 ? '快完成了' : '继续补齐缺口'}</Text>
+                </View>
+              </View>
+              {summaryChips.length > 0 && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.summaryChipRow}>
+                  {summaryChips.map((chip) => (
+                    <View key={chip as string} style={styles.summaryChip}>
+                      <Text style={styles.summaryChipText}>{chip}</Text>
+                    </View>
+                  ))}
+                </ScrollView>
+              )}
+              <TouchableOpacity style={styles.backToPlanButton} onPress={() => navigation.navigate('WeeklyPlan')}>
+                <Text style={styles.backToPlanButtonText}>← 回到周计划</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
       </View>
 
       <ScrollView
@@ -854,6 +912,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.light,
   },
+  headerEyebrow: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.primary.main,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    fontWeight: Typography.fontWeight.bold,
+    marginBottom: Spacing.xs,
+  },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -879,6 +945,95 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     color: Colors.primary.dark,
     fontWeight: Typography.fontWeight.medium,
+  },
+  progressSummaryBlock: {
+    marginTop: Spacing.md,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.xl,
+    backgroundColor: Colors.background.secondary,
+  },
+  progressSummaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+  },
+  progressSummaryTitle: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.text.secondary,
+  },
+  progressSummaryValue: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.primary.main,
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.neutral.gray200,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.primary.main,
+  },
+  readinessGrid: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  readinessCard: {
+    flex: 1,
+    backgroundColor: Colors.background.card,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+  },
+  readinessLabel: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    marginBottom: 4,
+  },
+  readinessValue: {
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+  },
+  readinessCaption: {
+    marginTop: 4,
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
+  },
+  summaryChipRow: {
+    paddingTop: Spacing.md,
+    paddingRight: Spacing.md,
+  },
+  summaryChip: {
+    marginRight: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.background.card,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  summaryChipText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.primary,
+  },
+  backToPlanButton: {
+    marginTop: Spacing.md,
+    alignSelf: 'flex-start',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.primary.light,
+  },
+  backToPlanButtonText: {
+    color: Colors.primary.dark,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
   },
 
   // 内容区
