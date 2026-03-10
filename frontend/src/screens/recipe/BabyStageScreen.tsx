@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RecipeStackParamList, BabyStageKey } from '../../types';
 import { useAllBabyStages } from '../../hooks/useBabyStages';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
 
 type Props = NativeStackScreenProps<RecipeStackParamList, 'BabyStages'>;
 
@@ -38,8 +39,21 @@ export function BabyStageScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>选择宝宝月龄阶段</Text>
-        <Text style={styles.subtitle}>按阶段浏览适合宝宝的辅食食谱</Text>
+        <View style={styles.heroCard}>
+          <Text style={styles.eyebrow}>Baby stages</Text>
+          <Text style={styles.title}>先按月龄阶段选，再看更稳妥的辅食建议</Text>
+          <Text style={styles.subtitle}>把阶段、关键营养和对应食谱放在一起，减少来回跳转的成本。</Text>
+          <View style={styles.heroMetaRow}>
+            <View style={styles.heroMetaCard}>
+              <Text style={styles.heroMetaValue}>{(stages ?? []).length}</Text>
+              <Text style={styles.heroMetaLabel}>阶段入口</Text>
+            </View>
+            <View style={styles.heroMetaCard}>
+              <Text style={styles.heroMetaValue}>按月龄</Text>
+              <Text style={styles.heroMetaLabel}>优先筛选</Text>
+            </View>
+          </View>
+        </View>
 
         {(stages ?? []).map((stage) => {
           const color = STAGE_COLORS[stage.stage] ?? '#888';
@@ -77,23 +91,49 @@ export function BabyStageScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FA' },
+  container: { flex: 1, backgroundColor: Colors.background.secondary },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content: { padding: 16, paddingBottom: 32 },
-  title: { fontSize: 22, fontWeight: '700', color: '#1A1A1A', marginBottom: 4 },
-  subtitle: { fontSize: 13, color: '#888', marginBottom: 20 },
+  content: { padding: Spacing.md, paddingBottom: Spacing['3xl'] },
+  heroCard: {
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  eyebrow: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.bold,
+    textTransform: 'uppercase',
+    marginBottom: Spacing.xs,
+  },
+  title: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.text.primary, marginBottom: Spacing.xs },
+  subtitle: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, marginBottom: Spacing.md, lineHeight: 20 },
+  heroMetaRow: { flexDirection: 'row', gap: Spacing.sm },
+  heroMetaCard: {
+    flex: 1,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+  },
+  heroMetaValue: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+  },
+  heroMetaLabel: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    marginTop: Spacing.xs,
+  },
   stageCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 10,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+    ...Shadows.sm,
   },
   indicator: {
     width: 50,
@@ -103,10 +143,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 14,
   },
-  indicatorText: { fontSize: 11, color: '#FFF', fontWeight: '700', textAlign: 'center' },
+  indicatorText: { fontSize: Typography.fontSize.xs, color: Colors.text.inverse, fontWeight: Typography.fontWeight.bold, textAlign: 'center' },
   stageInfo: { flex: 1 },
-  stageName: { fontSize: 16, fontWeight: '600', color: '#1A1A1A' },
-  ageRange: { fontSize: 13, color: '#888', marginTop: 2 },
-  nutritionHint: { fontSize: 12, color: '#FF9800', marginTop: 4 },
-  arrow: { fontSize: 22, color: '#CCC' },
+  stageName: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.text.primary },
+  ageRange: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, marginTop: 2 },
+  nutritionHint: { fontSize: Typography.fontSize.xs, color: Colors.primary.dark, marginTop: 4 },
+  arrow: { fontSize: 22, color: Colors.text.tertiary },
 });

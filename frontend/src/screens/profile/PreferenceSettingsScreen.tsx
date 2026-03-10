@@ -40,6 +40,21 @@ const stringifyIngredients = (value?: string[] | string): string => {
   return '';
 };
 
+const getBabyStageLabel = (months?: number | null): string => {
+  if (months == null || !Number.isFinite(months)) return '沿用个人资料';
+  if (months <= 8) return '辅食初步建立';
+  if (months <= 12) return '手指食物练习';
+  if (months <= 24) return '家庭共食过渡';
+  return '按家庭口味协同';
+};
+
+const getDifficultyLabel = (value: DifficultyOption | ''): string => {
+  if (value === 'easy') return '偏简单';
+  if (value === 'medium') return '难度适中';
+  if (value === 'hard') return '可以挑战';
+  return '按菜谱实际难度';
+};
+
 export function PreferenceSettingsScreen({ navigation }: Props) {
   const { data: preferenceData, isLoading, refetch } = usePreferenceInfo();
   const { data: user } = useUserInfo();
@@ -51,10 +66,52 @@ export function PreferenceSettingsScreen({ navigation }: Props) {
   const [cookingTimeLimit, setCookingTimeLimit] = useState('');
   const [difficultyPreference, setDifficultyPreference] = useState<DifficultyOption | ''>('');
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [showQuickPresets, setShowQuickPresets] = useState(false);
 
   const preferences = useMemo(
     () => preferenceData?.preferences || user?.preferences || {},
     [preferenceData?.preferences, user?.preferences]
+  );
+
+  const effectiveBabyAge = defaultBabyAge ? Number(defaultBabyAge) : user?.baby_age;
+  const summaryCards = useMemo(
+    () => [
+      {
+        label: '默认月龄',
+        value: defaultBabyAge ? `${defaultBabyAge} 个月` : '沿用资料',
+        helper: getBabyStageLabel(effectiveBabyAge),
+      },
+      {
+        label: '做饭节奏',
+        value: cookingTimeLimit ? `${cookingTimeLimit} 分钟内` : '不限时长',
+        helper: '给推荐和周计划一个时间边界',
+      },
+      {
+        label: '难度偏好',
+        value: getDifficultyLabel(difficultyPreference),
+        helper: '影响默认排序与替换建议',
+      },
+    ],
+    [defaultBabyAge, effectiveBabyAge, cookingTimeLimit, difficultyPreference]
+  );
+
+  const filledPreferenceCount = useMemo(() => {
+    return [
+      defaultBabyAge,
+      cookingTimeLimit,
+      difficultyPreference,
+      preferIngredients.trim(),
+      excludeIngredients.trim(),
+    ].filter(Boolean).length;
+  }, [defaultBabyAge, cookingTimeLimit, difficultyPreference, preferIngredients, excludeIngredients]);
+
+  const recommendationTargets = useMemo(
+    () => [
+      '首页推荐',
+      '周计划生成',
+      preferIngredients.trim() || excludeIngredients.trim() ? '换菜建议' : '购物清单联动',
+    ],
+    [preferIngredients, excludeIngredients]
   );
 
   useEffect(() => {
@@ -123,10 +180,68 @@ export function PreferenceSettingsScreen({ navigation }: Props) {
         style={styles.keyboardView}
       >
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          <Text style={styles.pageHint}>用于推荐菜谱、智能周计划和替换建议。</Text>
+          <View style={styles.heroCard}>
+            <View style={styles.heroTopRow}>
+              <View style={styles.heroTextBlock}>
+                <Text style={styles.heroEyebrow}>Preference settings</Text>
+                <Text style={styles.heroTitle}>先把默认偏好设好，后面的推荐会轻很多</Text>
+                <Text style={styles.pageHint}>用于推荐菜谱、智能周计划和替换建议。</Text>
+              </View>
+              <TouchableOpacity style={styles.heroActionButton} onPress={() => setShowQuickPresets((prev) => !prev)}>
+                <Text style={styles.heroActionButtonText}>{showQuickPresets ? '收起' : '快捷设置'}</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.statusRow}>
+              <View style={styles.statusBadge}>
+                <Text style={styles.statusBadgeText}>已设置 {filledPreferenceCount} / 5 项</Text>
+              </View>
+              <View style={[styles.statusBadge, styles.statusBadgeMuted]}>
+                <Text style={styles.statusBadgeMutedText}>{getBabyStageLabel(effectiveBabyAge)}</Text>
+              </View>
+            </View>
+            <View style={styles.summaryGrid}>
+              {summaryCards.map((item) => (
+                <View key={item.label} style={styles.summaryCard}>
+                  <Text style={styles.summaryLabel}>{item.label}</Text>
+                  <Text style={styles.summaryValue}>{item.value}</Text>
+                  <Text style={styles.summaryHelper}>{item.helper}</Text>
+                </View>
+              ))}
+            </View>
+            {showQuickPresets && (
+              <View style={styles.quickPresetSection}>
+                <Text style={styles.quickPresetTitle}>常用快捷设置</Text>
+                <View style={styles.quickPresetRow}>
+                  <TouchableOpacity style={styles.quickPresetChip} onPress={() => setCookingTimeLimit('20')}>
+                    <Text style={styles.quickPresetChipText}>20 分钟内</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickPresetChip} onPress={() => setDifficultyPreference('easy')}>
+                    <Text style={styles.quickPresetChipText}>偏简单</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.quickPresetChip} onPress={() => setDefaultBabyAge(user?.baby_age?.toString() || '')}>
+                    <Text style={styles.quickPresetChipText}>沿用宝宝月龄</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.quickPresetHint}>适合先快速设边界，再补充偏好的食材与忌口。</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.impactCard}>
+            <Text style={styles.impactTitle}>保存后会直接影响</Text>
+            <View style={styles.impactChipRow}>
+              {recommendationTargets.map((item) => (
+                <View key={item} style={styles.impactChip}>
+                  <Text style={styles.impactChipText}>{item}</Text>
+                </View>
+              ))}
+            </View>
+            <Text style={styles.impactDescription}>推荐理由、换菜建议和周计划生成会优先参考这里的默认设定。</Text>
+          </View>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>宝宝与做饭偏好</Text>
+            <Text style={styles.sectionDescription}>先约束默认月龄、可接受时长和做饭复杂度，让推荐更接近你们家的真实节奏。</Text>
 
             <View style={styles.field}>
               <Text style={styles.label}>默认宝宝月龄</Text>
@@ -178,6 +293,7 @@ export function PreferenceSettingsScreen({ navigation }: Props) {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>食材偏好</Text>
+            <Text style={styles.sectionDescription}>这里的食材会参与推荐排序、替换建议和购物清单生成。</Text>
 
             <View style={styles.field}>
               <Text style={styles.label}>想多吃的食材</Text>
@@ -219,8 +335,21 @@ export function PreferenceSettingsScreen({ navigation }: Props) {
               <Text style={styles.hint}>修改后点击下方按钮保存</Text>
             )}
           </View>
+        </ScrollView>
 
+        <View style={styles.saveBar}>
+          <View style={styles.saveBarTextBlock}>
+            <Text style={styles.saveBarTitle}>保存后，后续推荐会立即刷新</Text>
+            <Text style={styles.saveBarSubtitle}>建议先保存默认边界，再回到首页或周计划看变化。</Text>
+          </View>
           <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.button, styles.cancelButton]}
+              onPress={() => navigation.goBack()}
+              disabled={updateMutation.isPending}
+            >
+              <Text style={styles.cancelButtonText}>返回</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={[styles.button, styles.saveButton, updateMutation.isPending && styles.buttonDisabled]}
               onPress={handleSave}
@@ -230,16 +359,8 @@ export function PreferenceSettingsScreen({ navigation }: Props) {
                 {updateMutation.isPending ? '保存中...' : '保存偏好'}
               </Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
-              onPress={() => navigation.goBack()}
-              disabled={updateMutation.isPending}
-            >
-              <Text style={styles.cancelButtonText}>返回</Text>
-            </TouchableOpacity>
           </View>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -258,7 +379,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: Spacing.md,
-    paddingBottom: Spacing.xl,
+    paddingBottom: 180,
   },
   centerContent: {
     flex: 1,
@@ -270,11 +391,172 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     fontSize: Typography.fontSize.base,
   },
+  heroCard: {
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  heroTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+  },
+  heroTextBlock: {
+    flex: 1,
+  },
+  heroEyebrow: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: Spacing.xs,
+  },
+  heroTitle: {
+    fontSize: Typography.fontSize.xl,
+    color: Colors.text.primary,
+    fontWeight: Typography.fontWeight.bold,
+    marginBottom: Spacing.xs,
+  },
+  heroActionButton: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.background.secondary,
+  },
+  heroActionButtonText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.primary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  statusBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.primary.light,
+  },
+  statusBadgeMuted: {
+    backgroundColor: Colors.background.secondary,
+  },
+  statusBadgeText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.primary.dark,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  statusBadgeMutedText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  summaryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  summaryCard: {
+    flexGrow: 1,
+    minWidth: '30%',
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+  },
+  summaryLabel: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    marginBottom: Spacing.xs,
+  },
+  summaryValue: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.text.primary,
+    fontWeight: Typography.fontWeight.bold,
+    marginBottom: 4,
+  },
+  summaryHelper: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    lineHeight: 18,
+  },
+  quickPresetSection: {
+    marginTop: Spacing.md,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border.light,
+  },
+  quickPresetTitle: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.text.primary,
+  },
+  quickPresetRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  quickPresetChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.primary.light,
+  },
+  quickPresetChipText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.primary.dark,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  quickPresetHint: {
+    marginTop: Spacing.sm,
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    lineHeight: 18,
+  },
   pageHint: {
     fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
-    marginBottom: Spacing.md,
     lineHeight: 20,
+  },
+  impactCard: {
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  impactTitle: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.text.primary,
+    fontWeight: Typography.fontWeight.bold,
+  },
+  impactChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  impactChip: {
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.neutral.gray100,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+  },
+  impactChipText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.primary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  impactDescription: {
+    marginTop: Spacing.sm,
+    fontSize: Typography.fontSize.xs,
+    lineHeight: 18,
+    color: Colors.text.secondary,
   },
   section: {
     backgroundColor: Colors.background.primary,
@@ -286,7 +568,13 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.lg,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
+  },
+  sectionDescription: {
+    marginTop: Spacing.xs,
     marginBottom: Spacing.md,
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    lineHeight: 18,
   },
   field: {
     marginBottom: Spacing.lg,
@@ -358,9 +646,11 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
   },
   buttonContainer: {
+    flexDirection: 'row',
     gap: Spacing.sm,
   },
   button: {
+    flex: 1,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
     alignItems: 'center',
@@ -383,5 +673,30 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
+  },
+  saveBar: {
+    position: 'absolute',
+    left: Spacing.md,
+    right: Spacing.md,
+    bottom: Spacing.md,
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  saveBarTextBlock: {
+    marginBottom: Spacing.md,
+  },
+  saveBarTitle: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+    marginBottom: Spacing.xs,
+  },
+  saveBarSubtitle: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    lineHeight: 18,
   },
 });

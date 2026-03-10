@@ -23,6 +23,12 @@ export function FavoritesScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const { data, isLoading, error, refetch } = useFavorites({ page: 1, limit: 50 });
   const removeFavoriteMutation = useRemoveFavorite();
+  const favorites = data?.items || [];
+  const averagePrepTime = favorites.length
+    ? Math.round(
+        favorites.reduce((sum, item) => sum + Number(item.recipe?.prep_time || 0), 0) / favorites.length
+      )
+    : 0;
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -73,17 +79,29 @@ export function FavoritesScreen({ navigation }: Props) {
     );
   }
 
-  const favorites = data?.items || [];
-
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      {/* 头部 */}
       <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <HeartIcon size={24} color={Colors.functional.error} fill={Colors.functional.error} />
-          <Text style={styles.headerTitle}>我的收藏</Text>
+        <View style={styles.headerBadge}>
+          <HeartIcon size={16} color={Colors.functional.error} fill={Colors.functional.error} />
+          <Text style={styles.headerBadgeText}>Favorites</Text>
         </View>
-        <Text style={styles.headerSubtitle}>共 {data?.total || 0} 道精选菜谱</Text>
+        <Text style={styles.headerTitle}>把值得反复做的一菜两吃，先收在这里</Text>
+        <Text style={styles.headerSubtitle}>共 {data?.total || 0} 道精选菜谱，可直接回看或重新进入详情页继续做。</Text>
+        <View style={styles.headerStatsRow}>
+          <View style={styles.headerStatCard}>
+            <Text style={styles.headerStatValue}>{favorites.length}</Text>
+            <Text style={styles.headerStatLabel}>当前收藏</Text>
+          </View>
+          <View style={styles.headerStatCard}>
+            <Text style={styles.headerStatValue}>{averagePrepTime > 0 ? `${averagePrepTime} 分钟` : '--'}</Text>
+            <Text style={styles.headerStatLabel}>平均时长</Text>
+          </View>
+          <View style={styles.headerStatCard}>
+            <Text style={styles.headerStatValue}>{favorites.length > 0 ? '随时复做' : '先去挑菜'}</Text>
+            <Text style={styles.headerStatLabel}>当前状态</Text>
+          </View>
+        </View>
       </View>
 
       <ScrollView
@@ -163,24 +181,59 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border.light,
+    margin: Spacing.md,
+    marginBottom: 0,
+    borderRadius: BorderRadius.xl,
   },
-  headerContent: {
+  headerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.functional.errorLight,
+    marginBottom: Spacing.sm,
+  },
+  headerBadgeText: {
+    marginLeft: Spacing.xs,
+    fontSize: Typography.fontSize.xs,
+    color: Colors.functional.error,
+    fontWeight: Typography.fontWeight.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   headerTitle: {
-    fontSize: Typography.fontSize['2xl'],
+    fontSize: Typography.fontSize.xl,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
-    marginLeft: Spacing.sm,
   },
   headerSubtitle: {
     fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
     marginTop: Spacing.xs,
-    marginLeft: 32,
+    lineHeight: 20,
+  },
+  headerStatsRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  headerStatCard: {
+    flex: 1,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+  },
+  headerStatValue: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+  },
+  headerStatLabel: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    marginTop: Spacing.xs,
   },
   scrollView: {
     flex: 1,

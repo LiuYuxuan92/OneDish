@@ -16,6 +16,7 @@ import { babyStagesApi } from '../../api/babyStages';
 import { useStageRecipes } from '../../hooks/useBabyStages';
 import { StageGuideCard } from '../../components/recipe/StageGuideCard';
 import { RecipeCard } from '../../components/recipe/RecipeCard';
+import { Colors, Typography, Spacing, BorderRadius } from '../../styles/theme';
 
 type Props = NativeStackScreenProps<RecipeStackParamList, 'StageDetail'>;
 
@@ -30,7 +31,7 @@ const SCENE_FILTERS = [
 ];
 
 export function StageDetailScreen({ route, navigation }: Props) {
-  const { stage } = route.params;
+  const { stage, stageName } = route.params;
   const [activeFilter, setActiveFilter] = useState('');
 
   const { data: stageData, isLoading: stageLoading } = useQuery({
@@ -53,9 +54,25 @@ export function StageDetailScreen({ route, navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.heroCard}>
+          <Text style={styles.eyebrow}>Stage detail</Text>
+          <Text style={styles.heroTitle}>{stageName || stage}</Text>
+          <Text style={styles.heroSubtitle}>先看这个阶段的喂养重点，再根据场景筛具体食谱。</Text>
+          <View style={styles.heroMetaRow}>
+            <View style={styles.heroMetaCard}>
+              <Text style={styles.heroMetaValue}>{recipes?.length ?? 0}</Text>
+              <Text style={styles.heroMetaLabel}>可选食谱</Text>
+            </View>
+            <View style={styles.heroMetaCard}>
+              <Text style={styles.heroMetaValue}>{activeFilter ? '已筛选' : '全部场景'}</Text>
+              <Text style={styles.heroMetaLabel}>{activeFilter || '按月龄优先'}</Text>
+            </View>
+          </View>
+        </View>
+
         {/* 阶段指南卡 */}
         {stageLoading ? (
-          <ActivityIndicator style={{ margin: 20 }} color="#FF7043" />
+          <ActivityIndicator style={{ margin: 20 }} color={Colors.primary.main} />
         ) : stageData ? (
           <StageGuideCard stage={stageData} defaultExpanded={false} />
         ) : null}
@@ -93,7 +110,7 @@ export function StageDetailScreen({ route, navigation }: Props) {
             {recipesLoading ? '加载中...' : `${recipes?.length ?? 0} 道食谱`}
           </Text>
           {recipesLoading ? (
-            <ActivityIndicator color="#FF7043" style={{ margin: 20 }} />
+            <ActivityIndicator color={Colors.primary.main} style={{ margin: 20 }} />
           ) : recipes?.length === 0 ? (
             <Text style={styles.emptyText}>该筛选条件下暂无食谱</Text>
           ) : (
@@ -114,29 +131,75 @@ export function StageDetailScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FA' },
+  container: { flex: 1, backgroundColor: Colors.background.secondary },
+  heroCard: {
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    margin: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  eyebrow: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.bold,
+    textTransform: 'uppercase',
+    marginBottom: Spacing.xs,
+  },
+  heroTitle: {
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+  },
+  heroSubtitle: {
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    lineHeight: 20,
+  },
+  heroMetaRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  heroMetaCard: {
+    flex: 1,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+  },
+  heroMetaValue: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+  },
+  heroMetaLabel: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    marginTop: Spacing.xs,
+  },
   filterList: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.sm,
   },
   filterChip: {
-    paddingHorizontal: 14,
+    paddingHorizontal: Spacing.md,
     paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: '#FFF',
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.background.primary,
     borderWidth: 1,
-    borderColor: '#DDD',
+    borderColor: Colors.border.light,
   },
-  filterChipActive: { backgroundColor: '#FF7043', borderColor: '#FF7043' },
-  filterText: { fontSize: 13, color: '#555' },
-  filterTextActive: { color: '#FFF', fontWeight: '600' },
-  recipesSection: { paddingHorizontal: 16, paddingBottom: 32 },
-  recipesTitle: { fontSize: 14, color: '#888', marginBottom: 12 },
+  filterChipActive: { backgroundColor: Colors.primary.main, borderColor: Colors.primary.main },
+  filterText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary },
+  filterTextActive: { color: Colors.text.inverse, fontWeight: Typography.fontWeight.semibold },
+  recipesSection: { paddingHorizontal: Spacing.md, paddingBottom: Spacing['3xl'] },
+  recipesTitle: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, marginBottom: Spacing.sm },
   emptyText: {
     textAlign: 'center',
-    color: '#999',
+    color: Colors.text.secondary,
     marginTop: 40,
-    fontSize: 14,
+    fontSize: Typography.fontSize.sm,
   },
 });

@@ -205,8 +205,23 @@ export function ShoppingListHistoryScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <View style={styles.header}>
-        <Text style={styles.title}>历史清单</Text>
-        <Text style={styles.subtitle}>最近30天的购物清单</Text>
+        <Text style={styles.eyebrow}>Shopping history</Text>
+        <Text style={styles.title}>把历史清单、共享入口和回看操作收在一起</Text>
+        <Text style={styles.subtitle}>最近 30 天的购物清单会保留在这里，也可以通过邀请码加入共享清单。</Text>
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryValue}>{shoppingLists.length}</Text>
+            <Text style={styles.summaryLabel}>历史清单</Text>
+          </View>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryValue}>{shoppingLists.filter((item) => item.is_completed).length}</Text>
+            <Text style={styles.summaryLabel}>已完成</Text>
+          </View>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryValue}>{shoppingLists.reduce((sum, item) => sum + (item.unchecked_items || 0), 0)}</Text>
+            <Text style={styles.summaryLabel}>待购累计</Text>
+          </View>
+        </View>
         <View style={styles.joinRow}>
           <TextInput
             style={styles.joinInput}
@@ -302,14 +317,46 @@ const styles = StyleSheet.create({
   header: {
     padding: Spacing.lg,
     backgroundColor: Colors.background.primary,
+    margin: Spacing.md,
+    marginBottom: 0,
+    borderRadius: BorderRadius.xl,
+  },
+  eyebrow: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.bold,
+    textTransform: 'uppercase',
+    marginBottom: Spacing.xs,
   },
   title: {
-    fontSize: Typography.fontSize['2xl'],
+    fontSize: Typography.fontSize.xl,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
   },
   subtitle: {
     fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    marginTop: Spacing.xs,
+    lineHeight: 20,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  summaryCard: {
+    flex: 1,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+  },
+  summaryValue: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+  },
+  summaryLabel: {
+    fontSize: Typography.fontSize.xs,
     color: Colors.text.secondary,
     marginTop: Spacing.xs,
   },

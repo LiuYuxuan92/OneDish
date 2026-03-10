@@ -63,6 +63,7 @@ export function InventoryScreen({ navigation }: Props) {
   const deleteMutation = useDeleteInventory();
   const updateMutation = useUpdateInventory();
   const { data: suggestData } = useSuggestByInventory();
+  const highlightCount = suggestData?.suggestions?.length || 0;
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -192,6 +193,33 @@ export function InventoryScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
+      <View style={styles.heroCard}>
+        <View style={styles.heroTopRow}>
+          <View style={styles.heroTextBlock}>
+            <Text style={styles.heroEyebrow}>Inventory</Text>
+            <Text style={styles.heroTitle}>先看库存状态，再决定本周做什么</Text>
+            <Text style={styles.heroSubtitle}>把临期提醒、库存覆盖和推荐菜谱放在同一屏里，方便和首页、周计划联动。</Text>
+          </View>
+          <TouchableOpacity style={styles.heroAction} onPress={() => setShowAddModal(true)}>
+            <Text style={styles.heroActionText}>添加食材</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.heroSummaryRow}>
+          <View style={styles.heroSummaryItem}>
+            <Text style={styles.heroSummaryValue}>{data?.stats?.total || 0}</Text>
+            <Text style={styles.heroSummaryLabel}>库存总数</Text>
+          </View>
+          <View style={styles.heroSummaryItem}>
+            <Text style={styles.heroSummaryValue}>{data?.stats?.expiring || 0}</Text>
+            <Text style={styles.heroSummaryLabel}>临期提醒</Text>
+          </View>
+          <View style={styles.heroSummaryItem}>
+            <Text style={styles.heroSummaryValue}>{highlightCount}</Text>
+            <Text style={styles.heroSummaryLabel}>可消耗菜谱</Text>
+          </View>
+        </View>
+      </View>
+
       {/* 统计卡片 */}
       <View style={styles.statsContainer}>
         <View style={styles.statItem}>
@@ -477,11 +505,75 @@ export function InventoryScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.primary,
+    backgroundColor: Colors.background.secondary,
   },
   loadingContainer: {
     flex: 1,
     padding: Spacing.md,
+  },
+  heroCard: {
+    backgroundColor: Colors.background.primary,
+    marginHorizontal: Spacing.md,
+    marginTop: Spacing.md,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.md,
+  },
+  heroTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+  },
+  heroTextBlock: {
+    flex: 1,
+  },
+  heroEyebrow: {
+    ...Typography.body.caption,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.bold,
+    textTransform: 'uppercase',
+    marginBottom: Spacing.xs,
+  },
+  heroTitle: {
+    ...Typography.heading.h3,
+    color: Colors.text.primary,
+    marginBottom: Spacing.xs,
+  },
+  heroSubtitle: {
+    ...Typography.body.small,
+    color: Colors.text.secondary,
+    lineHeight: 20,
+  },
+  heroAction: {
+    backgroundColor: Colors.primary.main,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  heroActionText: {
+    color: Colors.text.inverse,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  heroSummaryRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  heroSummaryItem: {
+    flex: 1,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+  },
+  heroSummaryValue: {
+    ...Typography.heading.h3,
+    color: Colors.text.primary,
+  },
+  heroSummaryLabel: {
+    ...Typography.body.caption,
+    color: Colors.text.secondary,
+    marginTop: Spacing.xs,
   },
   // 统计卡片样式
   statsContainer: {
