@@ -38,6 +38,7 @@ export function FamilyScreen({ navigation }: Props) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
+  const [showSpaceTools, setShowSpaceTools] = useState(false);
   const [familyName, setFamilyName] = useState('我的家庭');
   const [inviteCode, setInviteCode] = useState('');
 
@@ -244,29 +245,48 @@ export function FamilyScreen({ navigation }: Props) {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.headerCard}>
-          <Text style={styles.headerEyebrow}>Family space</Text>
-          <Text style={styles.headerTitle}>{myFamily?.name || '家庭协作'}</Text>
-          <Text style={styles.headerSubtitle}>
-            把周计划、购物清单和宝宝喂养入口收拢到一个共享空间。
-          </Text>
+          <View style={styles.heroTopRow}>
+            <View style={styles.heroTextBlock}>
+              <Text style={styles.headerEyebrow}>Family space</Text>
+              <Text style={styles.headerTitle}>{myFamily?.name || '家庭协作'}</Text>
+              <Text style={styles.headerSubtitle}>
+                把周计划、购物清单和宝宝喂养入口收拢到一个共享空间。
+              </Text>
+            </View>
+            <TouchableOpacity style={styles.heroActionButton} onPress={() => setShowSpaceTools((prev) => !prev)}>
+              <Text style={styles.heroActionButtonText}>{showSpaceTools ? '收起' : '更多'}</Text>
+            </TouchableOpacity>
+          </View>
+
           {isWebLocalGuestMode() && (
             <Text style={styles.previewHint}>
               当前是 web 本地未登录预览：家庭空间已切到稳定 guest/mock 数据，不再继续请求失败后刷 401 噪音。
             </Text>
           )}
 
-          <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{memberCards.length || 0}</Text>
-              <Text style={styles.statLabel}>成员</Text>
+          <View style={styles.heroSummaryCard}>
+            <View style={styles.heroSummaryRow}>
+              <Text style={styles.heroSummaryLabel}>本周家庭节奏</Text>
+              <Text style={styles.heroSummaryValue}>{familyStats.plannedMeals} 餐已排</Text>
             </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{familyStats.plannedMeals}</Text>
-              <Text style={styles.statLabel}>本周餐次</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{shoppingStats.unchecked}</Text>
-              <Text style={styles.statLabel}>待采购</Text>
+            <Text style={styles.heroSummaryText}>
+              {memberCards.length > 0
+                ? `${memberCards.length} 位照护者正在共享计划；其中 ${familyStats.dualMeals} 餐已经支持一菜两吃。`
+                : '先创建或加入家庭后，就能把计划、采购和宝宝适配信息同步给所有照护者。'}
+            </Text>
+            <View style={styles.statsRow}>
+              <View style={styles.statCard}>
+                <Text style={styles.statValue}>{memberCards.length || 0}</Text>
+                <Text style={styles.statLabel}>成员</Text>
+              </View>
+              <View style={styles.statCard}>
+                <Text style={styles.statValue}>{familyStats.dualMeals}</Text>
+                <Text style={styles.statLabel}>双版本餐次</Text>
+              </View>
+              <View style={styles.statCard}>
+                <Text style={styles.statValue}>{shoppingStats.unchecked}</Text>
+                <Text style={styles.statLabel}>待采购</Text>
+              </View>
             </View>
           </View>
 
@@ -287,6 +307,20 @@ export function FamilyScreen({ navigation }: Props) {
               </View>
               <TouchableOpacity style={styles.inviteButton} onPress={handleRegenerateInvite}>
                 <Text style={styles.inviteButtonText}>刷新</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {showSpaceTools && myFamily && (
+            <View style={styles.spaceToolsRow}>
+              <TouchableOpacity style={styles.toolChip} onPress={() => navigation.navigate('FamilyWeeklyPlan')}>
+                <Text style={styles.toolChipText}>本周计划</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.toolChip} onPress={() => navigation.navigate('FamilyShoppingList')}>
+                <Text style={styles.toolChipText}>购物清单</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.toolChip} onPress={() => navigation.navigate('PreferenceSettings')}>
+                <Text style={styles.toolChipText}>宝宝偏好</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -481,6 +515,26 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background.card,
     ...Shadows.md,
   },
+  heroTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+  },
+  heroTextBlock: {
+    flex: 1,
+  },
+  heroActionButton: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.background.secondary,
+  },
+  heroActionButtonText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.primary,
+    fontWeight: Typography.fontWeight.medium,
+  },
   headerEyebrow: {
     fontSize: Typography.fontSize.xs,
     color: Colors.primary.main,
@@ -510,10 +564,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.sm,
   },
+  heroSummaryCard: {
+    marginTop: Spacing.lg,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.xl,
+    backgroundColor: Colors.background.secondary,
+  },
+  heroSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.xs,
+  },
+  heroSummaryLabel: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  heroSummaryValue: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.bold,
+  },
+  heroSummaryText: {
+    fontSize: Typography.fontSize.sm,
+    lineHeight: 20,
+    color: Colors.text.secondary,
+  },
   statsRow: {
     flexDirection: 'row',
     gap: Spacing.sm,
-    marginTop: Spacing.lg,
+    marginTop: Spacing.md,
   },
   statCard: {
     flex: 1,
@@ -568,6 +649,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
+  },
+  spaceToolsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  toolChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.primary.light,
+  },
+  toolChipText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.primary.dark,
+    fontWeight: Typography.fontWeight.semibold,
   },
   inviteLabel: {
     fontSize: Typography.fontSize.xs,

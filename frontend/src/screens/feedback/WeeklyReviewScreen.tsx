@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -13,6 +13,7 @@ type Props = NativeStackScreenProps<ProfileStackParamList, 'WeeklyReview'>;
 export function WeeklyReviewScreen({ navigation }: Props) {
   const { isLoading, review, weekStart, weekEnd } = useWeeklyReviewViewModel();
   const regenerate = useRegenerateWeeklyReview();
+  const [showActions, setShowActions] = useState(false);
 
   const handleRegenerate = async () => {
     const now = new Date();
@@ -27,9 +28,32 @@ export function WeeklyReviewScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.heroCard}>
-          <Text style={styles.eyebrow}>Weekly Review</Text>
-          <Text style={styles.title}>这周的一菜两吃，效果怎么样？</Text>
-          <Text style={styles.subtitle}>{weekStart && weekEnd ? `${weekStart} 至 ${weekEnd}` : '基于真实 weekly review 数据生成'}，没有 mock summary。</Text>
+          <View style={styles.heroTopRow}>
+            <View style={styles.heroTextBlock}>
+              <Text style={styles.eyebrow}>Weekly Review</Text>
+              <Text style={styles.title}>这周的一菜两吃，效果怎么样？</Text>
+              <Text style={styles.subtitle}>{weekStart && weekEnd ? `${weekStart} 至 ${weekEnd}` : '基于真实 weekly review 数据生成'}，没有 mock summary。</Text>
+            </View>
+            <TouchableOpacity style={styles.heroActionButton} onPress={() => setShowActions((prev) => !prev)}>
+              <Text style={styles.heroActionButtonText}>{showActions ? '收起' : '更多'}</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.heroNarrativeCard}>
+            <Text style={styles.heroNarrativeLabel}>本周回顾</Text>
+            <Text style={styles.heroNarrativeText}>
+              {review ? review.insightText : '等本周记录积累起来，这里会把接受度、双版本适配和下周建议压缩成一眼能看的总结。'}
+            </Text>
+          </View>
+          {showActions && (
+            <View style={styles.heroActionsRow}>
+              <TouchableOpacity style={styles.toolChip} onPress={() => navigation.navigate('FeedingFeedback')}>
+                <Text style={styles.toolChipText}>查看反馈</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.toolChip} onPress={handleRegenerate}>
+                <Text style={styles.toolChipText}>{regenerate.isPending ? '生成中...' : '重新生成'}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {isLoading ? (
@@ -115,9 +139,19 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background.secondary },
   content: { padding: Spacing.lg, paddingBottom: 120 },
   heroCard: { backgroundColor: Colors.background.primary, borderRadius: BorderRadius.xl, padding: Spacing.lg, ...Shadows.sm },
+  heroTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.md },
+  heroTextBlock: { flex: 1 },
+  heroActionButton: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, backgroundColor: Colors.background.secondary },
+  heroActionButtonText: { fontSize: Typography.fontSize.sm, color: Colors.text.primary, fontWeight: Typography.fontWeight.medium },
   eyebrow: { fontSize: Typography.fontSize.xs, color: Colors.secondary.main, fontWeight: Typography.fontWeight.bold, textTransform: 'uppercase' },
   title: { fontSize: Typography.fontSize['2xl'], color: Colors.text.primary, fontWeight: Typography.fontWeight.bold, marginTop: Spacing.xs },
   subtitle: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, lineHeight: 20, marginTop: Spacing.sm },
+  heroNarrativeCard: { marginTop: Spacing.md, padding: Spacing.md, borderRadius: BorderRadius.lg, backgroundColor: Colors.background.secondary },
+  heroNarrativeLabel: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, fontWeight: Typography.fontWeight.semibold, marginBottom: Spacing.xs },
+  heroNarrativeText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, lineHeight: 20 },
+  heroActionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.md },
+  toolChip: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, backgroundColor: Colors.secondary.light },
+  toolChipText: { fontSize: Typography.fontSize.sm, color: Colors.secondary.dark, fontWeight: Typography.fontWeight.semibold },
   emptyCard: { backgroundColor: Colors.background.primary, borderRadius: BorderRadius.xl, padding: Spacing.lg, marginTop: Spacing.lg, ...Shadows.sm },
   emptyTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.text.primary },
   emptyText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, lineHeight: 20, marginTop: Spacing.sm, marginBottom: Spacing.lg },

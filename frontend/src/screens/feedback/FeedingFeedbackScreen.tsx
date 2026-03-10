@@ -13,6 +13,7 @@ type FilterKey = 'all' | 'loved' | 'okay' | 'cautious' | 'rejected';
 export function FeedingFeedbackScreen({ navigation }: Props) {
   const { isLoading, records, grouped, summaryCards, refetch, isRefetching } = useFeedingFeedbackViewModel();
   const [filter, setFilter] = useState<FilterKey>('all');
+  const [showFilters, setShowFilters] = useState(false);
 
   const visibleRecords = useMemo(() => {
     if (filter === 'all') return records;
@@ -23,9 +24,24 @@ export function FeedingFeedbackScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.heroCard}>
-          <Text style={styles.eyebrow}>Feeding Feedback</Text>
-          <Text style={styles.title}>这周宝宝对哪些菜更买账？</Text>
-          <Text style={styles.subtitle}>保留真实喂养反馈接口，把“喜欢 / 一般 / 谨慎 / 拒绝”收拢成一个可回流计划的页面。</Text>
+          <View style={styles.heroTopRow}>
+            <View style={styles.heroTextBlock}>
+              <Text style={styles.eyebrow}>Feeding Feedback</Text>
+              <Text style={styles.title}>这周宝宝对哪些菜更买账？</Text>
+              <Text style={styles.subtitle}>把真实喂养反馈整理成下一周继续安排、谨慎重试和减少踩雷的家庭决策页。</Text>
+            </View>
+            <TouchableOpacity style={styles.heroActionButton} onPress={() => setShowFilters((prev) => !prev)}>
+              <Text style={styles.heroActionButtonText}>{showFilters ? '收起筛选' : '更多筛选'}</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.heroNarrativeCard}>
+            <Text style={styles.heroNarrativeLabel}>本周结论</Text>
+            <Text style={styles.heroNarrativeText}>
+              {grouped.loved.length
+                ? `已有 ${grouped.loved.length} 道菜进入“值得继续安排”，${grouped.retry.length} 道建议换做法再试。`
+                : '样本还不多，先持续记录几餐，页面会逐步给出更稳定的安排建议。'}
+            </Text>
+          </View>
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.summaryRow}>
@@ -65,19 +81,28 @@ export function FeedingFeedbackScreen({ navigation }: Props) {
           )) : <Text style={styles.emptyText}>喜欢样本还不多，继续记录后这里会更有用。</Text>}
         </View>
 
-        <View style={styles.filterRow}>
-          {[
-            ['all', '全部'],
-            ['loved', '喜欢'],
-            ['okay', '一般'],
-            ['cautious', '谨慎'],
-            ['rejected', '拒绝'],
-          ].map(([key, label]) => (
-            <TouchableOpacity key={key} style={[styles.filterChip, filter === key && styles.filterChipActive]} onPress={() => setFilter(key as FilterKey)}>
-              <Text style={[styles.filterChipText, filter === key && styles.filterChipTextActive]}>{label}</Text>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.filterBar}>
+          <Text style={styles.filterBarLabel}>当前视图：{filter === 'all' ? '全部反馈' : filter === 'loved' ? '喜欢' : filter === 'okay' ? '一般' : filter === 'cautious' ? '谨慎' : '拒绝'}</Text>
+          <TouchableOpacity onPress={() => setShowFilters((prev) => !prev)}>
+            <Text style={styles.refreshText}>{showFilters ? '收起' : '筛选'}</Text>
+          </TouchableOpacity>
         </View>
+
+        {showFilters && (
+          <View style={styles.filterRow}>
+            {[
+              ['all', '全部'],
+              ['loved', '喜欢'],
+              ['okay', '一般'],
+              ['cautious', '谨慎'],
+              ['rejected', '拒绝'],
+            ].map(([key, label]) => (
+              <TouchableOpacity key={key} style={[styles.filterChip, filter === key && styles.filterChipActive]} onPress={() => setFilter(key as FilterKey)}>
+                <Text style={[styles.filterChipText, filter === key && styles.filterChipTextActive]}>{label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
@@ -118,9 +143,16 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background.secondary },
   content: { padding: Spacing.lg, paddingBottom: 120 },
   heroCard: { backgroundColor: Colors.background.primary, borderRadius: BorderRadius.xl, padding: Spacing.lg, ...Shadows.sm },
+  heroTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: Spacing.md },
+  heroTextBlock: { flex: 1 },
+  heroActionButton: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, backgroundColor: Colors.background.secondary },
+  heroActionButtonText: { fontSize: Typography.fontSize.sm, color: Colors.text.primary, fontWeight: Typography.fontWeight.medium },
   eyebrow: { fontSize: Typography.fontSize.xs, color: Colors.primary.main, fontWeight: Typography.fontWeight.bold, textTransform: 'uppercase' },
   title: { fontSize: Typography.fontSize['2xl'], color: Colors.text.primary, fontWeight: Typography.fontWeight.bold, marginTop: Spacing.xs },
   subtitle: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, lineHeight: 20, marginTop: Spacing.sm },
+  heroNarrativeCard: { marginTop: Spacing.md, padding: Spacing.md, borderRadius: BorderRadius.lg, backgroundColor: Colors.background.secondary },
+  heroNarrativeLabel: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, fontWeight: Typography.fontWeight.semibold, marginBottom: Spacing.xs },
+  heroNarrativeText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, lineHeight: 20 },
   summaryRow: { gap: Spacing.md, paddingVertical: Spacing.lg },
   summaryCard: { width: 110, backgroundColor: Colors.background.primary, borderRadius: BorderRadius.lg, padding: Spacing.md, ...Shadows.xs },
   summaryValue: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.text.primary },
@@ -133,6 +165,8 @@ const styles = StyleSheet.create({
   highlightTitle: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.text.primary },
   highlightText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, marginTop: 2 },
   highlightAction: { fontSize: Typography.fontSize.sm, color: Colors.primary.main, fontWeight: Typography.fontWeight.semibold },
+  filterBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.sm },
+  filterBarLabel: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, fontWeight: Typography.fontWeight.medium },
   filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.lg },
   filterChip: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, backgroundColor: Colors.background.primary },
   filterChipActive: { backgroundColor: Colors.primary.main },
