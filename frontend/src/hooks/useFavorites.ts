@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Platform } from 'react-native';
 import { favoritesApi, type FavoritesListResponse } from '../api/favorites';
-import { shouldUseWebMockFallback } from '../mock/webFallback';
+import { shouldShortCircuitWebMock, shouldUseWebMockFallback } from '../mock/webFallback';
+import { useAuth } from './useAuth';
 
 const buildEmptyFavorites = (params?: { page?: number; limit?: number }): FavoritesListResponse => ({
   total: 0,
@@ -12,9 +13,16 @@ const buildEmptyFavorites = (params?: { page?: number; limit?: number }): Favori
 
 // 获取收藏列表
 export function useFavorites(params?: { page?: number; limit?: number }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  const shouldShortCircuit = Platform.OS === 'web' && shouldShortCircuitWebMock() && !isLoading && !isAuthenticated;
+
   return useQuery({
-    queryKey: ['favorites', params],
+    queryKey: ['favorites', params, shouldShortCircuit ? 'guest-short-circuit' : 'live'],
     queryFn: async () => {
+      if (shouldShortCircuit) {
+        return buildEmptyFavorites(params);
+      }
+
       try {
         const res = await favoritesApi.getFavorites(params);
         return res.data ?? res ?? buildEmptyFavorites(params);
@@ -27,6 +35,7 @@ export function useFavorites(params?: { page?: number; limit?: number }) {
     },
     staleTime: 2 * 60 * 1000, // 2分钟
     retry: Platform.OS === 'web' ? 0 : 1,
+    enabled: Platform.OS !== 'web' || !shouldShortCircuit || !isLoading,
   });
 }
 

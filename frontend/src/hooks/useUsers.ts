@@ -1,12 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Platform } from 'react-native';
 import { usersApi, UserInfo, UpdateUserInfoRequest, UserPreferences } from '../api/users';
-import { buildMockUserInfo, shouldUseWebMockFallback } from '../mock/webFallback';
+import { buildMockUserInfo, shouldShortCircuitWebMock, shouldUseWebMockFallback } from '../mock/webFallback';
+import { useAuth } from './useAuth';
 
 // 获取用户信息
 export function useUserInfo() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const shouldShortCircuit = shouldShortCircuitWebMock() && !isLoading && !isAuthenticated;
+
   return useQuery({
-    queryKey: ['users', 'me'],
+    queryKey: ['users', 'me', shouldShortCircuit ? 'guest-short-circuit' : 'live'],
     queryFn: async () => {
+      if (shouldShortCircuit) {
+        return buildMockUserInfo();
+      }
+
       try {
         const user = await usersApi.getUserInfo().then(res => res.data || res);
         try {
@@ -33,6 +42,7 @@ export function useUserInfo() {
       }
     },
     staleTime: 5 * 60 * 1000,
+    enabled: Platform.OS !== 'web' || !shouldShortCircuit || !isLoading,
   });
 }
 

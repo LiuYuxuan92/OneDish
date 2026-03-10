@@ -393,14 +393,25 @@ export function SearchScreen({ navigation }: Props) {
   );
 
   const renderSourceTabs = () => (
-    <ScrollView style={styles.sourceTabsScroll} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sourceTabsContent}>
-      {SOURCE_OPTIONS.map((option) => (
-        <TouchableOpacity key={option.key} style={[styles.sourceTab, searchSource === option.key && styles.sourceTabActive, isTablet && styles.sourceTabTablet]} onPress={() => handleSourceChange(option.key)}>
-          <Text style={[styles.sourceTabIcon, isTablet && styles.sourceTabIconTablet]}>{option.icon}</Text>
-          <Text style={[styles.sourceTabText, searchSource === option.key && styles.sourceTabTextActive, isTablet && styles.sourceTabTextTablet]}>{option.label}</Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
+    <View style={styles.sourceTabsSection}>
+      <Text style={styles.sourceTabsLabel}>来源</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sourceTabsContent}>
+        {SOURCE_OPTIONS.map((option) => (
+          <TouchableOpacity
+            key={option.key}
+            style={[
+              styles.sourceTab,
+              searchSource === option.key && styles.sourceTabActive,
+              isTablet && styles.sourceTabTablet,
+            ]}
+            onPress={() => handleSourceChange(option.key)}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.sourceTabText, searchSource === option.key && styles.sourceTabTextActive, isTablet && styles.sourceTabTextTablet]}>{option.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
   );
 
   const renderExplore = () => (
@@ -513,10 +524,10 @@ export function SearchScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background.secondary },
-  searchHeaderBlock: { backgroundColor: Colors.background.primary, paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.xs },
+  searchHeaderBlock: { backgroundColor: Colors.background.primary, paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: 4 },
   pageTitle: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.text.primary },
-  pageSubtitle: { marginTop: 2, fontSize: Typography.fontSize.xs, color: Colors.text.secondary, lineHeight: 18 },
-  searchBarContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.background.primary, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm, gap: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.border.light },
+  pageSubtitle: { marginTop: 2, fontSize: Typography.fontSize.xs, color: Colors.text.secondary, lineHeight: 16 },
+  searchBarContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.background.primary, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xs, gap: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.border.light },
   searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.neutral.gray100, borderRadius: BorderRadius.lg, paddingHorizontal: Spacing.md, height: 44, borderWidth: 1, borderColor: Colors.border.light },
   searchInput: { flex: 1, color: Colors.text.primary, marginLeft: Spacing.sm, fontSize: Typography.fontSize.base },
   clearButton: { padding: Spacing.xs },
@@ -534,25 +545,24 @@ const styles = StyleSheet.create({
   taskTabActive: { backgroundColor: '#E8F0FF' },
   taskTabText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, fontWeight: Typography.fontWeight.medium },
   taskTabTextActive: { color: Colors.primary.main },
-  sourceTabsScroll: { backgroundColor: Colors.background.primary, borderBottomWidth: 1, borderBottomColor: Colors.border.light },
-  sourceTabsContent: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, gap: Spacing.sm },
-  sourceTab: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, backgroundColor: Colors.neutral.gray100, gap: Spacing.xs, borderWidth: 1, borderColor: Colors.border.light },
+  sourceTabsSection: { backgroundColor: Colors.background.primary, paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: Spacing.xs, borderBottomWidth: 1, borderBottomColor: Colors.border.light, gap: 6 },
+  sourceTabsLabel: { fontSize: Typography.fontSize.xs, color: Colors.text.tertiary, fontWeight: Typography.fontWeight.medium },
+  sourceTabsContent: { gap: Spacing.xs, paddingRight: Spacing.lg },
+  sourceTab: { minHeight: 30, justifyContent: 'center', paddingHorizontal: Spacing.sm + 2, paddingVertical: 6, borderRadius: BorderRadius.full, backgroundColor: Colors.neutral.gray100, borderWidth: 1, borderColor: 'transparent' },
   sourceTabActive: { backgroundColor: Colors.primary.light, borderColor: Colors.primary.main },
-  sourceTabTablet: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  sourceTabIcon: { fontSize: 14 },
-  sourceTabIconTablet: { fontSize: 16 },
-  sourceTabText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary },
+  sourceTabTablet: { minHeight: 34, paddingHorizontal: Spacing.md, paddingVertical: 7 },
+  sourceTabText: { fontSize: Typography.fontSize.xs, color: Colors.text.secondary, fontWeight: Typography.fontWeight.medium },
   sourceTabTextActive: { color: Colors.primary.main, fontWeight: Typography.fontWeight.semibold },
-  sourceTabTextTablet: { fontSize: Typography.fontSize.base },
-  filterPanel: { backgroundColor: Colors.background.primary, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.border.light },
+  sourceTabTextTablet: { fontSize: Typography.fontSize.sm },
+  filterPanel: { backgroundColor: Colors.background.primary, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xs, borderBottomWidth: 1, borderBottomColor: Colors.border.light },
   filterPanelHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: Spacing.sm },
   filterPanelTitleBlock: { flex: 1 },
   filterPanelTitle: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.text.primary },
   filterPanelSubtitle: { marginTop: 2, fontSize: Typography.fontSize.xs, color: Colors.text.secondary, lineHeight: 16 },
-  filterPanelToggle: { paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs, borderRadius: BorderRadius.full, backgroundColor: Colors.neutral.gray100 },
+  filterPanelToggle: { paddingHorizontal: Spacing.sm, paddingVertical: 4, borderRadius: BorderRadius.full, backgroundColor: Colors.neutral.gray100 },
   filterPanelToggleText: { fontSize: Typography.fontSize.xs, color: Colors.primary.main, fontWeight: Typography.fontWeight.semibold },
-  filterPanelPreviewRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, marginTop: Spacing.sm },
-  filterPreviewChip: { backgroundColor: Colors.neutral.gray100, borderRadius: BorderRadius.full, paddingHorizontal: Spacing.sm, paddingVertical: 4, maxWidth: '100%' },
+  filterPanelPreviewRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, marginTop: 6 },
+  filterPreviewChip: { backgroundColor: Colors.neutral.gray100, borderRadius: BorderRadius.full, paddingHorizontal: Spacing.sm, paddingVertical: 3, maxWidth: '100%' },
   filterPreviewChipActive: { backgroundColor: Colors.primary.light },
   filterPreviewChipText: { fontSize: Typography.fontSize.xs, color: Colors.text.secondary },
   filterPreviewChipTextActive: { color: Colors.primary.main, fontWeight: Typography.fontWeight.medium },
