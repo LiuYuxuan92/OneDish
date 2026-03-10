@@ -522,7 +522,7 @@ export function ShoppingListScreen({ navigation }: Props) {
         <View style={styles.headerShell}>
           <View style={styles.headerTop}>
             <View style={styles.headerTextWrap}>
-              <Text style={styles.headerEyebrow}>Shopping list</Text>
+              <Text style={styles.headerEyebrow}>购物清单</Text>
               <Text style={styles.title}>今日购物清单</Text>
               {shoppingList && (
                 <Text style={styles.dateText}>

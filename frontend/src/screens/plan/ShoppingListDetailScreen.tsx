@@ -343,7 +343,7 @@ export function ShoppingListDetailScreen({ route, navigation }: Props) {
         <View style={styles.heroCard}>
           <View style={styles.heroTopRow}>
             <View style={styles.heroTextBlock}>
-              <Text style={styles.eyebrow}>Shopping list detail</Text>
+              <Text style={styles.eyebrow}>清单详情</Text>
               <Text style={styles.heroTitle}>这张清单已经按采购顺序拆好，买菜时直接勾就行</Text>
               <Text style={styles.heroSubtitle}>
                 {shoppingList?.list_date ? formatFullDate(shoppingList.list_date) : '当前购物清单'}
