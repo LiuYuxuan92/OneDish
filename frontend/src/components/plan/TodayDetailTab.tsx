@@ -32,6 +32,7 @@ export function TodayDetailTab({ currentDate, weeklyData, navigation }: TodayDet
       {MEAL_TYPES.map(mealType => {
         const plan = todayPlans[mealType] as {
           id: string;
+          recipe_id?: string;
           name: string;
           prep_time: number;
           difficulty?: string;
@@ -41,11 +42,14 @@ export function TodayDetailTab({ currentDate, weeklyData, navigation }: TodayDet
 
         if (!plan) {return null;}
 
+        const recipeId = plan.recipe_id || plan.id;
+        if (!recipeId) {return null;}
+
         return (
           <TouchableOpacity
             key={mealType}
             style={[styles.todayMealCard, { borderLeftColor: mealConfig.color }]}
-            onPress={() => navigation.navigate('RecipeDetail' as never, { recipeId: plan.id } as never)}
+            onPress={() => navigation.navigate('RecipeDetail' as never, { recipeId } as never)}
           >
             <View style={styles.todayMealHeader}>
               <Text style={styles.todayMealIcon}>{mealConfig.icon}</Text>

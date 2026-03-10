@@ -1,4 +1,5 @@
 import React from 'react';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
@@ -21,6 +22,17 @@ import { useTheme } from '../contexts/ThemeContext';
 import { buildHeaderOptions } from './headerOptions';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
+
+type FamilyWeeklyPlanWrapperProps = NativeStackScreenProps<ProfileStackParamList, 'FamilyWeeklyPlan'>;
+type FamilyShoppingListWrapperProps = NativeStackScreenProps<ProfileStackParamList, 'FamilyShoppingList'>;
+
+function FamilyWeeklyPlanWrapper({ navigation }: FamilyWeeklyPlanWrapperProps) {
+  return <WeeklyPlanScreen navigation={navigation as any} route={{ key: 'FamilyWeeklyPlan', name: 'WeeklyPlan' } as any} />;
+}
+
+function FamilyShoppingListWrapper({ navigation }: FamilyShoppingListWrapperProps) {
+  return <ShoppingListScreen navigation={navigation as any} route={{ key: 'FamilyShoppingList', name: 'ShoppingList' } as any} />;
+}
 
 export function ProfileNavigator() {
   const { theme } = useTheme();
@@ -75,16 +87,14 @@ export function ProfileNavigator() {
       />
       <Stack.Screen
         name="FamilyWeeklyPlan"
+        component={FamilyWeeklyPlanWrapper}
         options={{ title: '家庭周计划' }}
-      >
-        {() => <WeeklyPlanScreen navigation={undefined as any} route={undefined as any} />}
-      </Stack.Screen>
+      />
       <Stack.Screen
         name="FamilyShoppingList"
+        component={FamilyShoppingListWrapper}
         options={{ title: '家庭购物清单' }}
-      >
-        {() => <ShoppingListScreen navigation={undefined as any} route={undefined as any} />}
-      </Stack.Screen>
+      />
       <Stack.Screen
         name="FeedingFeedback"
         component={FeedingFeedbackScreen}

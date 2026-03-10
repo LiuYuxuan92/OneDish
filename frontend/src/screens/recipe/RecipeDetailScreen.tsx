@@ -64,6 +64,23 @@ const safeDateText = (value?: string | null) => {
   return Number.isNaN(date.getTime()) ? '时间未知' : date.toLocaleDateString();
 };
 
+const navigateToFeedingFeedback = (navigation: any) => {
+  const parent = navigation.getParent?.();
+  const root = parent?.getParent?.();
+
+  if (root?.navigate) {
+    root.navigate('Profile', { screen: 'FeedingFeedback' });
+    return;
+  }
+
+  if (parent?.navigate) {
+    parent.navigate('FeedingFeedback');
+    return;
+  }
+
+  navigation.navigate('FeedingFeedback');
+};
+
 export function RecipeDetailScreen({ route, navigation }: Props) {
   const { recipeId } = route.params;
   const { data: recipe, isLoading, error } = useRecipeDetail(recipeId);
@@ -800,7 +817,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
               </View>
             )) : <Text style={styles.feedbackEmptyText}>还没有这道菜的反馈记录。</Text>}
             <View style={styles.inlineActionRow}>
-              <TouchableOpacity style={styles.inlineActionButton} onPress={() => navigation.getParent()?.navigate('Profile' as never)}>
+              <TouchableOpacity style={styles.inlineActionButton} onPress={() => navigateToFeedingFeedback(navigation)}>
                 <Text style={styles.inlineActionButtonText}>回个人页看反馈中心</Text>
               </TouchableOpacity>
             </View>
