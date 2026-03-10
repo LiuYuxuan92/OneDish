@@ -394,7 +394,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
           >
             <BabyIcon
               size={18}
-              color={activeTab === 'baby' ? Colors.secondary.main : Colors.text.tertiary}
+              color={activeTab === 'baby' ? Colors.secondary[500] : Colors.text.tertiary}
             />
             <Text style={[styles.tabText, activeTab === 'baby' && styles.tabTextActive]}>
               宝宝版 {isPaired ? '' : '(智能转换)'}
@@ -441,7 +441,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
               onPress={() => setShowAgePicker(true)}
             >
               <View style={styles.ageSelectorContent}>
-                <BabyIcon size={18} color={Colors.secondary.main} />
+                <BabyIcon size={18} color={Colors.secondary[500]} />
                 <Text style={styles.ageSelectorLabel}>宝宝月龄:</Text>
                 <Text style={styles.ageSelectorValue}>{formatBabyAge(selectedBabyAge)}</Text>
               </View>
@@ -449,7 +449,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
             </TouchableOpacity>
             {isTransforming && (
               <View style={styles.transformingIndicator}>
-                <ActivityIndicator size="small" color={Colors.secondary.main} />
+                <ActivityIndicator size="small" color={Colors.secondary[500]} />
                 <Text style={styles.transformingText}>转换食谱中...</Text>
               </View>
             )}
@@ -513,7 +513,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
           <View style={styles.babyAgeTipSection}>
             <View style={styles.babyAgeTipCard}>
               <View style={styles.babyAgeTipHeader}>
-                <BabyIcon size={18} color={Colors.secondary.main} />
+                <BabyIcon size={18} color={Colors.secondary[500]} />
                 <Text style={styles.babyAgeTipTitle}>
                   适合 {babyAgeInfo.stageName}
                 </Text>
@@ -1232,7 +1232,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
     borderLeftWidth: 4,
-    borderLeftColor: Colors.secondary.main,
+    borderLeftColor: Colors.secondary[500],
   },
   babyAgeTipHeader: {
     flexDirection: 'row',
@@ -1242,7 +1242,7 @@ const styles = StyleSheet.create({
   babyAgeTipTitle: {
     ...Typography.body.regular,
     fontWeight: Typography.fontWeight.semibold,
-    color: Colors.secondary.main,
+    color: Colors.secondary[500],
     marginLeft: Spacing.xs,
   },
   babyAgeTipText: {
@@ -1306,7 +1306,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
   },
   tabIndicatorBaby: {
-    backgroundColor: Colors.secondary.main,
+    backgroundColor: Colors.secondary[500],
   },
   tabIndicatorTimeline: {
     backgroundColor: '#00ACC1',
@@ -1418,7 +1418,7 @@ const styles = StyleSheet.create({
   },
   aiGenerateOptionActive: {
     backgroundColor: Colors.secondary[50],
-    borderColor: Colors.secondary.main,
+    borderColor: Colors.secondary[500],
   },
   aiRadioCircle: {
     width: 20,
@@ -1430,20 +1430,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   aiRadioCircleActive: {
-    borderColor: Colors.secondary.main,
+    borderColor: Colors.secondary[500],
   },
   aiRadioInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: Colors.secondary.main,
+    backgroundColor: Colors.secondary[500],
   },
   aiGenerateOptionText: {
     ...Typography.body.regular,
     color: Colors.text.secondary,
   },
   aiGenerateOptionTextActive: {
-    color: Colors.secondary.main,
+    color: Colors.secondary[500],
     fontWeight: Typography.fontWeight.semibold,
   },
   aiModalFooter: {
@@ -1471,7 +1471,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     alignItems: 'center',
     borderRadius: BorderRadius.lg,
-    backgroundColor: Colors.secondary.main,
+    backgroundColor: Colors.secondary[500],
   },
   aiModalConfirmButtonDisabled: {
     opacity: 0.6,
@@ -1588,7 +1588,7 @@ const styles = StyleSheet.create({
   ageSelectorValue: {
     ...Typography.body.regular,
     fontWeight: Typography.fontWeight.semibold,
-    color: Colors.secondary.main,
+    color: Colors.secondary[500],
   },
   ageSelectorArrow: {
     fontSize: 12,
@@ -1603,7 +1603,7 @@ const styles = StyleSheet.create({
   },
   transformingText: {
     ...Typography.body.caption,
-    color: Colors.secondary.main,
+    color: Colors.secondary[500],
   },
 
   // 月龄选择器弹窗
@@ -1656,11 +1656,11 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
   },
   ageOptionTextSelected: {
-    color: Colors.secondary.main,
+    color: Colors.secondary[500],
     fontWeight: Typography.fontWeight.semibold,
   },
   ageOptionCheck: {
-    color: Colors.secondary.main,
+    color: Colors.secondary[500],
     fontWeight: Typography.fontWeight.bold,
     fontSize: Typography.fontSize.lg,
   },
@@ -2083,7 +2083,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary.main,
   },
   footerDotActiveBaby: {
-    backgroundColor: Colors.secondary.main,
+    backgroundColor: Colors.secondary[500],
   },
   footerIndicatorText: {
     fontSize: Typography.fontSize.sm,
