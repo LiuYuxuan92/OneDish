@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -12,57 +12,68 @@ import {
   Modal,
   FlatList,
   Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RecipeStackParamList } from '../../types';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
-import { useRecipeDetail } from '../../hooks/useRecipes';
-import { useAddFavorite, useRemoveFavorite } from '../../hooks/useFavorites';
-import { useAddRecipeToShoppingList } from '../../hooks/useShoppingLists';
-import { useUserInfo } from '../../hooks/useUsers';
-import { useBabyVersion } from '../../hooks/useRecipeTransform';
-import { useAIBabyVersion } from '../../hooks/useAIBabyVersion';
-import { getBabyAgeInfo, formatBabyAge } from '../../components/common/BabyAgeCard';
-import { Button } from '../../components/common/Button';
-import { 
-  ChevronLeftIcon, 
-  ClockIcon, 
-  UsersIcon, 
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import type { RecipeStackParamList } from "../../types";
+import {
+  Colors,
+  Typography,
+  Spacing,
+  BorderRadius,
+  Shadows,
+} from "../../styles/theme";
+import { useRecipeDetail } from "../../hooks/useRecipes";
+import { useAddFavorite, useRemoveFavorite } from "../../hooks/useFavorites";
+import { useAddRecipeToShoppingList } from "../../hooks/useShoppingLists";
+import { useUserInfo } from "../../hooks/useUsers";
+import { useBabyVersion } from "../../hooks/useRecipeTransform";
+import { useAIBabyVersion } from "../../hooks/useAIBabyVersion";
+import {
+  getBabyAgeInfo,
+  formatBabyAge,
+} from "../../components/common/BabyAgeCard";
+import { Button } from "../../components/common/Button";
+import {
+  ChevronLeftIcon,
+  ClockIcon,
+  UsersIcon,
   ChefHatIcon,
   FlameIcon,
   BabyIcon,
-  ShoppingCartIcon,
   HeartIcon,
   ShareIcon,
   InfoIcon,
-  TimerIcon
-} from '../../components/common/Icons';
-import { shareRecipe } from '../../utils/share';
-import { NutritionInfoCard } from '../../components/common/NutritionInfo';
-import { CookingTimerModal } from '../../components/common/CookingTimerModal';
-import { ImageCarousel } from '../../components/common/ImageCarousel';
-import { TimelineView } from '../../components/recipe/TimelineView';
-import { useTimeline } from '../../hooks/useTimeline';
-import { useCreateFeedingFeedback, useRecentFeedingFeedback } from '../../hooks/useFeedingFeedback';
+  TimerIcon,
+} from "../../components/common/Icons";
+import { shareRecipe } from "../../utils/share";
+import { NutritionInfoCard } from "../../components/common/NutritionInfo";
+import { CookingTimerModal } from "../../components/common/CookingTimerModal";
+import { ImageCarousel } from "../../components/common/ImageCarousel";
+import { TimelineView } from "../../components/recipe/TimelineView";
+import { useTimeline } from "../../hooks/useTimeline";
+import {
+  useCreateFeedingFeedback,
+  useRecentFeedingFeedback,
+} from "../../hooks/useFeedingFeedback";
 
-type Props = NativeStackScreenProps<RecipeStackParamList, 'RecipeDetail'>;
+type Props = NativeStackScreenProps<RecipeStackParamList, "RecipeDetail">;
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 // 宝宝月龄选项 (6-36个月)
 const BABY_AGE_OPTIONS = Array.from({ length: 31 }, (_, i) => 6 + i);
 
 const normalizeArray = <T,>(value: T[] | T | null | undefined): T[] => {
   if (Array.isArray(value)) return value.filter(Boolean as any);
-  if (value === null || value === undefined || value === '') return [];
+  if (value === null || value === undefined || value === "") return [];
   return [value as T];
 };
 
 const safeDateText = (value?: string | null) => {
-  if (!value) return '时间未知';
+  if (!value) return "时间未知";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '时间未知' : date.toLocaleDateString();
+  return Number.isNaN(date.getTime()) ? "时间未知" : date.toLocaleDateString();
 };
 
 const navigateToFeedingFeedback = (navigation: any) => {
@@ -70,22 +81,24 @@ const navigateToFeedingFeedback = (navigation: any) => {
   const root = parent?.getParent?.();
 
   if (root?.navigate) {
-    root.navigate('Profile', { screen: 'FeedingFeedback' });
+    root.navigate("Profile", { screen: "FeedingFeedback" });
     return;
   }
 
   if (parent?.navigate) {
-    parent.navigate('FeedingFeedback');
+    parent.navigate("FeedingFeedback");
     return;
   }
 
-  navigation.navigate('FeedingFeedback');
+  navigation.navigate("FeedingFeedback");
 };
 
 export function RecipeDetailScreen({ route, navigation }: Props) {
   const { recipeId } = route.params;
   const { data: recipe, isLoading, error } = useRecipeDetail(recipeId);
-  const [activeTab, setActiveTab] = useState<'adult' | 'baby' | 'timeline'>('adult');
+  const [activeTab, setActiveTab] = useState<"adult" | "baby" | "timeline">(
+    "adult",
+  );
   const [showSyncTip, setShowSyncTip] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const addFavoriteMutation = useAddFavorite();
@@ -96,8 +109,14 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
   const [selectedBabyAge, setSelectedBabyAge] = useState<number>(12);
   const addRecipeToShoppingList = useAddRecipeToShoppingList();
   const { data: user } = useUserInfo();
-  const { data: recentFeedbacks = [] } = useRecentFeedingFeedback({ limit: 3, recipe_id: recipeId });
-  const normalizedRecentFeedbacks = useMemo(() => normalizeArray<any>(recentFeedbacks), [recentFeedbacks]);
+  const { data: recentFeedbacks = [] } = useRecentFeedingFeedback({
+    limit: 3,
+    recipe_id: recipeId,
+  });
+  const normalizedRecentFeedbacks = useMemo(
+    () => normalizeArray<any>(recentFeedbacks),
+    [recentFeedbacks],
+  );
   const createFeedingFeedback = useCreateFeedingFeedback();
 
   // AI 宝宝版本生成相关状态
@@ -118,16 +137,16 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
     recipeId,
     selectedBabyAge,
     {
-      enabled: activeTab === 'baby',
+      enabled: activeTab === "baby",
       staticBabyVersion: recipe?.baby_version,
-    }
+    },
   );
 
   // 获取同步烹饪时间线
   const { data: timelineData, isLoading: isTimelineLoading } = useTimeline(
     recipeId,
     selectedBabyAge,
-    activeTab === 'timeline'
+    activeTab === "timeline",
   );
 
   // 获取宝宝适龄信息
@@ -139,13 +158,19 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
         recipe_id: recipeId,
         servings: 2,
       });
-      Alert.alert('成功', '已添加到购物清单');
+      Alert.alert("成功", "已添加到购物清单");
     } catch (error: any) {
-      console.error('[Frontend] 添加菜谱到购物清单失败:', error);
+      console.error("[Frontend] 添加菜谱到购物清单失败:", error);
       // 显示更详细的错误信息
-      const errorMessage = error?.message || error?.response?.data?.message || '添加失败，请稍后重试。';
+      const errorMessage =
+        error?.message ||
+        error?.response?.data?.message ||
+        "添加失败，请稍后重试。";
       const errorCode = error?.code || error?.response?.status;
-      Alert.alert('提示', `添加失败${errorCode ? ` (${errorCode})` : ''}: ${errorMessage}`);
+      Alert.alert(
+        "提示",
+        `添加失败${errorCode ? ` (${errorCode})` : ""}: ${errorMessage}`,
+      );
     }
   };
 
@@ -158,22 +183,34 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
       }
       setIsFavorite(!isFavorite);
     } catch (err: any) {
-      Alert.alert('提示', err?.message || (isFavorite ? '取消收藏失败' : '收藏失败'));
+      Alert.alert(
+        "提示",
+        err?.message || (isFavorite ? "取消收藏失败" : "收藏失败"),
+      );
     }
   };
 
-  const handleSubmitFeedingFeedback = async (acceptedLevel: 'like' | 'ok' | 'reject') => {
+  const handleSubmitFeedingFeedback = async (
+    acceptedLevel: "like" | "ok" | "reject",
+  ) => {
     try {
       await createFeedingFeedback.mutateAsync({
         recipe_id: recipeId,
         accepted_level: acceptedLevel,
         baby_age_at_that_time: user?.baby_age || null,
         allergy_flag: false,
-        note: acceptedLevel === 'reject' ? '最小版快捷反馈：本次未接受' : '',
+        note: acceptedLevel === "reject" ? "最小版快捷反馈：本次未接受" : "",
       });
-      Alert.alert('已记录', acceptedLevel === 'like' ? '已记录为喜欢' : acceptedLevel === 'ok' ? '已记录为一般接受' : '已记录为暂时拒绝');
+      Alert.alert(
+        "已记录",
+        acceptedLevel === "like"
+          ? "已记录为喜欢"
+          : acceptedLevel === "ok"
+            ? "已记录为一般接受"
+            : "已记录为暂时拒绝",
+      );
     } catch (error: any) {
-      Alert.alert('提示', error?.message || '提交反馈失败');
+      Alert.alert("提示", error?.message || "提交反馈失败");
     }
   };
 
@@ -182,22 +219,25 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
       recipeName: recipe.name,
       description: recipe.description,
       adultTime: `${recipe.prep_time}分钟`,
-      babyTime: effectiveBaby?.prep_time ? `${effectiveBaby.prep_time}分钟` : undefined,
+      babyTime: effectiveBaby?.prep_time
+        ? `${effectiveBaby.prep_time}分钟`
+        : undefined,
     });
   };
 
   // 从步骤中提取需要计时的步骤
-  const timerSteps = parsedCurrent?.steps
-    ?.filter((step: any) => step.time > 0)
-    .map((step: any, index: number) => ({
-      id: `step_${index}`,
-      name: `步骤${step.step || index + 1}`,
-      minutes: step.time,
-    })) || [];
+  const timerSteps =
+    parsedCurrent?.steps
+      ?.filter((step: any) => step.time > 0)
+      .map((step: any, index: number) => ({
+        id: `step_${index}`,
+        name: `步骤${step.step || index + 1}`,
+        minutes: step.time,
+      })) || [];
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={styles.container} edges={["bottom"]}>
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={Colors.primary.main} />
           <Text style={styles.loadingText}>加载菜谱中...</Text>
@@ -208,12 +248,19 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
 
   if (error || !recipe) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={styles.container} edges={["bottom"]}>
         <View style={styles.centerContent}>
           <Text style={styles.errorIcon}>⚠️</Text>
-          <Text style={styles.errorTitle}>{error ? '加载失败' : '菜谱不存在'}</Text>
-          <Text style={styles.errorText}>{error ? String(error) : '该菜谱可能已被删除'}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={() => navigation.goBack()}>
+          <Text style={styles.errorTitle}>
+            {error ? "加载失败" : "菜谱不存在"}
+          </Text>
+          <Text style={styles.errorText}>
+            {error ? String(error) : "该菜谱可能已被删除"}
+          </Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => navigation.goBack()}
+          >
             <Text style={styles.retryButtonText}>返回</Text>
           </TouchableOpacity>
         </View>
@@ -222,12 +269,12 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
   }
 
   // 判断是否为配对菜谱
-  const isPaired = recipe.name && recipe.name.includes('/');
+  const isPaired = recipe.name && recipe.name.includes("/");
 
   // 安全解析数据
   const parseJSON = (data: any) => {
     if (!data) return null;
-    if (typeof data === 'string') {
+    if (typeof data === "string") {
       try {
         return JSON.parse(data);
       } catch {
@@ -242,7 +289,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
 
   // 宝宝版数据统一从 useBabyVersion hook 获取
   const effectiveBaby = babyData?.baby_version || null;
-  const parsedCurrent = activeTab === 'adult' ? parsedAdult : effectiveBaby;
+  const parsedCurrent = activeTab === "adult" ? parsedAdult : effectiveBaby;
 
   // 获取同步烹饪信息
   const syncCooking = effectiveBaby?.sync_cooking;
@@ -250,41 +297,84 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
   // 获取主食材列表
   const mainIngredients = parsedAdult?.main_ingredients || [];
   const whyItFits = [
-    isPaired ? '这道菜天然符合“一菜两吃”，能先做家庭主菜，再顺手分出宝宝版本。' : '这道菜可以在现有成人做法上继续延展出宝宝版本。',
-    effectiveBaby?.texture ? `当前宝宝版质地建议：${effectiveBaby.texture}。` : null,
-    recipe?.tags?.length ? `命中标签：${recipe.tags.slice(0, 3).join('、')}。` : null,
-    normalizedRecentFeedbacks[0]?.accepted_level === 'like' ? '最近一次反馈是喜欢，可以放心继续轮换。' : null,
-    normalizedRecentFeedbacks[0]?.accepted_level === 'reject' ? '最近一次反馈是拒绝，建议换质地或搭配后再试。' : null,
+    isPaired
+      ? "这道菜天然符合“一菜两吃”，能先做家庭主菜，再顺手分出宝宝版本。"
+      : "这道菜可以在现有成人做法上继续延展出宝宝版本。",
+    effectiveBaby?.texture
+      ? `当前宝宝版质地建议：${effectiveBaby.texture}。`
+      : null,
+    recipe?.tags?.length
+      ? `命中标签：${recipe.tags.slice(0, 3).join("、")}。`
+      : null,
+    normalizedRecentFeedbacks[0]?.accepted_level === "like"
+      ? "最近一次反馈是喜欢，可以放心继续轮换。"
+      : null,
+    normalizedRecentFeedbacks[0]?.accepted_level === "reject"
+      ? "最近一次反馈是拒绝，建议换质地或搭配后再试。"
+      : null,
   ].filter(Boolean);
   const statusTags = [
-    isPaired ? '一菜两吃' : '可转宝宝版',
-    effectiveBaby ? 'adult/baby version 已接通' : null,
-    syncCooking ? 'sync cooking / timeline 已接通' : null,
-    normalizedRecentFeedbacks.length ? '有真实喂养反馈' : '反馈数据积累中',
+    isPaired ? "一菜两吃" : "可转宝宝版",
+    effectiveBaby ? "adult/baby version 已接通" : null,
+    syncCooking ? "sync cooking / timeline 已接通" : null,
+    normalizedRecentFeedbacks.length ? "有真实喂养反馈" : "反馈数据积累中",
   ].filter(Boolean);
   const adaptationBullets = [
     effectiveBaby?.texture ? `质地：${effectiveBaby.texture}` : null,
-    effectiveBaby?.preparation_notes ? `处理要点：${effectiveBaby.preparation_notes}` : null,
-    effectiveBaby?.allergy_alert ? `过敏提醒：${effectiveBaby.allergy_alert}` : null,
+    effectiveBaby?.preparation_notes
+      ? `处理要点：${effectiveBaby.preparation_notes}`
+      : null,
+    effectiveBaby?.allergy_alert
+      ? `过敏提醒：${effectiveBaby.allergy_alert}`
+      : null,
     syncCooking?.tips ? `同步烹饪：${syncCooking.tips}` : null,
   ].filter(Boolean);
+  const heroSummary = isPaired
+    ? "先按家庭主菜来理解，再顺手分出宝宝版本；这是这道菜最适合的阅读方式。"
+    : "先看成人主菜，再决定是否切到宝宝版做适配；页面按这个决策顺序重排。";
+  const versionCards = [
+    {
+      key: "adult",
+      title: "Adult version",
+      subtitle: `${recipe.prep_time} 分钟 · ${recipe.difficulty}`,
+      description:
+        parsedAdult?.steps?.[0]?.action ||
+        recipe.description ||
+        "先按成人版判断这道菜值不值得做。",
+    },
+    {
+      key: "baby",
+      title: "Baby version",
+      subtitle:
+        effectiveBaby?.age_range || `${formatBabyAge(selectedBabyAge)} 适配`,
+      description:
+        effectiveBaby?.preparation_notes ||
+        effectiveBaby?.texture ||
+        "切换后查看真实宝宝适配、质地和月龄版本。",
+    },
+  ];
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={["bottom"]}>
       {/* 顶部导航 */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
           <ChevronLeftIcon size={24} color={Colors.text.primary} />
         </TouchableOpacity>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.headerAction} onPress={toggleFavorite}>
-            <HeartIcon 
-              size={22} 
-              color={isFavorite ? Colors.functional.error : Colors.text.secondary}
-              fill={isFavorite ? Colors.functional.error : 'transparent'}
+          <TouchableOpacity
+            style={styles.headerAction}
+            onPress={toggleFavorite}
+          >
+            <HeartIcon
+              size={22}
+              color={
+                isFavorite ? Colors.functional.error : Colors.text.secondary
+              }
+              fill={isFavorite ? Colors.functional.error : "transparent"}
             />
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerAction} onPress={handleShare}>
@@ -293,170 +383,256 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
         </View>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* 菜谱标题区 */}
-        <View style={styles.titleSection}>
-          {isPaired && (
-            <View style={styles.pairBadge}>
-              <Text style={styles.pairBadgeIcon}>👨‍🍳👶</Text>
-              <Text style={styles.pairBadgeText}>一菜两吃</Text>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* 内容页首屏 */}
+        <View style={styles.heroSection}>
+          <View style={styles.titleSection}>
+            {isPaired && (
+              <View style={styles.pairBadge}>
+                <Text style={styles.pairBadgeIcon}>👨‍🍳👶</Text>
+                <Text style={styles.pairBadgeText}>一菜两吃</Text>
+              </View>
+            )}
+            <Text style={styles.recipeName}>{recipe.name}</Text>
+            <Text style={styles.heroSummary}>{heroSummary}</Text>
+
+            <View style={styles.metaContainer}>
+              <View style={styles.metaItem}>
+                <ClockIcon size={16} color={Colors.text.secondary} />
+                <Text style={styles.metaText}>{recipe.prep_time}分钟</Text>
+              </View>
+              <View style={styles.metaDivider} />
+              <View style={styles.metaItem}>
+                <ChefHatIcon size={16} color={Colors.text.secondary} />
+                <Text style={styles.metaText}>{recipe.difficulty}</Text>
+              </View>
+              <View style={styles.metaDivider} />
+              <View style={styles.metaItem}>
+                <UsersIcon size={16} color={Colors.text.secondary} />
+                <Text style={styles.metaText}>{recipe.servings}</Text>
+              </View>
+            </View>
+
+            <View style={styles.statusTagRow}>
+              {statusTags.map((tag: string) => (
+                <View key={tag} style={styles.statusTag}>
+                  <Text style={styles.statusTagText}>{tag}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {normalizeArray<string>(recipe.image_url).length > 0 && (
+            <View style={styles.imageSection}>
+              <ImageCarousel
+                images={normalizeArray<string>(recipe.image_url)}
+                height={220}
+                autoPlay={true}
+                autoPlayInterval={4000}
+              />
             </View>
           )}
-          <Text style={styles.recipeName}>{recipe.name}</Text>
 
-          {/* 元信息 */}
-          <View style={styles.metaContainer}>
-            <View style={styles.metaItem}>
-              <ClockIcon size={16} color={Colors.text.secondary} />
-              <Text style={styles.metaText}>{recipe.prep_time}分钟</Text>
-            </View>
-            <View style={styles.metaDivider} />
-            <View style={styles.metaItem}>
-              <ChefHatIcon size={16} color={Colors.text.secondary} />
-              <Text style={styles.metaText}>{recipe.difficulty}</Text>
-            </View>
-            <View style={styles.metaDivider} />
-            <View style={styles.metaItem}>
-              <UsersIcon size={16} color={Colors.text.secondary} />
-              <Text style={styles.metaText}>{recipe.servings}</Text>
-            </View>
-          </View>
-
-          <View style={styles.statusTagRow}>
-            {statusTags.map((tag: string) => (
-              <View key={tag} style={styles.statusTag}>
-                <Text style={styles.statusTagText}>{tag}</Text>
+          <View style={styles.heroCardsSection}>
+            <View style={[styles.detailCard, styles.detailCardEmphasis]}>
+              <Text style={styles.eyebrow}>ONE DISH, TWO WAYS</Text>
+              <Text style={styles.detailCardTitle}>
+                先决定这是不是你们今天要做的那一道
+              </Text>
+              <View style={styles.versionCompareRow}>
+                {versionCards.map((card: any) => {
+                  const selected = activeTab === card.key;
+                  return (
+                    <TouchableOpacity
+                      key={card.key}
+                      style={[
+                        styles.versionCard,
+                        selected && styles.versionCardActive,
+                      ]}
+                      onPress={() => setActiveTab(card.key as "adult" | "baby")}
+                    >
+                      <Text style={styles.versionCardTitle}>{card.title}</Text>
+                      <Text style={styles.versionCardSubtitle}>
+                        {card.subtitle}
+                      </Text>
+                      <Text
+                        style={styles.versionCardDescription}
+                        numberOfLines={3}
+                      >
+                        {card.description}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.versionCardCta,
+                          selected && styles.versionCardCtaActive,
+                        ]}
+                      >
+                        {selected
+                          ? "当前查看中"
+                          : card.key === "adult"
+                            ? "看大人版"
+                            : "看宝宝版"}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
-            ))}
+              {!!adaptationBullets.length && (
+                <View style={styles.miniNarrativeBox}>
+                  {adaptationBullets.slice(0, 3).map((line: string) => (
+                    <View key={line} style={styles.tipItem}>
+                      <Text style={styles.tipBullet}>•</Text>
+                      <Text style={styles.tipText}>{line}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            <View style={[styles.detailCard, styles.detailCardSoft]}>
+              <Text style={styles.detailCardTitle}>
+                Why this fits your household
+              </Text>
+              {whyItFits.map((line: string) => (
+                <View key={line} style={styles.tipItem}>
+                  <Text style={styles.tipBullet}>•</Text>
+                  <Text style={styles.tipText}>{line}</Text>
+                </View>
+              ))}
+            </View>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <View style={styles.detailCard}>
-            <Text style={styles.detailCardTitle}>Why this fits your household</Text>
-            {whyItFits.map((line: string) => (
-              <View key={line} style={styles.tipItem}>
-                <Text style={styles.tipBullet}>•</Text>
-                <Text style={styles.tipText}>{line}</Text>
-              </View>
-            ))}
-          </View>
-          <View style={styles.detailCard}>
-            <Text style={styles.detailCardTitle}>One Dish, Two Ways 摘要</Text>
-            {adaptationBullets.length ? adaptationBullets.map((line: string) => (
-              <View key={line} style={styles.tipItem}>
-                <Text style={styles.tipBullet}>•</Text>
-                <Text style={styles.tipText}>{line}</Text>
-              </View>
-            )) : (
-              <Text style={styles.tipText}>切到宝宝版后会展示真实适配摘要与同步烹饪信息。</Text>
-            )}
-            <View style={styles.inlineActionRow}>
-              <TouchableOpacity style={styles.inlineActionButton} onPress={() => setActiveTab('baby')}>
-                <Text style={styles.inlineActionButtonText}>看宝宝版</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.inlineActionButtonSecondary} onPress={() => setActiveTab('timeline')}>
-                <Text style={styles.inlineActionButtonSecondaryText}>看同步时间线</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-
-        {/* 图片轮播 - 如果有图片 */}
-        {normalizeArray<string>(recipe.image_url).length > 0 && (
-          <View style={styles.imageSection}>
-            <ImageCarousel
-              images={normalizeArray<string>(recipe.image_url)}
-              height={220}
-              autoPlay={true}
-              autoPlayInterval={4000}
-            />
-          </View>
-        )}
-
-        {/* 版本切换 Tab - 所有菜谱都可以转换为宝宝版 */}
         <View style={styles.tabContainer}>
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'adult' && styles.tabActive]}
-            onPress={() => setActiveTab('adult')}
+            style={[styles.tab, activeTab === "adult" && styles.tabActive]}
+            onPress={() => setActiveTab("adult")}
           >
             <FlameIcon
               size={18}
-              color={activeTab === 'adult' ? Colors.primary.main : Colors.text.tertiary}
+              color={
+                activeTab === "adult"
+                  ? Colors.primary.main
+                  : Colors.text.tertiary
+              }
             />
-            <Text style={[styles.tabText, activeTab === 'adult' && styles.tabTextActive]}>
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "adult" && styles.tabTextActive,
+              ]}
+            >
               大人版
             </Text>
-            {activeTab === 'adult' && <View style={styles.tabIndicator} />}
+            {activeTab === "adult" && <View style={styles.tabIndicator} />}
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'baby' && styles.tabActive]}
-            onPress={() => setActiveTab('baby')}
+            style={[styles.tab, activeTab === "baby" && styles.tabActive]}
+            onPress={() => setActiveTab("baby")}
           >
             <BabyIcon
               size={18}
-              color={activeTab === 'baby' ? Colors.secondary[500] : Colors.text.tertiary}
+              color={
+                activeTab === "baby"
+                  ? Colors.secondary[500]
+                  : Colors.text.tertiary
+              }
             />
-            <Text style={[styles.tabText, activeTab === 'baby' && styles.tabTextActive]}>
-              宝宝版 {isPaired ? '' : '(智能转换)'}
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "baby" && styles.tabTextActive,
+              ]}
+            >
+              宝宝版 {isPaired ? "" : "(智能转换)"}
             </Text>
-            {activeTab === 'baby' && (
+            {activeTab === "baby" && (
               <View style={[styles.tabIndicator, styles.tabIndicatorBaby]} />
             )}
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'timeline' && styles.tabActive]}
-            onPress={() => setActiveTab('timeline')}
+            style={[styles.tab, activeTab === "timeline" && styles.tabActive]}
+            onPress={() => setActiveTab("timeline")}
           >
             <ClockIcon
               size={18}
-              color={activeTab === 'timeline' ? '#00ACC1' : Colors.text.tertiary}
+              color={
+                activeTab === "timeline" ? "#00ACC1" : Colors.text.tertiary
+              }
             />
-            <Text style={[styles.tabText, activeTab === 'timeline' && styles.tabTextActive]}>
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "timeline" && styles.tabTextActive,
+              ]}
+            >
               同步烹饪
             </Text>
-            {activeTab === 'timeline' && (
-              <View style={[styles.tabIndicator, styles.tabIndicatorTimeline]} />
+            {activeTab === "timeline" && (
+              <View
+                style={[styles.tabIndicator, styles.tabIndicatorTimeline]}
+              />
             )}
           </TouchableOpacity>
         </View>
 
-        {/* AI 生成宝宝版本按钮 - 仅大人版显示 */}
-        {activeTab === 'adult' && (
-          <View style={styles.aiGenerateSection}>
-            <TouchableOpacity
-              style={styles.aiGenerateButton}
-              onPress={() => setShowAIGenerateModal(true)}
-            >
-              <Text style={styles.aiGenerateIcon}>✨</Text>
-              <Text style={styles.aiGenerateText}>AI 生成宝宝版本</Text>
-            </TouchableOpacity>
+        {activeTab === "adult" && (
+          <View style={styles.sectionTightTop}>
+            <View style={[styles.detailCard, styles.utilityCardMuted]}>
+              <View style={styles.utilityCardHeader}>
+                <Text style={styles.utilityCardTitle}>
+                  需要时再调用工具能力
+                </Text>
+                <Text style={styles.utilityCardCaption}>
+                  不打断先读内容、再做决定
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.aiGenerateButtonMuted}
+                onPress={() => setShowAIGenerateModal(true)}
+              >
+                <Text style={styles.aiGenerateIcon}>✨</Text>
+                <Text style={styles.aiGenerateButtonMutedText}>
+                  AI 生成宝宝版本
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
-        {/* 宝宝月龄选择器 - 仅宝宝版显示 */}
-        {activeTab === 'baby' && (
-          <View style={styles.ageSelectorSection}>
-            <TouchableOpacity
-              style={styles.ageSelectorButton}
-              onPress={() => setShowAgePicker(true)}
-            >
-              <View style={styles.ageSelectorContent}>
-                <BabyIcon size={18} color={Colors.secondary[500]} />
-                <Text style={styles.ageSelectorLabel}>宝宝月龄:</Text>
-                <Text style={styles.ageSelectorValue}>{formatBabyAge(selectedBabyAge)}</Text>
-              </View>
-              <Text style={styles.ageSelectorArrow}>▼</Text>
-            </TouchableOpacity>
-            {isTransforming && (
-              <View style={styles.transformingIndicator}>
-                <ActivityIndicator size="small" color={Colors.secondary[500]} />
-                <Text style={styles.transformingText}>转换食谱中...</Text>
-              </View>
-            )}
+        {activeTab === "baby" && (
+          <View style={styles.sectionTightTop}>
+            <View style={[styles.detailCard, styles.detailCardSoft]}>
+              <Text style={styles.detailCardTitle}>宝宝适配设置</Text>
+              <TouchableOpacity
+                style={styles.ageSelectorButton}
+                onPress={() => setShowAgePicker(true)}
+              >
+                <View style={styles.ageSelectorContent}>
+                  <BabyIcon size={18} color={Colors.secondary[500]} />
+                  <Text style={styles.ageSelectorLabel}>宝宝月龄:</Text>
+                  <Text style={styles.ageSelectorValue}>
+                    {formatBabyAge(selectedBabyAge)}
+                  </Text>
+                </View>
+                <Text style={styles.ageSelectorArrow}>▼</Text>
+              </TouchableOpacity>
+              {isTransforming && (
+                <View style={styles.transformingIndicator}>
+                  <ActivityIndicator
+                    size="small"
+                    color={Colors.secondary[500]}
+                  />
+                  <Text style={styles.transformingText}>转换食谱中...</Text>
+                </View>
+              )}
+            </View>
           </View>
         )}
-
         {/* 月龄选择器弹窗 */}
         <Modal
           visible={showAgePicker}
@@ -493,7 +669,8 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                     <Text
                       style={[
                         styles.ageOptionText,
-                        item === selectedBabyAge && styles.ageOptionTextSelected,
+                        item === selectedBabyAge &&
+                          styles.ageOptionTextSelected,
                       ]}
                     >
                       {formatBabyAge(item)}
@@ -510,7 +687,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
         </Modal>
 
         {/* 宝宝适龄提示 - 仅宝宝版显示 */}
-        {activeTab === 'baby' && babyAgeInfo && (
+        {activeTab === "baby" && babyAgeInfo && (
           <View style={styles.babyAgeTipSection}>
             <View style={styles.babyAgeTipCard}>
               <View style={styles.babyAgeTipHeader}>
@@ -526,8 +703,8 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                 <View style={styles.babyAgeTipFoods}>
                   <Text style={styles.babyAgeTipFoodsLabel}>推荐食材：</Text>
                   <Text style={styles.babyAgeTipFoodsText}>
-                    {babyAgeInfo.foods.slice(0, 3).join('、')}
-                    {babyAgeInfo.foods.length > 3 && '...'}
+                    {babyAgeInfo.foods.slice(0, 3).join("、")}
+                    {babyAgeInfo.foods.length > 3 && "..."}
                   </Text>
                 </View>
               )}
@@ -536,7 +713,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
         )}
 
         {/* 营养信息卡片 - 仅宝宝版显示 */}
-        {activeTab === 'baby' && babyData?.nutrition_info?.nutrients && (
+        {activeTab === "baby" && babyData?.nutrition_info?.nutrients && (
           <View style={styles.section}>
             <NutritionInfoCard
               nutrition={{
@@ -561,7 +738,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
 
         {/* 同步烹饪提示 - 当有同步烹饪信息时显示 */}
         {showSyncTip && syncCooking && (
-          <View style={styles.syncSection}>
+          <View style={styles.section}>
             <View style={styles.syncCard}>
               <View style={styles.syncHeader}>
                 <View style={styles.syncTitleRow}>
@@ -572,21 +749,26 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                   <Text style={styles.closeButton}>✕</Text>
                 </TouchableOpacity>
               </View>
-              <Text style={styles.syncTimeSaving}>⏱ {syncCooking.time_saving}</Text>
+              <Text style={styles.syncTimeSaving}>
+                ⏱ {syncCooking.time_saving}
+              </Text>
               <Text style={styles.syncTips}>{syncCooking.tips}</Text>
-              {syncCooking.shared_steps && syncCooking.shared_steps.length > 0 && (
-                <View style={styles.syncSteps}>
-                  <Text style={styles.syncStepsTitle}>共用步骤:</Text>
-                  <View style={styles.syncStepsList}>
-                    {syncCooking.shared_steps.map((step: string, index: number) => (
-                      <View key={index} style={styles.syncStepItem}>
-                        <Text style={styles.syncStepCheck}>✓</Text>
-                        <Text style={styles.syncStepText}>{step}</Text>
-                      </View>
-                    ))}
+              {syncCooking.shared_steps &&
+                syncCooking.shared_steps.length > 0 && (
+                  <View style={styles.syncSteps}>
+                    <Text style={styles.syncStepsTitle}>共用步骤:</Text>
+                    <View style={styles.syncStepsList}>
+                      {syncCooking.shared_steps.map(
+                        (step: string, index: number) => (
+                          <View key={index} style={styles.syncStepItem}>
+                            <Text style={styles.syncStepCheck}>✓</Text>
+                            <Text style={styles.syncStepText}>{step}</Text>
+                          </View>
+                        ),
+                      )}
+                    </View>
                   </View>
-                </View>
-              )}
+                )}
             </View>
           </View>
         )}
@@ -629,40 +811,47 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionIcon}>
-              {activeTab === 'adult' ? '🍽️' : '👶'}
+              {activeTab === "adult" ? "🍽️" : "👶"}
             </Text>
             <Text style={styles.sectionTitle}>
-              {activeTab === 'adult' ? '大人版详情' : '宝宝版详情'}
+              {activeTab === "adult" ? "大人版详情" : "宝宝版详情"}
             </Text>
-            {activeTab === 'baby' && effectiveBaby?.age_range && (
+            {activeTab === "baby" && effectiveBaby?.age_range && (
               <View style={styles.ageBadge}>
-                <Text style={styles.ageBadgeText}>{effectiveBaby.age_range}</Text>
+                <Text style={styles.ageBadgeText}>
+                  {effectiveBaby.age_range}
+                </Text>
               </View>
             )}
           </View>
 
           {/* 食材清单 */}
-          {parsedCurrent?.ingredients && parsedCurrent.ingredients.length > 0 && (
-            <View style={styles.detailCard}>
-              <Text style={styles.detailCardTitle}>📝 食材清单</Text>
-              <View style={styles.ingredientsList}>
-                {parsedCurrent.ingredients.map((item: any, index: number) => (
-                  <View key={index} style={styles.ingredientItem}>
-                    <View style={styles.ingredientDot} />
-                    <View style={styles.ingredientInfo}>
-                      <Text style={styles.ingredientItemName}>{item.name}</Text>
-                      <Text style={styles.ingredientItemAmount}>{item.amount}</Text>
-                    </View>
-                    {item.note && (
-                      <View style={styles.ingredientNoteBadge}>
-                        <InfoIcon size={12} color={Colors.primary.main} />
+          {parsedCurrent?.ingredients &&
+            parsedCurrent.ingredients.length > 0 && (
+              <View style={styles.detailCard}>
+                <Text style={styles.detailCardTitle}>📝 食材清单</Text>
+                <View style={styles.ingredientsList}>
+                  {parsedCurrent.ingredients.map((item: any, index: number) => (
+                    <View key={index} style={styles.ingredientItem}>
+                      <View style={styles.ingredientDot} />
+                      <View style={styles.ingredientInfo}>
+                        <Text style={styles.ingredientItemName}>
+                          {item.name}
+                        </Text>
+                        <Text style={styles.ingredientItemAmount}>
+                          {item.amount}
+                        </Text>
                       </View>
-                    )}
-                  </View>
-                ))}
+                      {item.note && (
+                        <View style={styles.ingredientNoteBadge}>
+                          <InfoIcon size={12} color={Colors.primary.main} />
+                        </View>
+                      )}
+                    </View>
+                  ))}
+                </View>
               </View>
-            </View>
-          )}
+            )}
 
           {/* 调料 */}
           {parsedCurrent?.seasonings && parsedCurrent.seasonings.length > 0 && (
@@ -687,7 +876,9 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                 {parsedCurrent.steps.map((step: any, index: number) => (
                   <View key={index} style={styles.stepItem}>
                     <View style={styles.stepNumber}>
-                      <Text style={styles.stepNumberText}>{step.step || index + 1}</Text>
+                      <Text style={styles.stepNumberText}>
+                        {step.step || index + 1}
+                      </Text>
                     </View>
                     <View style={styles.stepContent}>
                       <Text style={styles.stepAction}>{step.action}</Text>
@@ -695,25 +886,38 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                         {step.time > 0 && (
                           <View style={styles.stepMetaItem}>
                             <ClockIcon size={12} color={Colors.primary.main} />
-                            <Text style={styles.stepMetaText}>{step.time}分钟</Text>
+                            <Text style={styles.stepMetaText}>
+                              {step.time}分钟
+                            </Text>
                           </View>
                         )}
                         {step.tools && step.tools.length > 0 && (
                           <View style={styles.stepMetaItem}>
-                            <ChefHatIcon size={12} color={Colors.text.tertiary} />
-                            <Text style={styles.stepMetaText}>{step.tools.join(', ')}</Text>
+                            <ChefHatIcon
+                              size={12}
+                              color={Colors.text.tertiary}
+                            />
+                            <Text style={styles.stepMetaText}>
+                              {step.tools.join(", ")}
+                            </Text>
                           </View>
                         )}
                       </View>
                       {step.note && (
-                        <View style={[
-                          styles.stepNote,
-                          step.note.includes('🔥') && styles.stepNoteHighlight
-                        ]}>
-                          <Text style={[
-                            styles.stepNoteText,
-                            step.note.includes('🔥') && styles.stepNoteTextHighlight
-                          ]}>
+                        <View
+                          style={[
+                            styles.stepNote,
+                            step.note.includes("🔥") &&
+                              styles.stepNoteHighlight,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.stepNoteText,
+                              step.note.includes("🔥") &&
+                                styles.stepNoteTextHighlight,
+                            ]}
+                          >
                             {step.note}
                           </Text>
                         </View>
@@ -726,13 +930,15 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
           )}
 
           {/* 宝宝版专属信息 */}
-          {activeTab === 'baby' && effectiveBaby && (
+          {activeTab === "baby" && effectiveBaby && (
             <>
               {/* 营养要点 */}
               {effectiveBaby.nutrition_tips && (
                 <View style={[styles.detailCard, styles.nutritionCard]}>
                   <Text style={styles.detailCardTitle}>💡 营养要点</Text>
-                  <Text style={styles.nutritionText}>{effectiveBaby.nutrition_tips}</Text>
+                  <Text style={styles.nutritionText}>
+                    {effectiveBaby.nutrition_tips}
+                  </Text>
                 </View>
               )}
 
@@ -746,7 +952,9 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                     <Text style={styles.detailCardTitle}>过敏提醒</Text>
                   </View>
                   <View style={styles.allergyContent}>
-                    <Text style={styles.allergyText}>{effectiveBaby.allergy_alert}</Text>
+                    <Text style={styles.allergyText}>
+                      {effectiveBaby.allergy_alert}
+                    </Text>
                   </View>
                   <View style={styles.allergyWarning}>
                     <Text style={styles.allergyWarningText}>
@@ -760,7 +968,9 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
               {effectiveBaby.preparation_notes && (
                 <View style={[styles.detailCard, styles.tipsCard]}>
                   <Text style={styles.detailCardTitle}>📝 准备要点</Text>
-                  <Text style={styles.tipsText}>{effectiveBaby.preparation_notes}</Text>
+                  <Text style={styles.tipsText}>
+                    {effectiveBaby.preparation_notes}
+                  </Text>
                 </View>
               )}
             </>
@@ -768,8 +978,18 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
         </View>
 
         {/* 时间线视图 */}
-        {activeTab === 'timeline' && (
+        {activeTab === "timeline" && (
           <>
+            <View style={styles.sectionTightTop}>
+              <View style={[styles.detailCard, styles.utilityCardMuted]}>
+                <Text style={styles.utilityCardTitle}>
+                  同步 cooking / timeline
+                </Text>
+                <Text style={styles.utilityCardCaption}>
+                  需要时再切进来安排并行节奏；默认不抢首屏注意力。
+                </Text>
+              </View>
+            </View>
             <TimelineView
               timeline={timelineData}
               isLoading={isTimelineLoading}
@@ -780,14 +1000,16 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                 !timelineData && styles.startCookingButtonDisabled,
               ]}
               onPress={() => {
-                navigation.navigate('CookingMode', {
+                navigation.navigate("CookingMode", {
                   recipeId,
                   babyAgeMonths: selectedBabyAge ?? 12,
                 });
               }}
               disabled={!timelineData}
             >
-              <Text style={styles.startCookingButtonText}>🍳 开始烹饪（同步模式）</Text>
+              <Text style={styles.startCookingButtonText}>
+                🍳 开始烹饪（同步模式）
+              </Text>
             </TouchableOpacity>
           </>
         )}
@@ -798,28 +1020,64 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
             <Text style={styles.sectionTitle}>Feeding feedback</Text>
           </View>
           <View style={styles.detailCard}>
-            <Text style={styles.tipsText}>保留真实反馈接口：这里仍然直接提交 like / ok / reject，并把结果回流到“喂养反馈 / 每周回顾”页面。</Text>
+            <Text style={styles.tipsText}>
+              保留真实反馈接口：这里仍然直接提交 like / ok /
+              reject，并把结果回流到“喂养反馈 / 每周回顾”页面。
+            </Text>
             <View style={styles.feedbackActionRow}>
-              <TouchableOpacity style={styles.feedbackChipLike} onPress={() => handleSubmitFeedingFeedback('like')} disabled={createFeedingFeedback.isPending}>
+              <TouchableOpacity
+                style={styles.feedbackChipLike}
+                onPress={() => handleSubmitFeedingFeedback("like")}
+                disabled={createFeedingFeedback.isPending}
+              >
                 <Text style={styles.feedbackChipText}>喜欢</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.feedbackChipNeutral} onPress={() => handleSubmitFeedingFeedback('ok')} disabled={createFeedingFeedback.isPending}>
+              <TouchableOpacity
+                style={styles.feedbackChipNeutral}
+                onPress={() => handleSubmitFeedingFeedback("ok")}
+                disabled={createFeedingFeedback.isPending}
+              >
                 <Text style={styles.feedbackChipText}>一般</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.feedbackChipReject} onPress={() => handleSubmitFeedingFeedback('reject')} disabled={createFeedingFeedback.isPending}>
+              <TouchableOpacity
+                style={styles.feedbackChipReject}
+                onPress={() => handleSubmitFeedingFeedback("reject")}
+                disabled={createFeedingFeedback.isPending}
+              >
                 <Text style={styles.feedbackChipText}>拒绝</Text>
               </TouchableOpacity>
             </View>
             <Text style={styles.feedbackRecentTitle}>最近反馈</Text>
-            {normalizedRecentFeedbacks.length ? normalizedRecentFeedbacks.map((item: any) => (
-              <View key={item.id} style={styles.feedbackRecentItem}>
-                <Text style={styles.feedbackRecentText}>• {item.accepted_level === 'like' ? '喜欢' : item.accepted_level === 'ok' ? '一般' : '拒绝'} · {safeDateText(item.created_at)}</Text>
-                {!!item.note && <Text style={styles.feedbackRecentNote}>{item.note}</Text>}
-              </View>
-            )) : <Text style={styles.feedbackEmptyText}>还没有这道菜的反馈记录。</Text>}
+            {normalizedRecentFeedbacks.length ? (
+              normalizedRecentFeedbacks.map((item: any) => (
+                <View key={item.id} style={styles.feedbackRecentItem}>
+                  <Text style={styles.feedbackRecentText}>
+                    •{" "}
+                    {item.accepted_level === "like"
+                      ? "喜欢"
+                      : item.accepted_level === "ok"
+                        ? "一般"
+                        : "拒绝"}{" "}
+                    · {safeDateText(item.created_at)}
+                  </Text>
+                  {!!item.note && (
+                    <Text style={styles.feedbackRecentNote}>{item.note}</Text>
+                  )}
+                </View>
+              ))
+            ) : (
+              <Text style={styles.feedbackEmptyText}>
+                还没有这道菜的反馈记录。
+              </Text>
+            )}
             <View style={styles.inlineActionRow}>
-              <TouchableOpacity style={styles.inlineActionButton} onPress={() => navigateToFeedingFeedback(navigation)}>
-                <Text style={styles.inlineActionButtonText}>回个人页看反馈中心</Text>
+              <TouchableOpacity
+                style={styles.inlineActionButton}
+                onPress={() => navigateToFeedingFeedback(navigation)}
+              >
+                <Text style={styles.inlineActionButtonText}>
+                  回个人页看反馈中心
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -850,7 +1108,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
       {/* 底部操作栏 */}
       <View style={styles.footer}>
         {timerSteps.length > 0 && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.timerButton}
             onPress={() => setShowTimer(true)}
           >
@@ -859,7 +1117,9 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
           </TouchableOpacity>
         )}
         <Button
-          title={addRecipeToShoppingList.isPending ? '添加中...' : '🛒 加入购物清单'}
+          title={
+            addRecipeToShoppingList.isPending ? "添加中..." : "🛒 加入购物清单"
+          }
           onPress={handleAddToShoppingList}
           disabled={addRecipeToShoppingList.isPending}
           style={styles.footerButton}
@@ -898,7 +1158,9 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                   style={styles.aiAgeSelector}
                   onPress={() => setShowAgePicker(true)}
                 >
-                  <Text style={styles.aiAgeSelectorText}>{formatBabyAge(selectedBabyAge)}</Text>
+                  <Text style={styles.aiAgeSelectorText}>
+                    {formatBabyAge(selectedBabyAge)}
+                  </Text>
                   <Text style={styles.aiAgeSelectorArrow}>▼</Text>
                 </TouchableOpacity>
               </View>
@@ -914,16 +1176,22 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                     ]}
                     onPress={() => setGenerateUseAI(true)}
                   >
-                    <View style={[
-                      styles.aiRadioCircle,
-                      generateUseAI && styles.aiRadioCircleActive,
-                    ]}>
+                    <View
+                      style={[
+                        styles.aiRadioCircle,
+                        generateUseAI && styles.aiRadioCircleActive,
+                      ]}
+                    >
                       {generateUseAI && <View style={styles.aiRadioInner} />}
                     </View>
-                    <Text style={[
-                      styles.aiGenerateOptionText,
-                      generateUseAI && styles.aiGenerateOptionTextActive,
-                    ]}>✨ AI 智能生成</Text>
+                    <Text
+                      style={[
+                        styles.aiGenerateOptionText,
+                        generateUseAI && styles.aiGenerateOptionTextActive,
+                      ]}
+                    >
+                      ✨ AI 智能生成
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
@@ -932,16 +1200,22 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                     ]}
                     onPress={() => setGenerateUseAI(false)}
                   >
-                    <View style={[
-                      styles.aiRadioCircle,
-                      !generateUseAI && styles.aiRadioCircleActive,
-                    ]}>
+                    <View
+                      style={[
+                        styles.aiRadioCircle,
+                        !generateUseAI && styles.aiRadioCircleActive,
+                      ]}
+                    >
                       {!generateUseAI && <View style={styles.aiRadioInner} />}
                     </View>
-                    <Text style={[
-                      styles.aiGenerateOptionText,
-                      !generateUseAI && styles.aiGenerateOptionTextActive,
-                    ]}>📋 规则引擎</Text>
+                    <Text
+                      style={[
+                        styles.aiGenerateOptionText,
+                        !generateUseAI && styles.aiGenerateOptionTextActive,
+                      ]}
+                    >
+                      📋 规则引擎
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -957,7 +1231,8 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
               <TouchableOpacity
                 style={[
                   styles.aiModalConfirmButton,
-                  aiBabyVersion.isLoading && styles.aiModalConfirmButtonDisabled,
+                  aiBabyVersion.isLoading &&
+                    styles.aiModalConfirmButtonDisabled,
                 ]}
                 onPress={async () => {
                   setShowAIGenerateModal(false);
@@ -969,7 +1244,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                   if (result) {
                     setShowAIResultModal(true);
                   } else if (aiBabyVersion.error) {
-                    Alert.alert('生成失败', aiBabyVersion.error);
+                    Alert.alert("生成失败", aiBabyVersion.error);
                   }
                 }}
                 disabled={aiBabyVersion.isLoading}
@@ -1005,49 +1280,72 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
               {aiBabyVersion.lastResult && (
                 <View style={styles.aiResultContent}>
                   {/* 配料替换 */}
-                  {aiBabyVersion.lastResult.ingredient_replacements?.length > 0 && (
+                  {aiBabyVersion.lastResult.ingredient_replacements?.length >
+                    0 && (
                     <View style={styles.aiResultSection}>
-                      <Text style={styles.aiResultSectionTitle}>🍚 配料替换</Text>
-                      {aiBabyVersion.lastResult.ingredient_replacements.map((item, index) => (
-                        <View key={index} style={styles.aiResultItem}>
-                          <Text style={styles.aiResultItemText}>
-                            {item.original} → {item.replacement}
-                          </Text>
-                          <Text style={styles.aiResultItemReason}>{item.reason}</Text>
-                        </View>
-                      ))}
+                      <Text style={styles.aiResultSectionTitle}>
+                        🍚 配料替换
+                      </Text>
+                      {aiBabyVersion.lastResult.ingredient_replacements.map(
+                        (item, index) => (
+                          <View key={index} style={styles.aiResultItem}>
+                            <Text style={styles.aiResultItemText}>
+                              {item.original} → {item.replacement}
+                            </Text>
+                            <Text style={styles.aiResultItemReason}>
+                              {item.reason}
+                            </Text>
+                          </View>
+                        ),
+                      )}
                     </View>
                   )}
 
                   {/* 质地调整 */}
                   {aiBabyVersion.lastResult.texture_adjustments?.length > 0 && (
                     <View style={styles.aiResultSection}>
-                      <Text style={styles.aiResultSectionTitle}>👶 质地调整</Text>
-                      {aiBabyVersion.lastResult.texture_adjustments.map((item, index) => (
-                        <View key={index} style={styles.aiResultItem}>
-                          <Text style={styles.aiResultItemText}>{item.adjustment}</Text>
-                          <Text style={styles.aiResultItemReason}>{item.reason}</Text>
-                        </View>
-                      ))}
+                      <Text style={styles.aiResultSectionTitle}>
+                        👶 质地调整
+                      </Text>
+                      {aiBabyVersion.lastResult.texture_adjustments.map(
+                        (item, index) => (
+                          <View key={index} style={styles.aiResultItem}>
+                            <Text style={styles.aiResultItemText}>
+                              {item.adjustment}
+                            </Text>
+                            <Text style={styles.aiResultItemReason}>
+                              {item.reason}
+                            </Text>
+                          </View>
+                        ),
+                      )}
                     </View>
                   )}
 
                   {/* 过敏提醒 */}
                   {aiBabyVersion.lastResult.allergy_alerts?.length > 0 && (
                     <View style={styles.aiResultSection}>
-                      <Text style={styles.aiResultSectionTitle}>⚠️ 过敏提醒</Text>
-                      {aiBabyVersion.lastResult.allergy_alerts.map((alert, index) => (
-                        <View key={index} style={styles.aiResultAlert}>
-                          <Text style={styles.aiResultAlertText}>{alert}</Text>
-                        </View>
-                      ))}
+                      <Text style={styles.aiResultSectionTitle}>
+                        ⚠️ 过敏提醒
+                      </Text>
+                      {aiBabyVersion.lastResult.allergy_alerts.map(
+                        (alert, index) => (
+                          <View key={index} style={styles.aiResultAlert}>
+                            <Text style={styles.aiResultAlertText}>
+                              {alert}
+                            </Text>
+                          </View>
+                        ),
+                      )}
                     </View>
                   )}
 
                   {/* 营养提示 */}
                   {aiBabyVersion.lastResult.nutrition_tips && (
                     <View style={styles.aiResultSection}>
-                      <Text style={styles.aiResultSectionTitle}>💡 营养提示</Text>
+                      <Text style={styles.aiResultSectionTitle}>
+                        💡 营养提示
+                      </Text>
                       <Text style={styles.aiResultNutritionText}>
                         {aiBabyVersion.lastResult.nutrition_tips}
                       </Text>
@@ -1064,12 +1362,12 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                   // 复制做法
                   if (aiBabyVersion.lastResult) {
                     const text = `宝宝版本做法\n\n${
-                      aiBabyVersion.lastResult.adjusted_steps?.map(
-                        s => `${s.step}. ${s.action}`
-                      ).join('\n') || ''
+                      aiBabyVersion.lastResult.adjusted_steps
+                        ?.map((s) => `${s.step}. ${s.action}`)
+                        .join("\n") || ""
                     }`;
                     // 这里可以添加复制到剪贴板的逻辑
-                    Alert.alert('已复制', '做法已复制到剪贴板');
+                    Alert.alert("已复制", "做法已复制到剪贴板");
                   }
                 }}
               >
@@ -1100,8 +1398,8 @@ const styles = StyleSheet.create({
   },
   centerContent: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: Spacing.xl,
   },
   loadingText: {
@@ -1122,7 +1420,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: Typography.fontSize.base,
     color: Colors.text.secondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: Spacing.lg,
   },
   retryButton: {
@@ -1136,12 +1434,12 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
   },
-  
+
   // 头部导航
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     backgroundColor: Colors.background.primary,
@@ -1150,32 +1448,37 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
   },
   headerActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.sm,
   },
   headerAction: {
     padding: Spacing.sm,
   },
-  
+
   // 滚动区域
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: Platform.OS === 'web' ? 160 : 140,
+    paddingBottom: Platform.OS === "web" ? 160 : 140,
     flexGrow: 1,
   },
-  
+
   // 标题区
+  heroSection: {
+    backgroundColor: Colors.background.primary,
+    paddingBottom: Spacing.lg,
+  },
   titleSection: {
     backgroundColor: Colors.background.primary,
     paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
     paddingBottom: Spacing.lg,
-    alignItems: 'center',
+    alignItems: "center",
   },
   pairBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: Colors.primary.light,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
@@ -1192,21 +1495,97 @@ const styles = StyleSheet.create({
     color: Colors.primary.main,
   },
   recipeName: {
-    fontSize: Typography.fontSize['2xl'],
+    fontSize: Typography.fontSize["2xl"],
     fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 32,
   },
+  heroSummary: {
+    marginTop: Spacing.sm,
+    fontSize: Typography.fontSize.base,
+    lineHeight: 24,
+    color: Colors.text.secondary,
+    textAlign: "center",
+    maxWidth: 520,
+  },
+  heroCardsSection: {
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.md,
+  },
+  eyebrow: {
+    fontSize: Typography.fontSize.xs,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.bold,
+    marginBottom: Spacing.sm,
+  },
+  detailCardEmphasis: {
+    borderWidth: 1,
+    borderColor: Colors.primary.light,
+  },
+  detailCardSoft: {
+    backgroundColor: Colors.background.secondary,
+  },
+  versionCompareRow: {
+    flexDirection: width > 420 ? "row" : "column",
+    gap: Spacing.sm,
+  },
+  versionCard: {
+    flex: 1,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+    minHeight: 148,
+  },
+  versionCardActive: {
+    backgroundColor: Colors.primary.light,
+    borderColor: Colors.primary.main,
+  },
+  versionCardTitle: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+    marginBottom: 4,
+  },
+  versionCardSubtitle: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.tertiary,
+    marginBottom: Spacing.sm,
+  },
+  versionCardDescription: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    lineHeight: 20,
+    flex: 1,
+  },
+  versionCardCta: {
+    marginTop: Spacing.md,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  versionCardCtaActive: {
+    color: Colors.text.primary,
+  },
+  miniNarrativeBox: {
+    marginTop: Spacing.md,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border.light,
+  },
   metaContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: Spacing.md,
     gap: Spacing.md,
   },
   metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.xs,
   },
   metaText: {
@@ -1219,13 +1598,13 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: Colors.text.tertiary,
   },
-  
+
   // 图片轮播
   imageSection: {
     backgroundColor: Colors.background.primary,
     paddingBottom: Spacing.md,
   },
-  
+
   // 宝宝适龄提示
   babyAgeTipSection: {
     backgroundColor: Colors.background.primary,
@@ -1240,8 +1619,8 @@ const styles = StyleSheet.create({
     borderLeftColor: Colors.secondary[500],
   },
   babyAgeTipHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: Spacing.xs,
   },
   babyAgeTipTitle: {
@@ -1255,7 +1634,7 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
   },
   babyAgeTipFoods: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginTop: Spacing.xs,
   },
   babyAgeTipFoodsLabel: {
@@ -1266,10 +1645,10 @@ const styles = StyleSheet.create({
     ...Typography.body.small,
     color: Colors.text.secondary,
   },
-  
+
   // Tab切换
   tabContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: Colors.background.primary,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.light,
@@ -1277,16 +1656,20 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.sm,
     gap: Spacing.md,
   },
+  sectionTightTop: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+  },
   tab: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: Spacing.md,
     backgroundColor: Colors.neutral.gray100,
     borderRadius: BorderRadius.md,
     gap: Spacing.xs,
-    position: 'relative',
+    position: "relative",
   },
   tabActive: {
     backgroundColor: Colors.background.card,
@@ -1302,10 +1685,10 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.bold,
   },
   tabIndicator: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -Spacing.sm,
-    left: '20%',
-    right: '20%',
+    left: "20%",
+    right: "20%",
     height: 3,
     backgroundColor: Colors.primary.main,
     borderRadius: BorderRadius.full,
@@ -1314,7 +1697,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.secondary[500],
   },
   tabIndicatorTimeline: {
-    backgroundColor: '#00ACC1',
+    backgroundColor: "#00ACC1",
   },
 
   // AI 生成宝宝版本按钮
@@ -1326,13 +1709,48 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border.light,
   },
   aiGenerateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: Colors.primary.main,
     borderRadius: BorderRadius.lg,
     paddingVertical: Spacing.md,
     gap: Spacing.sm,
+  },
+  utilityCardMuted: {
+    backgroundColor: Colors.background.secondary,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  utilityCardHeader: {
+    marginBottom: Spacing.md,
+  },
+  utilityCardTitle: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.text.primary,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  utilityCardCaption: {
+    marginTop: 4,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.tertiary,
+    lineHeight: 20,
+  },
+  aiGenerateButtonMuted: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.md,
+    gap: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  aiGenerateButtonMutedText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.text.primary,
   },
   aiGenerateIcon: {
     fontSize: 18,
@@ -1340,29 +1758,29 @@ const styles = StyleSheet.create({
   aiGenerateText: {
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
 
   // AI 生成弹窗
   aiModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: Spacing.lg,
   },
   aiModalContainer: {
     backgroundColor: Colors.background.primary,
     borderRadius: BorderRadius.xl,
-    width: '90%',
-    maxHeight: '80%',
-    overflow: 'hidden',
+    width: "90%",
+    maxHeight: "80%",
+    overflow: "hidden",
     ...Shadows.lg,
   },
   aiModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: Spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.light,
@@ -1390,9 +1808,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   aiAgeSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: Colors.neutral.gray100,
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
@@ -1412,8 +1830,8 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   aiGenerateOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: Spacing.md,
     backgroundColor: Colors.neutral.gray100,
     borderRadius: BorderRadius.md,
@@ -1431,8 +1849,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 2,
     borderColor: Colors.text.tertiary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   aiRadioCircleActive: {
     borderColor: Colors.secondary[500],
@@ -1452,7 +1870,7 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.semibold,
   },
   aiModalFooter: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: Spacing.lg,
     gap: Spacing.md,
     borderTopWidth: 1,
@@ -1461,7 +1879,7 @@ const styles = StyleSheet.create({
   aiModalCancelButton: {
     flex: 1,
     paddingVertical: Spacing.md,
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: Colors.border.light,
@@ -1474,7 +1892,7 @@ const styles = StyleSheet.create({
   aiModalConfirmButton: {
     flex: 1,
     paddingVertical: Spacing.md,
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: BorderRadius.lg,
     backgroundColor: Colors.secondary[500],
   },
@@ -1483,7 +1901,7 @@ const styles = StyleSheet.create({
   },
   aiModalConfirmText: {
     ...Typography.body.regular,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontWeight: Typography.fontWeight.semibold,
   },
 
@@ -1522,7 +1940,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   aiResultAlert: {
-    backgroundColor: Colors.functional.errorLight || '#FFEBEE',
+    backgroundColor: Colors.functional.errorLight || "#FFEBEE",
     borderRadius: BorderRadius.md,
     padding: Spacing.sm,
     marginBottom: Spacing.xs,
@@ -1539,7 +1957,7 @@ const styles = StyleSheet.create({
   aiModalCopyButton: {
     flex: 1,
     paddingVertical: Spacing.md,
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: Colors.primary.main,
@@ -1552,13 +1970,13 @@ const styles = StyleSheet.create({
   aiModalShareButton: {
     flex: 1,
     paddingVertical: Spacing.md,
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: BorderRadius.lg,
     backgroundColor: Colors.primary.main,
   },
   aiModalShareText: {
     ...Typography.body.regular,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontWeight: Typography.fontWeight.medium,
   },
 
@@ -1571,9 +1989,9 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border.light,
   },
   ageSelectorButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: Colors.secondary[50],
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
@@ -1582,8 +2000,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.secondary[200],
   },
   ageSelectorContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.xs,
   },
   ageSelectorLabel: {
@@ -1600,9 +2018,9 @@ const styles = StyleSheet.create({
     color: Colors.text.tertiary,
   },
   transformingIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: Spacing.sm,
     gap: Spacing.xs,
   },
@@ -1614,23 +2032,23 @@ const styles = StyleSheet.create({
   // 月龄选择器弹窗
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: Spacing.lg,
   },
   agePickerContainer: {
     backgroundColor: Colors.background.primary,
     borderRadius: BorderRadius.xl,
-    width: '80%',
-    maxHeight: '60%',
-    overflow: 'hidden',
+    width: "80%",
+    maxHeight: "60%",
+    overflow: "hidden",
     ...Shadows.lg,
   },
   agePickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: Spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.light,
@@ -1645,9 +2063,9 @@ const styles = StyleSheet.create({
     padding: Spacing.xs,
   },
   ageOptionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
@@ -1671,9 +2089,6 @@ const styles = StyleSheet.create({
   },
 
   // 同步烹饪
-  syncSection: {
-    padding: Spacing.lg,
-  },
   syncCard: {
     backgroundColor: Colors.background.primary,
     borderRadius: BorderRadius.lg,
@@ -1683,14 +2098,14 @@ const styles = StyleSheet.create({
     borderLeftColor: Colors.food.fruit,
   },
   syncHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: Spacing.sm,
   },
   syncTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.xs,
   },
   syncIcon: {
@@ -1733,8 +2148,8 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   syncStepItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.xs,
   },
   syncStepCheck: {
@@ -1746,14 +2161,14 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
   },
-  
+
   // 区块
   section: {
     padding: Spacing.lg,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: Spacing.md,
     gap: Spacing.xs,
   },
@@ -1766,7 +2181,7 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     flex: 1,
   },
-  
+
   // 食材卡片
   ingredientsCard: {
     backgroundColor: Colors.background.primary,
@@ -1775,9 +2190,9 @@ const styles = StyleSheet.create({
     ...Shadows.sm,
   },
   ingredientRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: Spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.light,
@@ -1789,8 +2204,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   amountCompare: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.xs,
   },
   amountTag: {
@@ -1799,7 +2214,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
     minWidth: 70,
-    alignItems: 'center',
+    alignItems: "center",
   },
   amountTagBaby: {
     backgroundColor: Colors.secondary.light,
@@ -1820,7 +2235,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.text.tertiary,
   },
-  
+
   // 详情卡片
   detailCard: {
     backgroundColor: Colors.background.primary,
@@ -1835,14 +2250,14 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     marginBottom: Spacing.md,
   },
-  
+
   // 食材列表
   ingredientsList: {
     gap: Spacing.sm,
   },
   ingredientItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.sm,
   },
   ingredientDot: {
@@ -1853,9 +2268,9 @@ const styles = StyleSheet.create({
   },
   ingredientInfo: {
     flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   ingredientItemName: {
     fontSize: Typography.fontSize.base,
@@ -1870,11 +2285,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary.light,
     borderRadius: BorderRadius.sm,
   },
-  
+
   // 调料
   seasoningsList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: Spacing.sm,
   },
   seasoningTag: {
@@ -1882,8 +2297,8 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.xs,
   },
   seasoningName: {
@@ -1895,13 +2310,13 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
   },
-  
+
   // 步骤
   stepsList: {
     gap: Spacing.lg,
   },
   stepItem: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.md,
   },
   stepNumber: {
@@ -1909,8 +2324,8 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     backgroundColor: Colors.primary.main,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   stepNumberText: {
     color: Colors.text.inverse,
@@ -1927,13 +2342,13 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.medium,
   },
   stepMeta: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.md,
     marginTop: Spacing.xs,
   },
   stepMetaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   stepMetaText: {
@@ -1952,13 +2367,13 @@ const styles = StyleSheet.create({
   stepNoteText: {
     fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   stepNoteTextHighlight: {
     color: Colors.primary.dark,
     fontWeight: Typography.fontWeight.medium,
   },
-  
+
   // 特殊卡片
   nutritionCard: {
     backgroundColor: Colors.functional.successLight,
@@ -1976,8 +2391,8 @@ const styles = StyleSheet.create({
     borderLeftColor: Colors.functional.error,
   },
   allergyHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: Spacing.sm,
     gap: Spacing.xs,
   },
@@ -1986,8 +2401,8 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     backgroundColor: Colors.functional.error,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   allergyIcon: {
     fontSize: 16,
@@ -2023,10 +2438,10 @@ const styles = StyleSheet.create({
     color: Colors.functional.info,
     lineHeight: 22,
   },
-  
+
   // 小贴士
   tipItem: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.sm,
     paddingVertical: Spacing.xs,
   },
@@ -2041,7 +2456,7 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     lineHeight: 22,
   },
-  
+
   // 年龄标签
   ageBadge: {
     backgroundColor: Colors.secondary.light,
@@ -2054,13 +2469,13 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.secondary.dark,
   },
-  
+
   // 底部
   footerSpacer: {
     height: 120,
   },
   footer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
@@ -2072,9 +2487,9 @@ const styles = StyleSheet.create({
     ...Shadows.lg,
   },
   footerIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: Spacing.sm,
     gap: Spacing.sm,
   },
@@ -2104,25 +2519,25 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.semibold,
   },
   startCookingButton: {
-    backgroundColor: '#FF7043',
+    backgroundColor: "#FF7043",
     borderRadius: BorderRadius.lg,
     margin: 16,
     paddingVertical: Spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   startCookingButtonDisabled: {
     opacity: 0.5,
   },
   startCookingButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
   },
   timerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: Colors.primary[50],
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
@@ -2136,31 +2551,31 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.xs,
   },
   feedbackActionRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.sm,
     marginTop: Spacing.md,
     marginBottom: Spacing.md,
   },
   feedbackChipLike: {
     flex: 1,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: "#E8F5E9",
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
-    alignItems: 'center',
+    alignItems: "center",
   },
   feedbackChipNeutral: {
     flex: 1,
-    backgroundColor: '#FFF8E1',
+    backgroundColor: "#FFF8E1",
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
-    alignItems: 'center',
+    alignItems: "center",
   },
   feedbackChipReject: {
     flex: 1,
-    backgroundColor: '#FFEBEE',
+    backgroundColor: "#FFEBEE",
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
-    alignItems: 'center',
+    alignItems: "center",
   },
   feedbackChipText: {
     fontSize: Typography.fontSize.sm,
@@ -2190,9 +2605,9 @@ const styles = StyleSheet.create({
     color: Colors.text.tertiary,
   },
   statusTagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
     gap: Spacing.sm,
     marginTop: Spacing.md,
   },
@@ -2210,8 +2625,8 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.medium,
   },
   inlineActionRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: Spacing.sm,
     marginTop: Spacing.md,
   },
@@ -2239,5 +2654,4 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold,
   },
-
 });
