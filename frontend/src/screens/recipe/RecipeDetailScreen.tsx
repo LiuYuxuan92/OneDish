@@ -1324,7 +1324,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.gradient.primary?.start || Colors.primary.main,
+    backgroundColor: Colors.primary.main,
     borderRadius: BorderRadius.lg,
     paddingVertical: Spacing.md,
     gap: Spacing.sm,
