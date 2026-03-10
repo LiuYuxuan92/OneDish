@@ -39,6 +39,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
   } = useWeeklyPlanState();
 
   const [showShareTemplate, setShowShareTemplate] = useState(false);
+  const [isHeaderExpanded, setIsHeaderExpanded] = useState(false);
 
   const { data: userInfo } = useUserInfo();
   const { data: myFamily } = useMyFamily();
@@ -258,29 +259,34 @@ export function WeeklyPlanScreen({ navigation }: Props) {
           <View style={styles.heroHeader}>
             <View style={styles.heroTitleBlock}>
               <Text style={styles.heroTitle}>这一周先看重点</Text>
-              <Text style={styles.heroSubtitle}>{preferenceHint}</Text>
+              <Text style={styles.heroSubtitle} numberOfLines={isHeaderExpanded ? 3 : 1}>{preferenceHint}</Text>
             </View>
-            <TouchableOpacity style={styles.heroShoppingButton} onPress={() => navigation.navigate('ShoppingList')}>
-              <ShoppingBagIcon size={16} color={Colors.text.inverse} />
-              <Text style={styles.heroShoppingButtonText}>去清单</Text>
-            </TouchableOpacity>
+            <View style={styles.heroActionsColumn}>
+              <TouchableOpacity style={styles.heroShoppingButton} onPress={() => navigation.navigate('ShoppingList')}>
+                <ShoppingBagIcon size={16} color={Colors.text.inverse} />
+                <Text style={styles.heroShoppingButtonText}>去清单</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.heroCollapseButton} onPress={() => setIsHeaderExpanded((prev) => !prev)}>
+                <Text style={styles.heroCollapseButtonText}>{isHeaderExpanded ? '收起重点 ↑' : '展开重点 ↓'}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-          <View style={styles.summaryGrid}>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryValue}>{weekSummary.totalMeals}</Text>
-              <Text style={styles.summaryLabel}>Meals</Text>
+          <View style={styles.summaryGridCompact}>
+            <View style={styles.summaryChip}>
+              <Text style={styles.summaryChipValue}>{weekSummary.totalMeals}</Text>
+              <Text style={styles.summaryChipLabel}>Meals</Text>
             </View>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryValue}>{weekSummary.babyFriendlyMeals}</Text>
-              <Text style={styles.summaryLabel}>Dual meals</Text>
+            <View style={styles.summaryChip}>
+              <Text style={styles.summaryChipValue}>{weekSummary.babyFriendlyMeals}</Text>
+              <Text style={styles.summaryChipLabel}>Dual</Text>
             </View>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryValue}>{shoppingSummary.readinessRatio}%</Text>
-              <Text style={styles.summaryLabel}>Shopping ready</Text>
+            <View style={styles.summaryChip}>
+              <Text style={styles.summaryChipValue}>{shoppingSummary.readinessRatio}%</Text>
+              <Text style={styles.summaryChipLabel}>Ready</Text>
             </View>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryValue}>{weekSummary.completedMeals}</Text>
-              <Text style={styles.summaryLabel}>已完成</Text>
+            <View style={styles.summaryChip}>
+              <Text style={styles.summaryChipValue}>{weekSummary.completedMeals}</Text>
+              <Text style={styles.summaryChipLabel}>完成</Text>
             </View>
           </View>
           <View style={styles.progressStripBlock}>
@@ -295,22 +301,24 @@ export function WeeklyPlanScreen({ navigation }: Props) {
               已完成 {weekSummary.completedMeals}/{weekSummary.totalMeals || 0} 餐，购物准备度 {shoppingSummary.readinessRatio}%
             </Text>
           </View>
-          <View style={styles.quickEntryRow}>
-            <TouchableOpacity style={styles.quickEntryCard} onPress={() => navigation.navigate('ShoppingList')}>
-              <Text style={styles.quickEntryIcon}>🛒</Text>
-              <View style={styles.quickEntryTextBlock}>
-                <Text style={styles.quickEntryTitle}>当前清单</Text>
-                <Text style={styles.quickEntrySubtitle}>还有 {shoppingSummary.uncheckedItems} 项待买，库存已覆盖 {shoppingSummary.coveredCount} 项</Text>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.quickEntryCard} onPress={() => navigation.navigate('TemplateDiscovery')}>
-              <Text style={styles.quickEntryIcon}>📚</Text>
-              <View style={styles.quickEntryTextBlock}>
-                <Text style={styles.quickEntryTitle}>模板灵感</Text>
-                <Text style={styles.quickEntrySubtitle}>把这一周好用的组合沉淀成下次可复用模板</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
+          {isHeaderExpanded && (
+            <View style={styles.quickEntryRow}>
+              <TouchableOpacity style={styles.quickEntryCard} onPress={() => navigation.navigate('ShoppingList')}>
+                <Text style={styles.quickEntryIcon}>🛒</Text>
+                <View style={styles.quickEntryTextBlock}>
+                  <Text style={styles.quickEntryTitle}>当前清单</Text>
+                  <Text style={styles.quickEntrySubtitle}>还有 {shoppingSummary.uncheckedItems} 项待买，库存已覆盖 {shoppingSummary.coveredCount} 项</Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.quickEntryCard} onPress={() => navigation.navigate('TemplateDiscovery')}>
+                <Text style={styles.quickEntryIcon}>📚</Text>
+                <View style={styles.quickEntryTextBlock}>
+                  <Text style={styles.quickEntryTitle}>模板灵感</Text>
+                  <Text style={styles.quickEntrySubtitle}>把这一周好用的组合沉淀成下次可复用模板</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
         {todayMealHighlights.length > 0 && (
           <View style={styles.todayHighlightStrip}>

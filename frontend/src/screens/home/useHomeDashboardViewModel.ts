@@ -8,6 +8,7 @@ import {
   buildMockFeedingFeedback,
   buildMockShoppingList,
   buildMockWeeklyPlan,
+  shouldShortCircuitWebMock,
   shouldUseWebMockFallback,
 } from '../../mock/webFallback';
 import { useHomeRecommendation } from './useHomeRecommendation';
@@ -46,6 +47,10 @@ function buildShoppingFallback() {
 }
 
 async function runHomeQueryWithFallback<T>(query: () => Promise<T>, fallback: () => T): Promise<T> {
+  if (isWeb && shouldShortCircuitWebMock()) {
+    return fallback();
+  }
+
   try {
     return await query();
   } catch (error) {

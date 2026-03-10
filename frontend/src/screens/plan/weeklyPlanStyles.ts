@@ -69,7 +69,7 @@ export const weeklyPlanStyles = StyleSheet.create({
   },
   heroCard: {
     marginTop: Spacing.md,
-    padding: Spacing.lg,
+    padding: Spacing.md,
     borderRadius: BorderRadius.xl,
     backgroundColor: Colors.background.card,
     ...Shadows.md,
@@ -78,8 +78,8 @@ export const weeklyPlanStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: Spacing.md,
-    gap: Spacing.md,
+    marginBottom: Spacing.sm,
+    gap: Spacing.sm,
   },
   heroTitleBlock: {
     flex: 1,
@@ -93,7 +93,11 @@ export const weeklyPlanStyles = StyleSheet.create({
   heroSubtitle: {
     fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
-    lineHeight: 20,
+    lineHeight: 18,
+  },
+  heroActionsColumn: {
+    alignItems: 'flex-end',
+    gap: Spacing.xs,
   },
   heroShoppingButton: {
     flexDirection: 'row',
@@ -102,38 +106,49 @@ export const weeklyPlanStyles = StyleSheet.create({
     backgroundColor: Colors.primary.main,
     borderRadius: BorderRadius.full,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  heroCollapseButton: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+  },
+  heroCollapseButtonText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    fontWeight: Typography.fontWeight.medium,
   },
   heroShoppingButtonText: {
     color: Colors.text.inverse,
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold,
   },
-  summaryGrid: {
+  summaryGridCompact: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.sm,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
   },
-  summaryCard: {
-    width: '48%',
+  summaryChip: {
+    minWidth: '22%',
+    flexGrow: 1,
     backgroundColor: Colors.background.secondary,
     borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
   },
-  summaryValue: {
-    fontSize: Typography.fontSize['2xl'],
+  summaryChipValue: {
+    fontSize: Typography.fontSize.lg,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
   },
-  summaryLabel: {
-    marginTop: Spacing.xs,
-    fontSize: Typography.fontSize.sm,
+  summaryChipLabel: {
+    marginTop: 2,
+    fontSize: Typography.fontSize.xs,
     color: Colors.text.secondary,
   },
   quickEntryRow: {
-    gap: Spacing.sm,
+    gap: Spacing.xs,
+    marginTop: Spacing.xs,
   },
   progressStripBlock: {
     marginBottom: Spacing.md,

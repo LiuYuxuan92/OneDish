@@ -66,6 +66,7 @@ export function SearchScreen({ navigation }: Props) {
   const [transformError, setTransformError] = useState<string | null>(null);
   const [lovedRecipeNames, setLovedRecipeNames] = useState<Set<string>>(new Set());
   const [rejectedRecipeNames, setRejectedRecipeNames] = useState<Set<string>>(new Set());
+  const [isFiltersExpanded, setIsFiltersExpanded] = useState(false);
 
   const saveSearchResult = useSaveSearchResult();
   const { data: userInfo } = useUserInfo();
