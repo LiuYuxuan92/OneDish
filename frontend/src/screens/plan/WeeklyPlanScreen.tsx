@@ -19,6 +19,7 @@ import { TodayDetailTab } from '../../components/plan/TodayDetailTab';
 import { weeklyPlanStyles as styles } from './weeklyPlanStyles';
 import { useUserInfo } from '../../hooks/useUsers';
 import { useCreateFamily, useJoinFamily, useMyFamily, useRegenerateFamilyInvite, useRemoveFamilyMember } from '../../hooks/useFamilies';
+import { isWebLocalGuestMode } from '../../mock/webFallback';
 
 type Props = NativeStackScreenProps<PlanStackParamList, 'WeeklyPlan'>;
 
@@ -152,10 +153,16 @@ export function WeeklyPlanScreen({ navigation }: Props) {
       if (effectiveBabyAge) params.baby_age_months = effectiveBabyAge;
       if (effectiveExcludeIngredients.length > 0) params.exclude_ingredients = effectiveExcludeIngredients;
       await generateMutation.mutateAsync(params);
+      if (isWebLocalGuestMode()) {
+        Alert.alert('预览模式', '当前是本地未登录预览，已为你生成一份示例周计划，方便继续联调和验收。');
+      }
     } catch (genErr: unknown) {
       const err = genErr as { response?: { status: number }; statusCode?: number };
       if (err?.response?.status === 429 || err?.statusCode === 429) console.warn('请求过于频繁，请稍后再试');
-      else console.error('生成计划失败:', genErr);
+      else {
+        console.error('生成计划失败:', genErr);
+        Alert.alert('生成失败', isWebLocalGuestMode() ? '当前为未登录预览模式，稍后重试或继续查看示例计划。' : '请稍后重试');
+      }
     } finally { setIsGenerating(false); setRefreshingMeals(new Set()); }
   };
 
@@ -271,6 +278,12 @@ export function WeeklyPlanScreen({ navigation }: Props) {
               </TouchableOpacity>
             </View>
           </View>
+          {isWebLocalGuestMode() && (
+            <View style={styles.infoCard}>
+              <Text style={styles.infoIcon}>👀</Text>
+              <Text style={styles.infoText}>当前为 web 本地未登录预览模式：周计划、购物摘要和家庭协作数据已自动降级为示例数据，不会因为 401 直接刷红。</Text>
+            </View>
+          )}
           <View style={styles.summaryGridCompact}>
             <View style={styles.summaryChip}>
               <Text style={styles.summaryChipValue}>{weekSummary.totalMeals}</Text>

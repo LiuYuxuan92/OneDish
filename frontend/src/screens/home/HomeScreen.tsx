@@ -37,7 +37,7 @@ export function HomeScreen({ navigation }: Props) {
       trackMainFlowEvent('shopping_list_generate_click', { source: 'home', screen: 'HomeScreen', recipeId: recipe?.id || null });
       rootTabNavigation?.navigate('Plan', { screen: 'ShoppingList' });
     },
-    search: () => rootTabNavigation?.navigate('Recipes', { screen: 'Search' }),
+    search: () => rootTabNavigation?.navigate('Recipes', { screen: 'Search', params: undefined }),
     baby: () => rootTabNavigation?.navigate('Recipes', { screen: 'BabyStages' }),
     plan: () => rootTabNavigation?.navigate('Plan', { screen: 'WeeklyPlan' }),
     feeding: () => rootTabNavigation?.navigate('Profile', { screen: 'FeedingFeedback' }),

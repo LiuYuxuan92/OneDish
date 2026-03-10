@@ -18,6 +18,7 @@ import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles
 import type { ProfileStackParamList } from '../../types';
 import { useUserInfo } from '../../hooks/useUsers';
 import { useMyFamily, useCreateFamily, useJoinFamily, useRegenerateFamilyInvite, useRemoveFamilyMember } from '../../hooks/useFamilies';
+import { isWebLocalGuestMode } from '../../mock/webFallback';
 import { useWeeklyPlan } from '../../hooks/useMealPlans';
 import { useLatestShoppingList } from '../../hooks/useShoppingLists';
 import type { FamilyContext, FamilyMember } from '../../api/families';
@@ -248,6 +249,11 @@ export function FamilyScreen({ navigation }: Props) {
           <Text style={styles.headerSubtitle}>
             把周计划、购物清单和宝宝喂养入口收拢到一个共享空间。
           </Text>
+          {isWebLocalGuestMode() && (
+            <Text style={styles.previewHint}>
+              当前是 web 本地未登录预览：家庭空间已切到稳定 guest/mock 数据，不再继续请求失败后刷 401 噪音。
+            </Text>
+          )}
 
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
@@ -493,6 +499,16 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     lineHeight: 20,
     color: Colors.text.secondary,
+  },
+  previewHint: {
+    marginTop: Spacing.sm,
+    fontSize: Typography.fontSize.xs,
+    lineHeight: 18,
+    color: Colors.primary.dark,
+    backgroundColor: Colors.primary.light,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
   },
   statsRow: {
     flexDirection: 'row',

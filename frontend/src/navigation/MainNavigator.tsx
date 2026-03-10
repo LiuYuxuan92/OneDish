@@ -189,6 +189,10 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           });
 
           if (!isFocused && !event.defaultPrevented) {
+            if (route.name === 'Recipes') {
+              navigation.navigate('Recipes' as any, { screen: 'RecipeList' } as any);
+              return;
+            }
             navigation.navigate(route.name as any);
           }
         };
@@ -226,6 +230,7 @@ export function MainNavigator() {
       <Tab.Screen
         name="Recipes"
         component={RecipeNavigator}
+        options={{ unmountOnBlur: true }}
       />
       <Tab.Screen
         name="Plan"

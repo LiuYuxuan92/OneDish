@@ -65,6 +65,13 @@ export function useGenerateWeeklyPlan() {
 
   return useMutation({
     mutationFn: async (params?: GenerateWeeklyPlanParams) => {
+      if (isWebLocalGuestMode()) {
+        return {
+          code: 200,
+          message: 'mock generated weekly plan for web local dev',
+          data: buildMockWeeklyPlan(),
+        } as any;
+      }
       const result = await mealPlansApi.generateWeekly(params);
       return result;
     },
