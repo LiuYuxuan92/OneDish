@@ -357,6 +357,41 @@ export function SearchScreen({ navigation }: Props) {
     </ScrollView>
   );
 
+  const renderFilterPanel = () => (
+    <View style={styles.filterPanel}>
+      <View style={styles.filterPanelHeader}>
+        <View style={styles.filterPanelTitleBlock}>
+          <Text style={styles.filterPanelTitle}>搜索条件</Text>
+          <Text style={styles.filterPanelSubtitle}>默认先收折，把首屏留给结果；需要时再展开细调。</Text>
+        </View>
+        <TouchableOpacity style={styles.filterPanelToggle} onPress={() => setIsFiltersExpanded((prev) => !prev)}>
+          <Text style={styles.filterPanelToggleText}>{isFiltersExpanded ? '收起 ↑' : '展开筛选 ↓'}</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.filterPanelPreviewRow}>
+        <View style={[styles.filterPreviewChip, inventoryFirstEnabled && styles.filterPreviewChipActive]}>
+          <Text style={[styles.filterPreviewChipText, inventoryFirstEnabled && styles.filterPreviewChipTextActive]}>库存优先</Text>
+        </View>
+        {selectedScenario ? (
+          <View style={[styles.filterPreviewChip, styles.filterPreviewChipActive]}>
+            <Text style={[styles.filterPreviewChipText, styles.filterPreviewChipTextActive]} numberOfLines={1}>场景：{selectedScenario}</Text>
+          </View>
+        ) : null}
+        <View style={styles.filterPreviewChip}>
+          <Text style={styles.filterPreviewChipText}>任务：{experienceVm.taskTabs.find((tab) => tab.key === taskTab)?.label || '关键词'}</Text>
+        </View>
+      </View>
+
+      {isFiltersExpanded && (
+        <View style={styles.filterPanelExpanded}>
+          {renderSmartFilters()}
+          {renderTaskTabs()}
+        </View>
+      )}
+    </View>
+  );
+
   const renderSourceTabs = () => (
     <ScrollView style={styles.sourceTabsScroll} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sourceTabsContent}>
       {SOURCE_OPTIONS.map((option) => (
@@ -444,8 +479,7 @@ export function SearchScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {renderSearchBar()}
-      {renderSmartFilters()}
-      {renderTaskTabs()}
+      {renderFilterPanel()}
       {renderSourceTabs()}
 
       {hasSearched && !isLoading && total > 0 && (
@@ -479,10 +513,10 @@ export function SearchScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background.secondary },
-  searchHeaderBlock: { backgroundColor: Colors.background.primary, paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
-  pageTitle: { fontSize: Typography.fontSize['2xl'], fontWeight: Typography.fontWeight.bold, color: Colors.text.primary },
-  pageSubtitle: { marginTop: Spacing.xs, fontSize: Typography.fontSize.sm, color: Colors.text.secondary, lineHeight: 20 },
-  searchBarContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.background.primary, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md, gap: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.border.light },
+  searchHeaderBlock: { backgroundColor: Colors.background.primary, paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.xs },
+  pageTitle: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.text.primary },
+  pageSubtitle: { marginTop: 2, fontSize: Typography.fontSize.xs, color: Colors.text.secondary, lineHeight: 18 },
+  searchBarContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.background.primary, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm, gap: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.border.light },
   searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.neutral.gray100, borderRadius: BorderRadius.lg, paddingHorizontal: Spacing.md, height: 44, borderWidth: 1, borderColor: Colors.border.light },
   searchInput: { flex: 1, color: Colors.text.primary, marginLeft: Spacing.sm, fontSize: Typography.fontSize.base },
   clearButton: { padding: Spacing.xs },
@@ -490,18 +524,18 @@ const styles = StyleSheet.create({
   searchButtonDisabled: { backgroundColor: Colors.neutral.gray300 },
   searchButtonText: { color: Colors.text.inverse, fontWeight: Typography.fontWeight.semibold, fontSize: Typography.fontSize.base },
   searchButtonTextDisabled: { color: Colors.text.tertiary },
-  smartFilterRow: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, gap: Spacing.sm, backgroundColor: Colors.background.primary },
+  smartFilterRow: { paddingHorizontal: 0, paddingVertical: Spacing.xs, gap: Spacing.sm },
   smartFilterChip: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, backgroundColor: Colors.neutral.gray100, borderWidth: 1, borderColor: Colors.border.light },
   smartFilterChipActive: { backgroundColor: Colors.primary.light, borderColor: Colors.primary.main },
   smartFilterChipText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, fontWeight: Typography.fontWeight.medium },
   smartFilterChipTextActive: { color: Colors.primary.main },
-  taskTabRow: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md, gap: Spacing.sm, backgroundColor: Colors.background.primary },
+  taskTabRow: { paddingHorizontal: 0, paddingBottom: Spacing.xs, gap: Spacing.sm },
   taskTab: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, backgroundColor: '#F5F7FB' },
   taskTabActive: { backgroundColor: '#E8F0FF' },
   taskTabText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, fontWeight: Typography.fontWeight.medium },
   taskTabTextActive: { color: Colors.primary.main },
   sourceTabsScroll: { backgroundColor: Colors.background.primary, borderBottomWidth: 1, borderBottomColor: Colors.border.light },
-  sourceTabsContent: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, gap: Spacing.sm },
+  sourceTabsContent: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, gap: Spacing.sm },
   sourceTab: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, backgroundColor: Colors.neutral.gray100, gap: Spacing.xs, borderWidth: 1, borderColor: Colors.border.light },
   sourceTabActive: { backgroundColor: Colors.primary.light, borderColor: Colors.primary.main },
   sourceTabTablet: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
@@ -510,6 +544,19 @@ const styles = StyleSheet.create({
   sourceTabText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary },
   sourceTabTextActive: { color: Colors.primary.main, fontWeight: Typography.fontWeight.semibold },
   sourceTabTextTablet: { fontSize: Typography.fontSize.base },
+  filterPanel: { backgroundColor: Colors.background.primary, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.border.light },
+  filterPanelHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: Spacing.sm },
+  filterPanelTitleBlock: { flex: 1 },
+  filterPanelTitle: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.text.primary },
+  filterPanelSubtitle: { marginTop: 2, fontSize: Typography.fontSize.xs, color: Colors.text.secondary, lineHeight: 16 },
+  filterPanelToggle: { paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs, borderRadius: BorderRadius.full, backgroundColor: Colors.neutral.gray100 },
+  filterPanelToggleText: { fontSize: Typography.fontSize.xs, color: Colors.primary.main, fontWeight: Typography.fontWeight.semibold },
+  filterPanelPreviewRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, marginTop: Spacing.sm },
+  filterPreviewChip: { backgroundColor: Colors.neutral.gray100, borderRadius: BorderRadius.full, paddingHorizontal: Spacing.sm, paddingVertical: 4, maxWidth: '100%' },
+  filterPreviewChipActive: { backgroundColor: Colors.primary.light },
+  filterPreviewChipText: { fontSize: Typography.fontSize.xs, color: Colors.text.secondary },
+  filterPreviewChipTextActive: { color: Colors.primary.main, fontWeight: Typography.fontWeight.medium },
+  filterPanelExpanded: { marginTop: Spacing.xs },
   resultStats: { backgroundColor: Colors.background.secondary, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.border.light },
   resultStatsContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   resultStatsText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, fontWeight: Typography.fontWeight.medium },

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { mealPlansApi } from '../api/mealPlans';
 import type { SmartRecommendationParams, RecommendationFeedbackParams, GenerateWeeklyPlanParams } from '../api/mealPlans';
-import { buildMockWeeklyPlan, shouldUseWebMockFallback } from '../mock/webFallback';
+import { buildMockWeeklyPlan, isWebLocalGuestMode, shouldUseWebMockFallback } from '../mock/webFallback';
 
 /**
  * 获取一周计划
