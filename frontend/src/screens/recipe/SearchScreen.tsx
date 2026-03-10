@@ -66,7 +66,6 @@ export function SearchScreen({ navigation }: Props) {
   const [transformError, setTransformError] = useState<string | null>(null);
   const [lovedRecipeNames, setLovedRecipeNames] = useState<Set<string>>(new Set());
   const [rejectedRecipeNames, setRejectedRecipeNames] = useState<Set<string>>(new Set());
-  const [isFiltersExpanded, setIsFiltersExpanded] = useState(false);
 
   const saveSearchResult = useSaveSearchResult();
   const { data: userInfo } = useUserInfo();
@@ -158,6 +157,13 @@ export function SearchScreen({ navigation }: Props) {
       });
     }
   }, [inputValue, searchSource, inventoryFirstEnabled, selectedScenario]);
+
+  const applyQuickSearch = useCallback((value: string, nextTaskTab?: SearchTaskTab) => {
+    setInputValue(value);
+    setSubmittedKeyword(value);
+    if (nextTaskTab) setTaskTab(nextTaskTab);
+    setSelectedRecipe(null);
+  }, []);
 
   const handleSourceChange = useCallback((source: SearchSource) => {
     setSearchSource(source);
@@ -299,17 +305,17 @@ export function SearchScreen({ navigation }: Props) {
   };
 
   const renderSearchBar = () => (
-    <>
-      <View style={styles.searchHeaderBlock}>
-        <Text style={styles.pageTitle}>Search</Text>
-        <Text style={styles.pageSubtitle}>按任务组织搜索：一菜两吃、冰箱食材、场景、月龄都保留真实接线。</Text>
+    <View style={styles.searchHeaderCard}>
+      <View style={styles.searchHeaderCopy}>
+        <Text style={styles.pageTitle}>今天想做点什么？</Text>
+        <Text style={styles.pageSubtitle}>先搜一下，结果会更早出来。</Text>
       </View>
       <View style={styles.searchBarContainer}>
         <View style={styles.searchBar}>
           <SearchIcon size={20} color={Colors.primary.main} />
           <TextInput
             style={styles.searchInput}
-            placeholder="搜索菜谱名称、食材、场景..."
+            placeholder="搜菜名、食材、做法场景"
             value={inputValue}
             onChangeText={setInputValue}
             placeholderTextColor={Colors.text.tertiary}
@@ -324,116 +330,88 @@ export function SearchScreen({ navigation }: Props) {
           <Text style={[styles.searchButtonText, !inputValue.trim() && styles.searchButtonTextDisabled]}>搜索</Text>
         </TouchableOpacity>
       </View>
-    </>
-  );
-
-  const renderSmartFilters = () => (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.smartFilterRow}>
-      {experienceVm.smartFilters.map((filter) => {
-        const active = filter.key === 'inventory' ? inventoryFirstEnabled : (filter.key === 'dual' && taskTab === 'dual') || (filter.key === 'accepted' && taskTab === 'age');
-        return (
-          <TouchableOpacity key={filter.key} style={[styles.smartFilterChip, active && styles.smartFilterChipActive]} onPress={() => {
-            if (filter.key === 'inventory') setInventoryFirstEnabled((prev) => !prev);
-            else if (filter.key === 'dual') setTaskTab('dual');
-            else if (filter.key === 'accepted') setTaskTab('age');
-            else if (filter.key === 'quick') setInputValue('快手');
-            else if (filter.key === 'easy') setInputValue('易改造');
-            else if (filter.key === 'safe') setInputValue('无过敏提示');
-          }}>
-            <Text style={[styles.smartFilterChipText, active && styles.smartFilterChipTextActive]}>{filter.label}</Text>
-          </TouchableOpacity>
-        );
-      })}
-    </ScrollView>
-  );
-
-  const renderTaskTabs = () => (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.taskTabRow}>
-      {experienceVm.taskTabs.map((tab) => (
-        <TouchableOpacity key={tab.key} style={[styles.taskTab, taskTab === tab.key && styles.taskTabActive]} onPress={() => setTaskTab(tab.key)}>
-          <Text style={[styles.taskTabText, taskTab === tab.key && styles.taskTabTextActive]}>{tab.label}</Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
-  );
-
-  const renderFilterPanel = () => (
-    <View style={styles.filterPanel}>
-      <View style={styles.filterPanelHeader}>
-        <View style={styles.filterPanelTitleBlock}>
-          <Text style={styles.filterPanelTitle}>搜索条件</Text>
-          <Text style={styles.filterPanelSubtitle}>默认先收折，把首屏留给结果；需要时再展开细调。</Text>
-        </View>
-        <TouchableOpacity style={styles.filterPanelToggle} onPress={() => setIsFiltersExpanded((prev) => !prev)}>
-          <Text style={styles.filterPanelToggleText}>{isFiltersExpanded ? '收起 ↑' : '展开筛选 ↓'}</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.filterPanelPreviewRow}>
-        <View style={[styles.filterPreviewChip, inventoryFirstEnabled && styles.filterPreviewChipActive]}>
-          <Text style={[styles.filterPreviewChipText, inventoryFirstEnabled && styles.filterPreviewChipTextActive]}>库存优先</Text>
-        </View>
-        {selectedScenario ? (
-          <View style={[styles.filterPreviewChip, styles.filterPreviewChipActive]}>
-            <Text style={[styles.filterPreviewChipText, styles.filterPreviewChipTextActive]} numberOfLines={1}>场景：{selectedScenario}</Text>
-          </View>
-        ) : null}
-        <View style={styles.filterPreviewChip}>
-          <Text style={styles.filterPreviewChipText}>任务：{experienceVm.taskTabs.find((tab) => tab.key === taskTab)?.label || '关键词'}</Text>
-        </View>
-      </View>
-
-      {isFiltersExpanded && (
-        <View style={styles.filterPanelExpanded}>
-          {renderSmartFilters()}
-          {renderTaskTabs()}
-        </View>
-      )}
     </View>
   );
 
   const renderSourceTabs = () => (
     <View style={styles.sourceTabsSection}>
-      <Text style={styles.sourceTabsLabel}>来源</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sourceTabsContent}>
-        {SOURCE_OPTIONS.map((option) => (
-          <TouchableOpacity
-            key={option.key}
-            style={[
-              styles.sourceTab,
-              searchSource === option.key && styles.sourceTabActive,
-              isTablet && styles.sourceTabTablet,
-            ]}
-            onPress={() => handleSourceChange(option.key)}
-            activeOpacity={0.85}
-          >
-            <Text style={[styles.sourceTabText, searchSource === option.key && styles.sourceTabTextActive, isTablet && styles.sourceTabTextTablet]}>{option.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <View style={styles.sourceTabsShell}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sourceTabsContent}>
+          {SOURCE_OPTIONS.map((option) => (
+            <TouchableOpacity
+              key={option.key}
+              style={[
+                styles.sourceTab,
+                searchSource === option.key && styles.sourceTabActive,
+                isTablet && styles.sourceTabTablet,
+              ]}
+              onPress={() => handleSourceChange(option.key)}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.sourceTabText, searchSource === option.key && styles.sourceTabTextActive, isTablet && styles.sourceTabTextTablet]}>{option.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
     </View>
+  );
+
+  const renderTaskRow = () => (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.taskRow}>
+      {experienceVm.taskTabs.slice(0, 3).map((tab) => (
+        <TouchableOpacity
+          key={tab.key}
+          style={[styles.taskChip, taskTab === tab.key && styles.taskChipActive]}
+          onPress={() => {
+            setTaskTab(tab.key);
+            if (tab.key === 'dual') applyQuickSearch('一菜两吃', 'dual');
+            if (tab.key === 'inventory' && inventoryIngredients.length > 0) applyQuickSearch(inventoryIngredients.slice(0, 2).join(' '), 'inventory');
+            if (tab.key === 'age') applyQuickSearch('12个月+', 'age');
+          }}
+        >
+          <Text style={[styles.taskChipText, taskTab === tab.key && styles.taskChipTextActive]}>{tab.label}</Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
   );
 
   const renderExplore = () => (
     <View style={styles.exploreContainer}>
-      <Text style={styles.exploreTitle}>无输入时的探索区</Text>
-      <Text style={styles.exploreCaption}>保留热门搜索、场景卡片、月龄筛选，先帮用户起步。</Text>
-      <View style={styles.exploreSection}>
-        <Text style={styles.exploreSectionTitle}>Popular searches</Text>
-        <View style={styles.exploreTagWrap}>{experienceVm.explore.popularSearches.map((item) => <TouchableOpacity key={item} style={styles.exploreTag} onPress={() => { setInputValue(item); setSubmittedKeyword(item); }}><Text style={styles.exploreTagText}>{item}</Text></TouchableOpacity>)}</View>
-      </View>
-      <View style={styles.exploreSection}>
-        <Text style={styles.exploreSectionTitle}>Scenario cards</Text>
+      <View style={styles.exploreQuickSection}>
+        <Text style={styles.exploreSectionTitle}>试试这些任务</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scenarioRow}>
           {SCENARIO_OPTIONS.map((option) => {
             const active = selectedScenario === option.query;
-            return <TouchableOpacity key={option.key} style={[styles.scenarioChip, active && styles.scenarioChipActive]} onPress={() => { setSelectedScenario(active ? '' : option.query); setTaskTab('scenario'); if (!inputValue.trim()) setInputValue(option.query); if (!active && !submittedKeyword) setSubmittedKeyword(option.query); }}><Text style={[styles.scenarioChipText, active && styles.scenarioChipTextActive]}>{option.label}</Text></TouchableOpacity>;
+            return (
+              <TouchableOpacity
+                key={option.key}
+                style={[styles.scenarioChip, active && styles.scenarioChipActive]}
+                onPress={() => {
+                  const nextValue = active ? '' : option.query;
+                  setSelectedScenario(nextValue);
+                  setTaskTab('scenario');
+                  if (nextValue) applyQuickSearch(nextValue, 'scenario');
+                  if (active) {
+                    setSubmittedKeyword('');
+                    setInputValue('');
+                  }
+                }}
+              >
+                <Text style={[styles.scenarioChipText, active && styles.scenarioChipTextActive]}>{option.label}</Text>
+              </TouchableOpacity>
+            );
           })}
         </ScrollView>
       </View>
+
       <View style={styles.exploreSection}>
-        <Text style={styles.exploreSectionTitle}>Age filters</Text>
-        <View style={styles.exploreTagWrap}>{experienceVm.explore.ageFilters.map((item) => <TouchableOpacity key={item} style={styles.exploreTag} onPress={() => { setTaskTab('age'); setInputValue(item); }}><Text style={styles.exploreTagText}>{item}</Text></TouchableOpacity>)}</View>
+        <Text style={styles.exploreSectionTitle}>大家常搜</Text>
+        <View style={styles.exploreTagWrap}>{experienceVm.explore.popularSearches.slice(0, 4).map((item) => <TouchableOpacity key={item} style={styles.exploreTag} onPress={() => applyQuickSearch(item, 'keyword')}><Text style={styles.exploreTagText}>{item}</Text></TouchableOpacity>)}</View>
+      </View>
+
+      <View style={styles.exploreSection}>
+        <Text style={styles.exploreSectionTitle}>按月龄找</Text>
+        <View style={styles.exploreTagWrap}>{experienceVm.explore.ageFilters.slice(0, 4).map((item) => <TouchableOpacity key={item} style={styles.exploreTag} onPress={() => applyQuickSearch(item, 'age')}><Text style={styles.exploreTagText}>{item}</Text></TouchableOpacity>)}</View>
       </View>
     </View>
   );
@@ -462,9 +440,12 @@ export function SearchScreen({ navigation }: Props) {
       <TouchableOpacity style={styles.recipeCard} onPress={() => handleRecipePress(item)} activeOpacity={0.7}>
         <View style={styles.recipeImagePlaceholder}><Text style={styles.recipeImagePlaceholderText}>🍽️</Text></View>
         <View style={styles.recipeInfo}>
-          <Text style={styles.recipeName}>{item.name || '未命名菜谱'}</Text>
+          <View style={styles.recipeTopRow}>
+            <Text style={styles.recipeName}>{item.name || '未命名菜谱'}</Text>
+            <Text style={styles.recipeSourceText}>{sourceLabel}</Text>
+          </View>
           {item.description ? <Text style={styles.recipeDescription} numberOfLines={2}>{item.description}</Text> : null}
-          <Text style={styles.recipeMetaText}>{sourceLabel} {timeLabel}{diffLabel}</Text>
+          <Text style={styles.recipeMetaText}>{timeLabel}{diffLabel}</Text>
           {!!card?.labels?.length && <View style={styles.labelRow}>{card.labels.slice(0, 3).map((label) => <View key={label} style={styles.contextPill}><Text style={styles.contextPillText}>{label}</Text></View>)}</View>}
           {!!card?.whyItFits && <Text style={styles.whyItFitsText} numberOfLines={2}>{card.whyItFits}</Text>}
           {!!preferenceHint && <View style={styles.preferenceHintBadge}><Text style={styles.preferenceHintBadgeText} numberOfLines={2}>{preferenceHint}</Text></View>}
@@ -490,8 +471,8 @@ export function SearchScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {renderSearchBar()}
-      {renderFilterPanel()}
       {renderSourceTabs()}
+      {renderTaskRow()}
 
       {hasSearched && !isLoading && total > 0 && (
         <View style={styles.resultStats}>
@@ -499,7 +480,7 @@ export function SearchScreen({ navigation }: Props) {
             <Text style={styles.resultStatsText}>找到 {total} 个结果</Text>
             <View style={styles.resultSourceBadge}><Text style={styles.resultSourceBadgeText}>{routeSource === 'local' ? '📚 Local' : routeSource === 'cache' ? '⚡ Cache' : routeSource === 'web' || routeSource === 'tianxing' ? '🌐 Web' : routeSource === 'ai' ? '🤖 AI' : '🔍 全部'}</Text></View>
           </View>
-          <Text style={styles.preferenceLeadText}>{buildPreferenceLeadText({
+          <Text style={styles.preferenceLeadText} numberOfLines={1}>{buildPreferenceLeadText({
             defaultBabyAge: userInfo?.preferences?.default_baby_age,
             preferIngredients: Array.isArray(userInfo?.preferences?.prefer_ingredients)
               ? userInfo?.preferences?.prefer_ingredients
@@ -523,67 +504,54 @@ export function SearchScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background.secondary },
-  searchHeaderBlock: { backgroundColor: Colors.background.primary, paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: 4 },
-  pageTitle: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.text.primary },
-  pageSubtitle: { marginTop: 2, fontSize: Typography.fontSize.xs, color: Colors.text.secondary, lineHeight: 16 },
-  searchBarContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.background.primary, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xs, gap: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.border.light },
-  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.neutral.gray100, borderRadius: BorderRadius.lg, paddingHorizontal: Spacing.md, height: 44, borderWidth: 1, borderColor: Colors.border.light },
+  container: { flex: 1, backgroundColor: '#F6F4EF' },
+  searchHeaderCard: { backgroundColor: 'transparent', marginHorizontal: Spacing.lg, marginTop: Spacing.xs, paddingTop: Spacing.sm, paddingBottom: Spacing.xs },
+  searchHeaderCopy: { flex: 1, marginBottom: Spacing.sm },
+  pageEyebrow: { fontSize: Typography.fontSize.xs, color: Colors.text.tertiary, fontWeight: Typography.fontWeight.semibold, textTransform: 'uppercase', letterSpacing: 0.6 },
+  pageTitle: { fontSize: Typography.fontSize.xl + 2, fontWeight: Typography.fontWeight.bold, color: Colors.text.primary },
+  pageSubtitle: { marginTop: 4, fontSize: Typography.fontSize.sm, color: Colors.text.secondary, lineHeight: 20 },
+  searchBarContainer: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.background.primary, borderRadius: BorderRadius['2xl'], paddingHorizontal: Spacing.md, height: 52, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', ...Shadows.sm },
   searchInput: { flex: 1, color: Colors.text.primary, marginLeft: Spacing.sm, fontSize: Typography.fontSize.base },
   clearButton: { padding: Spacing.xs },
-  searchButton: { backgroundColor: Colors.primary.main, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, borderRadius: BorderRadius.lg },
+  searchButton: { backgroundColor: Colors.primary.main, paddingHorizontal: Spacing.lg, paddingVertical: 14, borderRadius: BorderRadius['2xl'] },
   searchButtonDisabled: { backgroundColor: Colors.neutral.gray300 },
   searchButtonText: { color: Colors.text.inverse, fontWeight: Typography.fontWeight.semibold, fontSize: Typography.fontSize.base },
   searchButtonTextDisabled: { color: Colors.text.tertiary },
-  smartFilterRow: { paddingHorizontal: 0, paddingVertical: Spacing.xs, gap: Spacing.sm },
-  smartFilterChip: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, backgroundColor: Colors.neutral.gray100, borderWidth: 1, borderColor: Colors.border.light },
-  smartFilterChipActive: { backgroundColor: Colors.primary.light, borderColor: Colors.primary.main },
-  smartFilterChipText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, fontWeight: Typography.fontWeight.medium },
-  smartFilterChipTextActive: { color: Colors.primary.main },
-  taskTabRow: { paddingHorizontal: 0, paddingBottom: Spacing.xs, gap: Spacing.sm },
-  taskTab: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, backgroundColor: '#F5F7FB' },
-  taskTabActive: { backgroundColor: '#E8F0FF' },
-  taskTabText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, fontWeight: Typography.fontWeight.medium },
-  taskTabTextActive: { color: Colors.primary.main },
-  sourceTabsSection: { backgroundColor: Colors.background.primary, paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: Spacing.xs, borderBottomWidth: 1, borderBottomColor: Colors.border.light, gap: 6 },
-  sourceTabsLabel: { fontSize: Typography.fontSize.xs, color: Colors.text.tertiary, fontWeight: Typography.fontWeight.medium },
-  sourceTabsContent: { gap: Spacing.xs, paddingRight: Spacing.lg },
-  sourceTab: { minHeight: 30, justifyContent: 'center', paddingHorizontal: Spacing.sm + 2, paddingVertical: 6, borderRadius: BorderRadius.full, backgroundColor: Colors.neutral.gray100, borderWidth: 1, borderColor: 'transparent' },
-  sourceTabActive: { backgroundColor: Colors.primary.light, borderColor: Colors.primary.main },
-  sourceTabTablet: { minHeight: 34, paddingHorizontal: Spacing.md, paddingVertical: 7 },
+  sourceTabsSection: { paddingHorizontal: Spacing.lg, paddingTop: 2, paddingBottom: 4 },
+  sourceTabsShell: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.72)', borderRadius: BorderRadius.full, padding: 4 },
+  sourceTabsContent: { gap: 6, paddingRight: Spacing.md },
+  sourceTab: { minHeight: 26, justifyContent: 'center', paddingHorizontal: Spacing.sm + 1, paddingVertical: 4, borderRadius: BorderRadius.full, backgroundColor: 'transparent', borderWidth: 1, borderColor: 'transparent' },
+  sourceTabActive: { backgroundColor: Colors.background.primary, borderColor: 'rgba(0,0,0,0.06)' },
+  sourceTabTablet: { minHeight: 30, paddingHorizontal: Spacing.md, paddingVertical: 5 },
   sourceTabText: { fontSize: Typography.fontSize.xs, color: Colors.text.secondary, fontWeight: Typography.fontWeight.medium },
-  sourceTabTextActive: { color: Colors.primary.main, fontWeight: Typography.fontWeight.semibold },
+  sourceTabTextActive: { color: Colors.text.primary, fontWeight: Typography.fontWeight.semibold },
   sourceTabTextTablet: { fontSize: Typography.fontSize.sm },
-  filterPanel: { backgroundColor: Colors.background.primary, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xs, borderBottomWidth: 1, borderBottomColor: Colors.border.light },
-  filterPanelHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: Spacing.sm },
-  filterPanelTitleBlock: { flex: 1 },
-  filterPanelTitle: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.text.primary },
-  filterPanelSubtitle: { marginTop: 2, fontSize: Typography.fontSize.xs, color: Colors.text.secondary, lineHeight: 16 },
-  filterPanelToggle: { paddingHorizontal: Spacing.sm, paddingVertical: 4, borderRadius: BorderRadius.full, backgroundColor: Colors.neutral.gray100 },
-  filterPanelToggleText: { fontSize: Typography.fontSize.xs, color: Colors.primary.main, fontWeight: Typography.fontWeight.semibold },
-  filterPanelPreviewRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, marginTop: 6 },
-  filterPreviewChip: { backgroundColor: Colors.neutral.gray100, borderRadius: BorderRadius.full, paddingHorizontal: Spacing.sm, paddingVertical: 3, maxWidth: '100%' },
-  filterPreviewChipActive: { backgroundColor: Colors.primary.light },
-  filterPreviewChipText: { fontSize: Typography.fontSize.xs, color: Colors.text.secondary },
-  filterPreviewChipTextActive: { color: Colors.primary.main, fontWeight: Typography.fontWeight.medium },
-  filterPanelExpanded: { marginTop: Spacing.xs },
-  resultStats: { backgroundColor: Colors.background.secondary, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.border.light },
+  taskRow: { paddingHorizontal: Spacing.lg, paddingTop: 4, paddingBottom: Spacing.xs, gap: 8 },
+  taskChip: { paddingHorizontal: Spacing.md, paddingVertical: 9, borderRadius: BorderRadius.full, backgroundColor: 'rgba(255,255,255,0.9)', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  taskChipActive: { backgroundColor: '#E8F0FF', borderColor: 'rgba(58,124,255,0.16)' },
+  taskChipText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, fontWeight: Typography.fontWeight.medium },
+  taskChipTextActive: { color: Colors.primary.main },
+  resultStats: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: Spacing.xs },
   resultStatsContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   resultStatsText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, fontWeight: Typography.fontWeight.medium },
   resultSourceBadge: { backgroundColor: Colors.primary.light, paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: BorderRadius.full },
   resultSourceBadgeText: { fontSize: Typography.fontSize.xs, color: Colors.primary.main, fontWeight: Typography.fontWeight.semibold },
-  preferenceLeadText: { marginTop: Spacing.sm, fontSize: Typography.fontSize.xs, color: Colors.text.secondary, lineHeight: 18 },
+  preferenceLeadText: { marginTop: 4, fontSize: Typography.fontSize.xs, color: Colors.text.secondary, lineHeight: 16 },
   scrollContainer: { flex: 1 },
   listContent: {
-    padding: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: 6,
     paddingBottom: Platform.OS === 'web' ? 96 : Spacing.xl,
     flexGrow: 1,
   },
-  recipeCard: { flexDirection: 'row', backgroundColor: Colors.background.primary, borderRadius: BorderRadius.lg, marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border.light, ...Shadows.sm },
+  recipeCard: { flexDirection: 'row', backgroundColor: Colors.background.primary, borderRadius: BorderRadius.xl, marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border.light, ...Shadows.sm },
   recipeImagePlaceholder: { width: 80, height: 80, margin: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: Colors.primary.light, justifyContent: 'center', alignItems: 'center' },
   recipeImagePlaceholderText: { fontSize: 32 },
   recipeInfo: { flex: 1, paddingVertical: Spacing.md, paddingRight: Spacing.md },
-  recipeName: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold as any, color: Colors.text.primary, marginBottom: Spacing.xs },
+  recipeTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: Spacing.sm },
+  recipeName: { flex: 1, fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.semibold as any, color: Colors.text.primary, marginBottom: Spacing.xs },
+  recipeSourceText: { fontSize: Typography.fontSize.xs, color: Colors.text.tertiary, marginTop: 2 },
   recipeDescription: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, marginBottom: Spacing.xs },
   recipeMetaText: { fontSize: Typography.fontSize.xs, color: Colors.text.tertiary },
   labelRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, marginTop: Spacing.sm },
@@ -598,17 +566,19 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: Typography.fontSize.base, color: Colors.text.secondary, textAlign: 'center', lineHeight: 22 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: Spacing['3xl'] },
   loadingText: { fontSize: Typography.fontSize.base, color: Colors.text.secondary, marginTop: Spacing.md },
-  exploreContainer: { paddingBottom: Spacing.xl },
-  exploreTitle: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.text.primary },
-  exploreCaption: { marginTop: Spacing.xs, marginBottom: Spacing.md, fontSize: Typography.fontSize.sm, color: Colors.text.secondary, lineHeight: 20 },
+  exploreContainer: { paddingBottom: Spacing.lg },
+  exploreHeroCard: { backgroundColor: Colors.background.primary, borderRadius: BorderRadius['2xl'], padding: Spacing.lg, ...Shadows.sm },
+  exploreHeroTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.text.primary },
+  exploreHeroText: { marginTop: Spacing.xs, fontSize: Typography.fontSize.sm, color: Colors.text.secondary, lineHeight: 20 },
+  exploreQuickSection: { marginTop: 2 },
   exploreSection: { marginTop: Spacing.md },
   exploreSectionTitle: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.semibold, color: Colors.text.primary, marginBottom: Spacing.sm },
   exploreTagWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  exploreTag: { backgroundColor: Colors.background.primary, borderRadius: BorderRadius.full, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderWidth: 1, borderColor: Colors.border.light },
+  exploreTag: { backgroundColor: Colors.background.primary, borderRadius: BorderRadius.full, paddingHorizontal: Spacing.md, paddingVertical: 9, borderWidth: 1, borderColor: Colors.border.light },
   exploreTagText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary },
-  scenarioRow: { gap: Spacing.sm },
-  scenarioChip: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, backgroundColor: '#F5F7FB' },
-  scenarioChipActive: { backgroundColor: '#E8F0FF' },
+  scenarioRow: { gap: 8, marginTop: Spacing.xs },
+  scenarioChip: { paddingHorizontal: Spacing.md, paddingVertical: 9, borderRadius: BorderRadius.full, backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  scenarioChipActive: { backgroundColor: '#E8F0FF', borderColor: 'rgba(58,124,255,0.16)' },
   scenarioChipText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, fontWeight: Typography.fontWeight.medium },
   scenarioChipTextActive: { color: Colors.primary.main },
   detailContainer: { flex: 1, backgroundColor: Colors.background.secondary },
