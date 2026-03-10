@@ -26,7 +26,7 @@ export function FeedingFeedbackScreen({ navigation }: Props) {
         <View style={styles.heroCard}>
           <View style={styles.heroTopRow}>
             <View style={styles.heroTextBlock}>
-              <Text style={styles.eyebrow}>Feeding Feedback</Text>
+              <Text style={styles.eyebrow}>喂养反馈</Text>
               <Text style={styles.title}>这周宝宝对哪些菜更买账？</Text>
               <Text style={styles.subtitle}>把真实喂养反馈整理成下一周继续安排、谨慎重试和减少踩雷的家庭决策页。</Text>
             </View>

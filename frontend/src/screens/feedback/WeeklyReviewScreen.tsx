@@ -30,9 +30,9 @@ export function WeeklyReviewScreen({ navigation }: Props) {
         <View style={styles.heroCard}>
           <View style={styles.heroTopRow}>
             <View style={styles.heroTextBlock}>
-              <Text style={styles.eyebrow}>Weekly Review</Text>
+              <Text style={styles.eyebrow}>每周回顾</Text>
               <Text style={styles.title}>这周的一菜两吃，效果怎么样？</Text>
-              <Text style={styles.subtitle}>{weekStart && weekEnd ? `${weekStart} 至 ${weekEnd}` : '基于真实 weekly review 数据生成'}，没有 mock summary。</Text>
+              <Text style={styles.subtitle}>{weekStart && weekEnd ? `${weekStart} 至 ${weekEnd}` : '基于真实周回顾数据生成'}，没有模拟摘要。</Text>
             </View>
             <TouchableOpacity style={styles.heroActionButton} onPress={() => setShowActions((prev) => !prev)}>
               <Text style={styles.heroActionButtonText}>{showActions ? '收起' : '更多'}</Text>
@@ -79,7 +79,7 @@ export function WeeklyReviewScreen({ navigation }: Props) {
             </View>
 
             <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>One Dish, Two Ways 洞察</Text>
+              <Text style={styles.sectionTitle}>一菜两吃洞察</Text>
               <Text style={styles.bodyText}>{review.insightText}</Text>
               <Text style={[styles.bodyText, { marginTop: Spacing.sm }]}>{review.trendText}</Text>
             </View>

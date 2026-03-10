@@ -143,7 +143,7 @@ export function HomeScreen({ navigation }: Props) {
         <View style={styles.sectionPrimary}>
           <View style={styles.sectionRowBetween}>
             <View>
-              <Text style={styles.sectionTitle}>One Dish, Two Ways</Text>
+              <Text style={styles.sectionTitle}>一菜两吃</Text>
               <Text style={styles.sectionCaption}>主推荐先放前面，先把今天最值得做的一道定下来。</Text>
             </View>
             <TouchableOpacity onPress={nav.search}><Text style={styles.linkText}>去搜索</Text></TouchableOpacity>
