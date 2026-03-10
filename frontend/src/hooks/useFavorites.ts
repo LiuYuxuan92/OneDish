@@ -1,12 +1,32 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { favoritesApi } from '../api/favorites';
+import { Platform } from 'react-native';
+import { favoritesApi, type FavoritesListResponse } from '../api/favorites';
+import { shouldUseWebMockFallback } from '../mock/webFallback';
+
+const buildEmptyFavorites = (params?: { page?: number; limit?: number }): FavoritesListResponse => ({
+  total: 0,
+  page: params?.page ?? 1,
+  limit: params?.limit ?? 20,
+  items: [],
+});
 
 // 获取收藏列表
 export function useFavorites(params?: { page?: number; limit?: number }) {
   return useQuery({
     queryKey: ['favorites', params],
-    queryFn: () => favoritesApi.getFavorites(params).then(res => res.data || res),
+    queryFn: async () => {
+      try {
+        const res = await favoritesApi.getFavorites(params);
+        return res.data ?? res ?? buildEmptyFavorites(params);
+      } catch (error) {
+        if (Platform.OS === 'web' && shouldUseWebMockFallback(error)) {
+          return buildEmptyFavorites(params);
+        }
+        throw error;
+      }
+    },
     staleTime: 2 * 60 * 1000, // 2分钟
+    retry: Platform.OS === 'web' ? 0 : 1,
   });
 }
 

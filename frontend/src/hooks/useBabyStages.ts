@@ -20,7 +20,7 @@ export function useBabyStageByAge(months: number | undefined) {
     queryFn: async () => {
       if (!months) return null;
       const res = await babyStagesApi.getByAge(months);
-      return res.data.data;
+      return res?.data?.data ?? res?.data ?? null;
     },
     enabled: !!months,
     staleTime: 24 * 60 * 60 * 1000,

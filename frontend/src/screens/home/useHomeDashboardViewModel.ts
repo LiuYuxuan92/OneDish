@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
+import { Platform } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { mealPlansApi } from '../../api/mealPlans';
 import { shoppingListsApi } from '../../api/shoppingLists';
 import { feedingFeedbackApi } from '../../api/feedingFeedback';
+import { buildMockFeedingFeedback, shouldUseWebMockFallback } from '../../mock/webFallback';
 import { useHomeRecommendation } from './useHomeRecommendation';
 
 const mealTypeLabelMap: Record<string, string> = {
@@ -57,9 +59,17 @@ export function useHomeDashboardViewModel() {
   const feedingQuery = useQuery({
     queryKey: ['home-dashboard', 'feeding-recent'],
     queryFn: async () => {
-      const res = await feedingFeedbackApi.recent({ limit: 20 });
-      return (res as any)?.data ?? res;
+      try {
+        const res = await feedingFeedbackApi.recent({ limit: 20 });
+        return (res as any)?.data ?? res ?? { items: [] };
+      } catch (error) {
+        if (Platform.OS === 'web' && shouldUseWebMockFallback(error)) {
+          return buildMockFeedingFeedback();
+        }
+        throw error;
+      }
     },
+    retry: Platform.OS === 'web' ? 0 : 1,
   });
 
   const viewModel = useMemo(() => {
