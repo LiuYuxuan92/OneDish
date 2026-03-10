@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { mealPlansApi } from '../api/mealPlans';
 import type { SmartRecommendationParams, RecommendationFeedbackParams, GenerateWeeklyPlanParams } from '../api/mealPlans';
+import { buildMockWeeklyPlan, shouldUseWebMockFallback } from '../mock/webFallback';
 
 /**
  * 获取一周计划
@@ -10,8 +11,19 @@ export function useWeeklyPlan(params?: { start_date?: string; end_date?: string 
   return useQuery({
     queryKey: ['mealPlans', 'weekly', params],
     queryFn: async () => {
-      const result = await mealPlansApi.getWeekly(params);
-      return result || null;
+      try {
+        const result = await mealPlansApi.getWeekly(params);
+        return result || null;
+      } catch (error) {
+        if (shouldUseWebMockFallback(error)) {
+          return {
+            code: 200,
+            message: 'mock weekly plan for web local dev',
+            data: buildMockWeeklyPlan(),
+          } as any;
+        }
+        throw error;
+      }
     },
     staleTime: 5 * 60 * 1000,
     cacheTime: 24 * 60 * 60 * 1000,

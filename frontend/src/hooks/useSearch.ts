@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { searchApi, SearchResult, UnifiedSearchResult } from '../api/search';
 import { trackEvent } from '../analytics/sdk';
+import { buildMockSearchResult, shouldUseWebMockFallback } from '../mock/webFallback';
 
 // 统一搜索（联网搜索）
 export function useUnifiedSearch(keyword?: string, options?: { inventoryIngredients?: string[]; scenario?: string }) {
@@ -25,6 +26,9 @@ export function useUnifiedSearch(keyword?: string, options?: { inventoryIngredie
           http_status: error?.http_status,
           error_code: error?.code,
         });
+        if (shouldUseWebMockFallback(error)) {
+          return buildMockSearchResult(keyword, options);
+        }
         return { results: [], source: 'local', route_source: 'local', total: 0, error: String(error) };
       }
     },
@@ -57,6 +61,14 @@ export function useSourceSearch(keyword?: string, source?: 'local' | 'tianxing' 
           http_status: error?.http_status,
           error_code: error?.code,
         });
+        if (shouldUseWebMockFallback(error)) {
+          const fallback = buildMockSearchResult(keyword, options);
+          return {
+            ...fallback,
+            source: source || 'local',
+            route_source: source === 'tianxing' ? 'web' : (source || 'local'),
+          };
+        }
         return { results: [], source: source || 'local', route_source: source || 'local', total: 0, error: String(error) };
       }
     },

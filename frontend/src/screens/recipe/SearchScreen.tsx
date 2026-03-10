@@ -26,6 +26,7 @@ import { buildSearchPreferenceHint, buildPreferenceLeadText } from '../../utils/
 import { ingredientInventoryApi } from '../../api/ingredientInventory';
 import { feedingFeedbackApi } from '../../api/feedingFeedback';
 import { useSearchExperienceViewModel, SearchTaskTab } from './useSearchExperienceViewModel';
+import { buildMockFeedingFeedback, buildMockInventory, shouldUseWebMockFallback } from '../../mock/webFallback';
 
 type Props = NativeStackScreenProps<RecipeStackParamList, 'Search'>;
 
@@ -75,14 +76,27 @@ export function SearchScreen({ navigation }: Props) {
         ? payload.inventory.map((item: any) => String(item?.ingredient_name || '').trim()).filter(Boolean)
         : [];
       setInventoryIngredients(names.slice(0, 20));
-    }).catch(() => {});
+    }).catch((error) => {
+      if (shouldUseWebMockFallback(error)) {
+        const payload = buildMockInventory();
+        const names = payload.inventory.map((item) => String(item.ingredient_name || '').trim()).filter(Boolean);
+        setInventoryIngredients(names.slice(0, 20));
+      }
+    });
 
     feedingFeedbackApi.recent({ limit: 50 }).then((res: any) => {
       const payload = res?.data || res;
       const items = Array.isArray(payload?.items) ? payload.items : [];
       setLovedRecipeNames(new Set(items.filter((item: any) => item.accepted_level === 'like' && item.recipe_name).map((item: any) => item.recipe_name)));
       setRejectedRecipeNames(new Set(items.filter((item: any) => item.accepted_level === 'reject' && item.recipe_name).map((item: any) => item.recipe_name)));
-    }).catch(() => {});
+    }).catch((error) => {
+      if (shouldUseWebMockFallback(error)) {
+        const payload = buildMockFeedingFeedback();
+        const items = payload.items;
+        setLovedRecipeNames(new Set(items.filter((item) => item.accepted_level === 'like' && item.recipe_name).map((item) => item.recipe_name as string)));
+        setRejectedRecipeNames(new Set(items.filter((item) => item.accepted_level === 'reject' && item.recipe_name).map((item) => item.recipe_name as string)));
+      }
+    });
   }, []);
 
   const searchOptions = useMemo(() => ({

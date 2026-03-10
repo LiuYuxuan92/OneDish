@@ -1,21 +1,35 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersApi, UserInfo, UpdateUserInfoRequest, UserPreferences } from '../api/users';
+import { buildMockUserInfo, shouldUseWebMockFallback } from '../mock/webFallback';
 
 // 获取用户信息
 export function useUserInfo() {
   return useQuery({
     queryKey: ['users', 'me'],
     queryFn: async () => {
-      const user = await usersApi.getUserInfo().then(res => res.data || res);
       try {
-        const prefResponse = await usersApi.getPreferences();
-        const prefPayload = prefResponse?.data || prefResponse;
-        return {
-          ...user,
-          preferences: prefPayload?.preferences || prefPayload || user?.preferences || {},
-        };
-      } catch {
-        return user;
+        const user = await usersApi.getUserInfo().then(res => res.data || res);
+        try {
+          const prefResponse = await usersApi.getPreferences();
+          const prefPayload = prefResponse?.data || prefResponse;
+          return {
+            ...user,
+            preferences: prefPayload?.preferences || prefPayload || user?.preferences || {},
+          };
+        } catch (prefError) {
+          if (shouldUseWebMockFallback(prefError)) {
+            return {
+              ...user,
+              preferences: user?.preferences || buildMockUserInfo().preferences,
+            };
+          }
+          return user;
+        }
+      } catch (error) {
+        if (shouldUseWebMockFallback(error)) {
+          return buildMockUserInfo();
+        }
+        throw error;
       }
     },
     staleTime: 5 * 60 * 1000,

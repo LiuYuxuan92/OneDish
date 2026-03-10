@@ -12,8 +12,20 @@ export class MealPlanController {
   // 获取一周计划
   getWeeklyPlan = async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).user.user_id;
+      const userId = (req as any).user?.user_id;
       const { start_date, end_date } = req.query;
++
++      if (!userId) {
++        return res.json({
++          code: 200,
++          message: 'success',
++          data: {
++            start_date: (start_date as string) || this.mealPlanService.getMonday(new Date()),
++            end_date: (end_date as string) || this.mealPlanService.getSunday(new Date()),
++            plans: {},
++          },
++        });
++      }
 
       const result = await this.mealPlanService.getWeeklyPlan(
         userId,
