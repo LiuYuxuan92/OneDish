@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -30,6 +30,7 @@ interface MenuItem {
 
 export function ProfileScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = React.useState(false);
+  const [showQuickLinks, setShowQuickLinks] = useState(false);
   const { data: user, isLoading, error, refetch } = useUserInfo();
 
   const onRefresh = async () => {
@@ -166,8 +167,21 @@ export function ProfileScreen({ navigation }: Props) {
         }
         contentContainerStyle={styles.scrollContent}
       >
-        {/* 用户信息卡片 */}
         <View style={styles.userCard}>
+          <View style={styles.profileHeroTopRow}>
+            <View style={styles.profileHeroTextBlock}>
+              <Text style={styles.profileEyebrow}>Profile hub</Text>
+              <Text style={styles.username}>{user?.username || '美食家'}</Text>
+              <Text style={styles.userEmail}>{user?.email || '欢迎回来'}</Text>
+              <Text style={styles.profileNarrative}>
+                把家庭资料、宝宝阶段、收藏与反馈回顾收在一个更轻的个人中心入口里。
+              </Text>
+            </View>
+            <TouchableOpacity style={styles.profileActionButton} onPress={() => setShowQuickLinks((prev) => !prev)}>
+              <Text style={styles.profileActionButtonText}>{showQuickLinks ? '收起' : '快捷入口'}</Text>
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>👨‍🍳</Text>
@@ -176,10 +190,7 @@ export function ProfileScreen({ navigation }: Props) {
               <Text style={styles.statusIcon}>✓</Text>
             </View>
           </View>
-          <Text style={styles.username}>{user?.username || '美食家'}</Text>
-          <Text style={styles.userEmail}>{user?.email || '欢迎回来'}</Text>
-          
-          {/* 统计信息 */}
+
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{user?.family_size || 2}</Text>
@@ -200,6 +211,20 @@ export function ProfileScreen({ navigation }: Props) {
               <Text style={styles.statLabel}>收藏菜谱</Text>
             </View>
           </View>
+
+          {showQuickLinks && (
+            <View style={styles.quickLinksRow}>
+              <TouchableOpacity style={styles.quickLinkChip} onPress={() => navigation.navigate('Family')}>
+                <Text style={styles.quickLinkChipText}>家庭空间</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.quickLinkChip} onPress={() => navigation.navigate('FeedingFeedback')}>
+                <Text style={styles.quickLinkChipText}>喂养反馈</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.quickLinkChip} onPress={() => navigation.navigate('WeeklyReview')}>
+                <Text style={styles.quickLinkChipText}>每周回顾</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* 宝宝月龄卡片 - 当有宝宝时显示 */}
@@ -246,11 +271,44 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
   },
   userCard: {
-    alignItems: 'center',
     padding: Spacing['2xl'],
     backgroundColor: Colors.background.primary,
     marginBottom: Spacing.lg,
     ...Shadows.sm,
+  },
+  profileHeroTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+  },
+  profileHeroTextBlock: {
+    flex: 1,
+  },
+  profileEyebrow: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: Spacing.xs,
+  },
+  profileNarrative: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    lineHeight: 20,
+    marginTop: Spacing.sm,
+  },
+  profileActionButton: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.background.secondary,
+  },
+  profileActionButtonText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.primary,
+    fontWeight: Typography.fontWeight.medium,
   },
   babyAgeSection: {
     paddingHorizontal: Spacing.lg,
@@ -311,6 +369,24 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.lg,
     gap: Spacing.xl,
+  },
+  quickLinksRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+    justifyContent: 'center',
+  },
+  quickLinkChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.primary.light,
+  },
+  quickLinkChipText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.primary.dark,
+    fontWeight: Typography.fontWeight.semibold,
   },
   statItem: {
     alignItems: 'center',
