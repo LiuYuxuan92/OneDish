@@ -117,7 +117,7 @@ export function AISettingsScreen({ navigation }: Props) {
       <Text style={styles.emptyIcon}>🤖</Text>
       <Text style={styles.emptyTitle}>还没有 AI 配置</Text>
       <Text style={styles.emptySubtitle}>
-        添加你的 AI API Key，可以节省平台成本并获得更好的体验
+        添加你的 AI 接口密钥，可以节省平台成本并获得更好的体验
       </Text>
       <TouchableOpacity style={styles.emptyButton} onPress={handleAdd}>
         <PlusIcon size={20} color={Colors.text.inverse} />

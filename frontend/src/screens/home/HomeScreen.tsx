@@ -63,7 +63,7 @@ export function HomeScreen({ navigation }: Props) {
         <View style={styles.hero}>
           <View style={styles.heroTopRow}>
             <View style={styles.heroCopy}>
-              <Text style={styles.eyebrow}>Home</Text>
+              <Text style={styles.eyebrow}>今日主页</Text>
               <Text style={styles.greeting}>{vm.header.greeting}</Text>
               <Text style={styles.subtitle}>{vm.header.subtitle}</Text>
             </View>
@@ -76,7 +76,7 @@ export function HomeScreen({ navigation }: Props) {
           <View style={styles.todayCard}>
             <View style={styles.summaryHeaderRow}>
               <View style={styles.summaryCopyBlock}>
-                <Text style={styles.summaryEyebrow}>Today summary</Text>
+                <Text style={styles.summaryEyebrow}>今日摘要</Text>
                 <Text style={styles.summaryPrimary}>{vm.todaySummary.primary}</Text>
                 <Text style={styles.summarySecondary}>{vm.todaySummary.secondary}</Text>
               </View>
@@ -110,7 +110,7 @@ export function HomeScreen({ navigation }: Props) {
                     <Text style={styles.mealHint}>{meal.done ? '今天已做完' : '还可以继续补细节'}</Text>
                   </View>
                   <View style={[styles.mealStatus, meal.done && styles.mealStatusDone]}>
-                    <Text style={[styles.mealStatusText, meal.done && styles.mealStatusTextDone]}>{meal.done ? 'Done' : 'Planned'}</Text>
+                    <Text style={[styles.mealStatusText, meal.done && styles.mealStatusTextDone]}>{meal.done ? '已完成' : '已安排'}</Text>
                   </View>
                 </View>
               )) : <Text style={styles.emptyHint}>今天还没有安排，先去搜索一顿，再回周计划补齐。</Text>}
@@ -165,12 +165,12 @@ export function HomeScreen({ navigation }: Props) {
                   </View>
                   <View style={styles.recommendationSplitCard}>
                     <View style={styles.splitColumn}>
-                      <Text style={styles.splitEyebrow}>Family</Text>
+                      <Text style={styles.splitEyebrow}>大人版</Text>
                       <Text style={styles.splitText}>先做共享底菜，再按口味补成人调味。</Text>
                     </View>
                     <View style={styles.splitDivider} />
                     <View style={styles.splitColumn}>
-                      <Text style={styles.splitEyebrow}>Baby</Text>
+                      <Text style={styles.splitEyebrow}>宝宝版</Text>
                       <Text style={styles.splitText}>提前分出一份，按阶段调口感与颗粒度。</Text>
                     </View>
                   </View>
@@ -193,7 +193,7 @@ export function HomeScreen({ navigation }: Props) {
         <View style={styles.section}>
           <View style={styles.sectionRowBetween}>
             <View>
-              <Text style={styles.sectionTitle}>Explore</Text>
+              <Text style={styles.sectionTitle}>继续找菜</Text>
               <Text style={styles.sectionCaption}>像内容入口，不像后台模块，先逛再进具体流程。</Text>
             </View>
             <TouchableOpacity onPress={nav.search}><Text style={styles.linkText}>全部入口</Text></TouchableOpacity>

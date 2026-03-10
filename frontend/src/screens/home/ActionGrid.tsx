@@ -18,7 +18,7 @@ export function ActionGrid({ actions }: ActionGridProps) {
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.title}>Quick actions</Text>
+          <Text style={styles.title}>快捷入口</Text>
           <Text style={styles.caption}>轻量直达，不打断主流程</Text>
         </View>
       </View>

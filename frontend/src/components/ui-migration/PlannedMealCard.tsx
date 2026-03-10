@@ -20,7 +20,7 @@ export const PlannedMealCard: React.FC<PlannedMealCardProps> = ({ item, onPress,
       <Card variant="outlined" style={styles.emptyCard}>
         <Pressable onPress={() => onAddEmpty?.(item.slotKey)} style={styles.emptyAction}>
           <Text style={styles.emptyPlus}>＋</Text>
-          <Text style={styles.emptyText}>Add recipe</Text>
+          <Text style={styles.emptyText}>添加菜谱</Text>
         </Pressable>
       </Card>
     );
@@ -45,8 +45,8 @@ export const PlannedMealCard: React.FC<PlannedMealCardProps> = ({ item, onPress,
       </Pressable>
       {item.adaptation ? <AdaptationSummary adaptation={item.adaptation} compact /> : null}
       <View style={styles.actionRow}>
-        <Pressable onPress={() => onReplace?.(item.planId)}><Text style={styles.actionText}>Replace</Text></Pressable>
-        <Pressable onPress={() => onRemove?.(item.planId)}><Text style={styles.actionText}>Remove</Text></Pressable>
+        <Pressable onPress={() => onReplace?.(item.planId)}><Text style={styles.actionText}>替换</Text></Pressable>
+        <Pressable onPress={() => onRemove?.(item.planId)}><Text style={styles.actionText}>移除</Text></Pressable>
       </View>
     </Card>
   );

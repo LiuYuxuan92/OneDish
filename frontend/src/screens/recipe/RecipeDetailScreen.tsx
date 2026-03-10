@@ -315,8 +315,8 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
   ].filter(Boolean);
   const statusTags = [
     isPaired ? "一菜两吃" : "可转宝宝版",
-    effectiveBaby ? "adult/baby version 已接通" : null,
-    syncCooking ? "sync cooking / timeline 已接通" : null,
+    effectiveBaby ? "大人版 / 宝宝版已接通" : null,
+    syncCooking ? "同步烹饪时间线已接通" : null,
     normalizedRecentFeedbacks.length ? "有真实喂养反馈" : "反馈数据积累中",
   ].filter(Boolean);
   const adaptationBullets = [
@@ -335,7 +335,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
   const versionCards = [
     {
       key: "adult",
-      title: "Adult version",
+      title: "大人版",
       subtitle: `${recipe.prep_time} 分钟 · ${recipe.difficulty}`,
       description:
         parsedAdult?.steps?.[0]?.action ||
@@ -344,7 +344,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
     },
     {
       key: "baby",
-      title: "Baby version",
+      title: "宝宝版",
       subtitle:
         effectiveBaby?.age_range || `${formatBabyAge(selectedBabyAge)} 适配`,
       description:
@@ -439,7 +439,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
 
           <View style={styles.heroCardsSection}>
             <View style={[styles.detailCard, styles.detailCardEmphasis]}>
-              <Text style={styles.eyebrow}>ONE DISH, TWO WAYS</Text>
+              <Text style={styles.eyebrow}>一菜两吃</Text>
               <Text style={styles.detailCardTitle}>
                 先决定这是不是你们今天要做的那一道
               </Text>
@@ -495,7 +495,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
 
             <View style={[styles.detailCard, styles.detailCardSoft]}>
               <Text style={styles.detailCardTitle}>
-                Why this fits your household
+                为什么适合你家今天来做
               </Text>
               {whyItFits.map((line: string) => (
                 <View key={line} style={styles.tipItem}>
@@ -983,7 +983,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
             <View style={styles.sectionTightTop}>
               <View style={[styles.detailCard, styles.utilityCardMuted]}>
                 <Text style={styles.utilityCardTitle}>
-                  同步 cooking / timeline
+                  同步烹饪时间线
                 </Text>
                 <Text style={styles.utilityCardCaption}>
                   需要时再切进来安排并行节奏；默认不抢首屏注意力。
@@ -1017,12 +1017,12 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionIcon}>🍼</Text>
-            <Text style={styles.sectionTitle}>Feeding feedback</Text>
+            <Text style={styles.sectionTitle}>喂养反馈</Text>
           </View>
           <View style={styles.detailCard}>
             <Text style={styles.tipsText}>
-              保留真实反馈接口：这里仍然直接提交 like / ok /
-              reject，并把结果回流到“喂养反馈 / 每周回顾”页面。
+              保留真实反馈接口：这里仍然直接提交喜欢 / 一般 /
+              拒绝，并把结果回流到“喂养反馈 / 每周回顾”页面。
             </Text>
             <View style={styles.feedbackActionRow}>
               <TouchableOpacity

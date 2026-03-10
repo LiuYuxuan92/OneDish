@@ -554,12 +554,12 @@ export function ShoppingListScreen({ navigation }: Props) {
 
               <View style={styles.readinessGrid}>
                 <TouchableOpacity style={styles.readinessCard} onPress={() => navigation.navigate('WeeklyPlan')}>
-                  <Text style={styles.readinessLabel}>Meal readiness</Text>
+                  <Text style={styles.readinessLabel}>餐次准备度</Text>
                   <Text style={styles.readinessValue}>{mealReadinessReady}/{mealReadinessTotal || mealReadinessReady}</Text>
                   <Text style={styles.readinessCaption}>已覆盖餐次</Text>
                 </TouchableOpacity>
                 <View style={styles.readinessCard}>
-                  <Text style={styles.readinessLabel}>Still needed</Text>
+                  <Text style={styles.readinessLabel}>仍需补齐</Text>
                   <Text style={styles.readinessValue}>{totalUnchecked}</Text>
                   <Text style={styles.readinessCaption}>{totalUnchecked <= 3 ? '快完成了' : '继续补齐缺口'}</Text>
                 </View>

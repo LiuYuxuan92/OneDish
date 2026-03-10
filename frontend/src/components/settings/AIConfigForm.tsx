@@ -66,7 +66,7 @@ export function AIConfigForm({
       return;
     }
     if (!apiKey.trim() && !editingConfig) {
-      Alert.alert('提示', '请输入 API Key');
+      Alert.alert('提示', '请输入接口密钥');
       return;
     }
 
@@ -146,15 +146,15 @@ export function AIConfigForm({
               />
             </View>
 
-            {/* API Key */}
+            {/* 接口密钥 */}
             <View style={styles.field}>
-              <Text style={styles.label}>API Key</Text>
+              <Text style={styles.label}>接口密钥</Text>
               <View style={styles.passwordInputContainer}>
                 <TextInput
                   style={[styles.input, styles.passwordInput]}
                   value={apiKey}
                   onChangeText={setApiKey}
-                  placeholder={editingConfig ? '留空则不修改' : '请输入 API Key'}
+                  placeholder={editingConfig ? '留空则不修改' : '请输入接口密钥'}
                   placeholderTextColor={Colors.text.disabled}
                   secureTextEntry={!showApiKey}
                   autoCapitalize="none"
@@ -173,9 +173,9 @@ export function AIConfigForm({
               </View>
             </View>
 
-            {/* Base URL (Optional) */}
+            {/* 基础地址（可选） */}
             <View style={styles.field}>
-              <Text style={styles.label}>Base URL <Text style={styles.optional}>(可选)</Text></Text>
+              <Text style={styles.label}>基础地址 <Text style={styles.optional}>(可选)</Text></Text>
               <TextInput
                 style={styles.input}
                 value={baseUrl}

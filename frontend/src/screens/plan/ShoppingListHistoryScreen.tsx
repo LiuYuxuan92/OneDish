@@ -205,7 +205,7 @@ export function ShoppingListHistoryScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>Shopping history</Text>
+        <Text style={styles.eyebrow}>历史清单</Text>
         <Text style={styles.title}>把历史清单、共享入口和回看操作收在一起</Text>
         <Text style={styles.subtitle}>最近 30 天的购物清单会保留在这里，也可以通过邀请码加入共享清单。</Text>
         <View style={styles.summaryRow}>

@@ -196,7 +196,7 @@ export function InventoryScreen({ navigation }: Props) {
       <View style={styles.heroCard}>
         <View style={styles.heroTopRow}>
           <View style={styles.heroTextBlock}>
-            <Text style={styles.heroEyebrow}>Inventory</Text>
+            <Text style={styles.heroEyebrow}>库存管理</Text>
             <Text style={styles.heroTitle}>先看库存状态，再决定本周做什么</Text>
             <Text style={styles.heroSubtitle}>把临期提醒、库存覆盖和推荐菜谱放在同一屏里，方便和首页、周计划联动。</Text>
           </View>

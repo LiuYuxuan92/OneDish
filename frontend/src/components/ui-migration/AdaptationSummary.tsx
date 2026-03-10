@@ -14,31 +14,31 @@ export const AdaptationSummary: React.FC<AdaptationSummaryProps> = ({ adaptation
   if (compact) {
     return (
       <View style={styles.compactRow}>
-        {adaptation.splitStep ? <Text style={styles.compactPill}>✂️ Step {adaptation.splitStep}</Text> : null}
+        {adaptation.splitStep ? <Text style={styles.compactPill}>✂️ 第 {adaptation.splitStep} 步分出</Text> : null}
         {adaptation.texture ? <Text style={styles.compactPill}>👶 {adaptation.texture}</Text> : null}
-        {adaptation.extraPrep && adaptation.extraPrep !== 'none' ? <Text style={styles.compactPill}>+{adaptation.extraPrep} prep</Text> : null}
+        {adaptation.extraPrep && adaptation.extraPrep !== 'none' ? <Text style={styles.compactPill}>+{adaptation.extraPrep} 预处理</Text> : null}
       </View>
     );
   }
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>👨‍👩‍👦 Baby adaptation</Text>
+      <Text style={styles.title}>👨‍👩‍👦 宝宝适配</Text>
       <View style={styles.grid}>
         {adaptation.method ? (
           <View style={styles.gridCell}>
-            <Text style={styles.caption}>Method</Text>
+            <Text style={styles.caption}>处理方式</Text>
             <Text style={styles.value}>{adaptation.method}</Text>
           </View>
         ) : null}
         {adaptation.texture ? (
           <View style={styles.gridCell}>
-            <Text style={styles.caption}>Texture</Text>
+            <Text style={styles.caption}>质地建议</Text>
             <Text style={styles.value}>{adaptation.texture}</Text>
           </View>
         ) : null}
       </View>
-      {adaptation.splitStep ? <Text style={styles.callout}>✂️ Split at step {adaptation.splitStep}</Text> : null}
+      {adaptation.splitStep ? <Text style={styles.callout}>✂️ 在第 {adaptation.splitStep} 步分出宝宝份</Text> : null}
       {adaptation.summary ? <Text style={styles.summary}>{adaptation.summary}</Text> : null}
       {adaptation.allergenNotes?.length ? (
         <View style={styles.alertBox}>

@@ -170,7 +170,7 @@ export function ProfileScreen({ navigation }: Props) {
         <View style={styles.userCard}>
           <View style={styles.profileHeroTopRow}>
             <View style={styles.profileHeroTextBlock}>
-              <Text style={styles.profileEyebrow}>Profile hub</Text>
+              <Text style={styles.profileEyebrow}>个人中心</Text>
               <Text style={styles.username}>{user?.username || '美食家'}</Text>
               <Text style={styles.userEmail}>{user?.email || '欢迎回来'}</Text>
               <Text style={styles.profileNarrative}>

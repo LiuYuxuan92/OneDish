@@ -247,7 +247,7 @@ export function FamilyScreen({ navigation }: Props) {
         <View style={styles.headerCard}>
           <View style={styles.heroTopRow}>
             <View style={styles.heroTextBlock}>
-              <Text style={styles.headerEyebrow}>Family space</Text>
+              <Text style={styles.headerEyebrow}>家庭空间</Text>
               <Text style={styles.headerTitle}>{myFamily?.name || '家庭协作'}</Text>
               <Text style={styles.headerSubtitle}>
                 把周计划、购物清单和宝宝喂养入口收拢到一个共享空间。
@@ -378,7 +378,7 @@ export function FamilyScreen({ navigation }: Props) {
           <TouchableOpacity style={styles.spaceCard} onPress={() => navigation.navigate('FamilyWeeklyPlan')}>
             <Text style={styles.spaceIcon}>📅</Text>
             <View style={styles.spaceBody}>
-              <Text style={styles.spaceTitle}>Weekly Plan</Text>
+              <Text style={styles.spaceTitle}>共享周计划</Text>
               <Text style={styles.spaceDescription}>本周 {familyStats.plannedMeals} 个餐次，双版本餐次 {familyStats.dualMeals} 个</Text>
             </View>
             <Text style={styles.spaceLink}>进入</Text>
@@ -386,7 +386,7 @@ export function FamilyScreen({ navigation }: Props) {
           <TouchableOpacity style={styles.spaceCard} onPress={() => navigation.navigate('FamilyShoppingList')}>
             <Text style={styles.spaceIcon}>🛒</Text>
             <View style={styles.spaceBody}>
-              <Text style={styles.spaceTitle}>Shopping List</Text>
+              <Text style={styles.spaceTitle}>共享采购</Text>
               <Text style={styles.spaceDescription}>待采购 {shoppingStats.unchecked} 项，库存已覆盖 {shoppingStats.covered} 项</Text>
             </View>
             <Text style={styles.spaceLink}>进入</Text>
@@ -394,7 +394,7 @@ export function FamilyScreen({ navigation }: Props) {
           <TouchableOpacity style={styles.spaceCard} onPress={() => navigation.navigate('PreferenceSettings')}>
             <Text style={styles.spaceIcon}>👶</Text>
             <View style={styles.spaceBody}>
-              <Text style={styles.spaceTitle}>Baby profile</Text>
+              <Text style={styles.spaceTitle}>宝宝档案</Text>
               <Text style={styles.spaceDescription}>调整月龄、偏好和忌口，让家庭协作更贴近真实宝宝阶段</Text>
             </View>
             <Text style={styles.spaceLink}>设置</Text>
@@ -424,11 +424,11 @@ export function FamilyScreen({ navigation }: Props) {
           <View style={styles.overviewGrid}>
             <View style={styles.overviewCard}>
               <Text style={styles.overviewValue}>{familyStats.plannedMeals}</Text>
-              <Text style={styles.overviewLabel}>Meals planned</Text>
+              <Text style={styles.overviewLabel}>已规划餐次</Text>
             </View>
             <View style={[styles.overviewCard, styles.overviewCardWarm]}>
               <Text style={styles.overviewValue}>{familyStats.dualMeals}</Text>
-              <Text style={styles.overviewLabel}>Dual meals</Text>
+              <Text style={styles.overviewLabel}>双版本餐次</Text>
             </View>
             <View style={styles.overviewCard}>
               <Text style={styles.overviewValue}>{familyStats.completedMeals}</Text>
@@ -436,7 +436,7 @@ export function FamilyScreen({ navigation }: Props) {
             </View>
             <View style={styles.overviewCard}>
               <Text style={styles.overviewValue}>{memberCards.length || 0}</Text>
-              <Text style={styles.overviewLabel}>Caregivers active</Text>
+              <Text style={styles.overviewLabel}>活跃照护者</Text>
             </View>
           </View>
         </View>

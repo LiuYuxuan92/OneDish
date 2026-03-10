@@ -253,7 +253,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={styles.headerTextBlock}>
-            <Text style={styles.headerEyebrow}>Planner</Text>
+            <Text style={styles.headerEyebrow}>计划编排</Text>
             <Text style={styles.headerTitle}>本周计划</Text>
             <Text style={styles.headerDate}>{start.getMonth() + 1}月{start.getDate()}日 - {end.getMonth() + 1}月{end.getDate()}日</Text>
           </View>
@@ -286,15 +286,15 @@ export function WeeklyPlanScreen({ navigation }: Props) {
           <View style={styles.summaryGridCompact}>
             <View style={styles.summaryChip}>
               <Text style={styles.summaryChipValue}>{weekSummary.totalMeals}</Text>
-              <Text style={styles.summaryChipLabel}>Meals</Text>
+              <Text style={styles.summaryChipLabel}>总餐次</Text>
             </View>
             <View style={styles.summaryChip}>
               <Text style={styles.summaryChipValue}>{weekSummary.babyFriendlyMeals}</Text>
-              <Text style={styles.summaryChipLabel}>Dual</Text>
+              <Text style={styles.summaryChipLabel}>双版本</Text>
             </View>
             <View style={styles.summaryChip}>
               <Text style={styles.summaryChipValue}>{shoppingSummary.readinessRatio}%</Text>
-              <Text style={styles.summaryChipLabel}>Ready</Text>
+              <Text style={styles.summaryChipLabel}>采购准备</Text>
             </View>
             <View style={styles.summaryChip}>
               <Text style={styles.summaryChipValue}>{weekSummary.completedMeals}</Text>
