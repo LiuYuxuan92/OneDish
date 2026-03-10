@@ -4,7 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import { mealPlansApi } from '../../api/mealPlans';
 import { shoppingListsApi } from '../../api/shoppingLists';
 import { feedingFeedbackApi } from '../../api/feedingFeedback';
-import { buildMockFeedingFeedback, shouldUseWebMockFallback } from '../../mock/webFallback';
+import {
+  buildMockFeedingFeedback,
+  buildMockShoppingList,
+  buildMockWeeklyPlan,
+  shouldUseWebMockFallback,
+} from '../../mock/webFallback';
 import { useHomeRecommendation } from './useHomeRecommendation';
 
 const mealTypeLabelMap: Record<string, string> = {
@@ -13,6 +18,8 @@ const mealTypeLabelMap: Record<string, string> = {
   dinner: '晚餐',
   snack: '加餐',
 };
+
+const isWeb = Platform.OS === 'web';
 
 function getTodayDateKey() {
   return new Date().toISOString().slice(0, 10);
@@ -34,6 +41,21 @@ function endOfWeek(date: Date) {
   return d;
 }
 
+function buildShoppingFallback() {
+  return { items: [buildMockShoppingList()] };
+}
+
+async function runHomeQueryWithFallback<T>(query: () => Promise<T>, fallback: () => T): Promise<T> {
+  try {
+    return await query();
+  } catch (error) {
+    if (isWeb && shouldUseWebMockFallback(error)) {
+      return fallback();
+    }
+    throw error;
+  }
+}
+
 export function useHomeDashboardViewModel() {
   const recommendation = useHomeRecommendation();
   const todayKey = getTodayDateKey();
@@ -42,34 +64,32 @@ export function useHomeDashboardViewModel() {
 
   const weeklyQuery = useQuery({
     queryKey: ['home-dashboard', 'weekly-plan', weekStart, weekEnd],
-    queryFn: async () => {
-      const res = await mealPlansApi.getWeekly({ start_date: weekStart, end_date: weekEnd });
-      return (res as any)?.data ?? res;
-    },
+    queryFn: async () =>
+      runHomeQueryWithFallback(async () => {
+        const res = await mealPlansApi.getWeekly({ start_date: weekStart, end_date: weekEnd });
+        return (res as any)?.data ?? res ?? buildMockWeeklyPlan();
+      }, buildMockWeeklyPlan),
+    retry: isWeb ? 0 : 1,
   });
 
   const shoppingQuery = useQuery({
     queryKey: ['home-dashboard', 'shopping-lists', weekStart, weekEnd],
-    queryFn: async () => {
-      const res = await shoppingListsApi.getAll({ start_date: weekStart, end_date: weekEnd });
-      return (res as any)?.data ?? res;
-    },
+    queryFn: async () =>
+      runHomeQueryWithFallback(async () => {
+        const res = await shoppingListsApi.getAll({ start_date: weekStart, end_date: weekEnd });
+        return (res as any)?.data ?? res ?? buildShoppingFallback();
+      }, buildShoppingFallback),
+    retry: isWeb ? 0 : 1,
   });
 
   const feedingQuery = useQuery({
     queryKey: ['home-dashboard', 'feeding-recent'],
-    queryFn: async () => {
-      try {
+    queryFn: async () =>
+      runHomeQueryWithFallback(async () => {
         const res = await feedingFeedbackApi.recent({ limit: 20 });
         return (res as any)?.data ?? res ?? { items: [] };
-      } catch (error) {
-        if (Platform.OS === 'web' && shouldUseWebMockFallback(error)) {
-          return buildMockFeedingFeedback();
-        }
-        throw error;
-      }
-    },
-    retry: Platform.OS === 'web' ? 0 : 1,
+      }, buildMockFeedingFeedback),
+    retry: isWeb ? 0 : 1,
   });
 
   const viewModel = useMemo(() => {
