@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import * as KeepAwake from 'expo-keep-awake';
@@ -21,21 +21,18 @@ import StepTimer from '../../components/cooking/StepTimer';
 import { CrossLineAlert } from '../../components/cooking/CrossLineAlert';
 import { BabyStepCard } from '../../components/cooking/BabyStepCard';
 import { SyncCookingTimeline } from './SyncCookingTimeline';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
 
 type Props = NativeStackScreenProps<RecipeStackParamList, 'CookingMode'>;
-
-// 视图模式类型
 type ViewMode = 'step' | 'timeline';
 
 export function CookingModeScreen({ route, navigation }: Props) {
   const { recipeId, babyAgeMonths } = route.params;
-
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('step');
 
   const { data: timeline, isLoading } = useTimeline(recipeId, babyAgeMonths, true);
-
   const {
     currentIndex,
     currentPhase,
@@ -52,7 +49,6 @@ export function CookingModeScreen({ route, navigation }: Props) {
     speakCurrent,
   } = useCookingSession(timeline);
 
-  // Keep screen awake while cooking
   useEffect(() => {
     KeepAwake.activateKeepAwakeAsync();
     return () => {
@@ -60,32 +56,20 @@ export function CookingModeScreen({ route, navigation }: Props) {
     };
   }, []);
 
-  // 切换视图模式：单步视图 <-> 时间线视图
   const handleToggleViewMode = useCallback(() => {
     setViewMode((prev) => (prev === 'step' ? 'timeline' : 'step'));
   }, []);
 
   const handleExit = useCallback(() => {
-    Alert.alert(
-      '退出烹饪',
-      '进度已自动保存，下次进入可继续',
-      [
-        { text: '取消', style: 'cancel' },
-        {
-          text: '确认',
-          onPress: () => navigation.goBack(),
-        },
-      ],
-    );
+    Alert.alert('退出烹饪', '进度已自动保存，下次进入可继续', [
+      { text: '取消', style: 'cancel' },
+      { text: '确认', onPress: () => navigation.goBack() },
+    ]);
   }, [navigation]);
 
   const handleFinish = useCallback(async () => {
     await clearSession();
-    Alert.alert(
-      '🎉 烹饪完成！',
-      '大人和宝宝的饭都做好了，烹饪记录已清除',
-      [{ text: '太棒了', onPress: () => navigation.goBack() }]
-    );
+    Alert.alert('🎉 烹饪完成！', '大人和宝宝的饭都做好了，烹饪记录已清除', [{ text: '太棒了', onPress: () => navigation.goBack() }]);
   }, [clearSession, navigation]);
 
   const handleNext = useCallback(() => {
@@ -106,7 +90,6 @@ export function CookingModeScreen({ route, navigation }: Props) {
     handleNext();
   };
 
-  // Pan gesture: swipe left = next step, swipe right = previous step
   const panGesture = Gesture.Pan()
     .runOnJS(true)
     .onEnd((event) => {
@@ -119,7 +102,6 @@ export function CookingModeScreen({ route, navigation }: Props) {
       }
     });
 
-  // Double-tap gesture: re-read current step aloud
   const doubleTapGesture = Gesture.Tap()
     .runOnJS(true)
     .numberOfTaps(2)
@@ -129,20 +111,18 @@ export function CookingModeScreen({ route, navigation }: Props) {
 
   const composedGesture = Gesture.Race(panGesture, doubleTapGesture);
 
-  // Loading / session not yet restored
   if (isLoading || !sessionLoaded) {
     return (
-      <SafeAreaView style={styles.centered}>
-        <ActivityIndicator size="large" color="#FF7043" style={{ marginBottom: 12 }} />
+      <SafeAreaView style={styles.centered} edges={['bottom']}>
+        <ActivityIndicator size="large" color={Colors.primary.main} style={{ marginBottom: 12 }} />
         <Text style={styles.loadingText}>正在准备烹饪步骤...</Text>
       </SafeAreaView>
     );
   }
 
-  // No timeline or no current phase
   if (!timeline || !currentPhase) {
     return (
-      <SafeAreaView style={styles.centered}>
+      <SafeAreaView style={styles.centered} edges={['bottom']}>
         <Text style={styles.emptyText}>暂无同步烹饪时间线</Text>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Text style={styles.backButtonText}>返回</Text>
@@ -151,17 +131,11 @@ export function CookingModeScreen({ route, navigation }: Props) {
     );
   }
 
-  const parallelPhase =
-    currentPhase.parallel_with != null
-      ? timeline.phases[currentPhase.parallel_with]
-      : undefined;
+  const parallelPhase = currentPhase.parallel_with != null ? timeline.phases[currentPhase.parallel_with] : undefined;
 
-  // 处理时间线视图中的步骤点击
   const handleTimelinePhasePress = useCallback(
     (index: number) => {
-      // 跳转到对应步骤
       if (index >= 0 && index < timeline.phases.length) {
-        // 使用 session 的 goToStep 功能（如果存在）
         for (let i = 0; i < index; i++) {
           goNext();
         }
@@ -170,7 +144,6 @@ export function CookingModeScreen({ route, navigation }: Props) {
     [timeline, goNext]
   );
 
-  // 处理时间线视图中的步骤完成
   const handleTimelinePhaseComplete = useCallback(
     (index: number) => {
       const phases = timeline.phases ?? [];
@@ -179,7 +152,6 @@ export function CookingModeScreen({ route, navigation }: Props) {
         setAlertMessage('宝宝那锅需要你照顾了，记得检查火候和熟度');
         setAlertVisible(true);
       }
-      // 前进到下一步
       if (index < totalPhases - 1) {
         goNext();
       } else {
@@ -189,114 +161,82 @@ export function CookingModeScreen({ route, navigation }: Props) {
     [timeline, totalPhases, goNext, handleFinish]
   );
 
-  // 渲染单步视图
   const renderStepView = () => (
     <GestureDetector gesture={composedGesture}>
       <View style={styles.flex1}>
-        {/* Top bar */}
+        <View style={styles.heroShell}>
+          <View style={styles.topBar}>
+            <TouchableOpacity onPress={handleExit} style={styles.topBarButton}>
+              <Text style={styles.topBarButtonText}>← 退出</Text>
+            </TouchableOpacity>
+            <Text style={styles.topBarTitle}>同步烹饪</Text>
+            <View style={styles.topBarRight}>
+              <TouchableOpacity onPress={handleToggleViewMode} style={styles.viewModeButton}>
+                <Text style={styles.viewModeButtonText}>📋 时间线</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={toggleVoice} style={styles.topBarButton}>
+                <Text style={styles.topBarButtonText}>{voiceEnabled ? '🔊' : '🔇'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.progressArea}>
+            <View style={styles.progressHeaderRow}>
+              <Text style={styles.progressLabel}>步骤 {currentIndex + 1} / {totalPhases}</Text>
+              <Text style={styles.progressHint}>{isLast ? '最后一步' : '左滑进入下一步'}</Text>
+            </View>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` as `${number}%` }]} />
+            </View>
+          </View>
+        </View>
+
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {currentPhase.type === 'baby' ? (
+            <BabyStepCard phase={currentPhase} babyAgeMonths={babyAgeMonths} ingredients={[]} />
+          ) : (
+            <StepCard phase={currentPhase} parallelPhase={parallelPhase} isCurrent={true} />
+          )}
+
+          {currentPhase.duration > 0 ? (
+            <View style={styles.timerContainer}>
+              <StepTimer stepId={`step_${currentIndex}`} stepName={currentPhase.action} durationMinutes={currentPhase.duration} />
+            </View>
+          ) : null}
+        </ScrollView>
+
+        <View style={styles.bottomNav}>
+          <TouchableOpacity style={[styles.navButton, styles.prevButton, isFirst && styles.navButtonDisabled]} onPress={goPrev} disabled={isFirst} activeOpacity={0.7}>
+            <Text style={[styles.navButtonText, isFirst && styles.navButtonTextDisabled]}>← 上一步</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.navButton, styles.nextButton]} onPress={handleMarkComplete} activeOpacity={0.7}>
+            <Text style={styles.nextButtonText}>{isLast ? '🎉 完成烹饪' : '完成此步 →'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        <CrossLineAlert visible={alertVisible} message={alertMessage} onDismiss={() => setAlertVisible(false)} />
+      </View>
+    </GestureDetector>
+  );
+
+  const renderTimelineView = () => (
+    <View style={styles.container}>
+      <View style={styles.heroShell}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={handleExit} style={styles.topBarButton}>
             <Text style={styles.topBarButtonText}>← 退出</Text>
           </TouchableOpacity>
           <Text style={styles.topBarTitle}>同步烹饪</Text>
-          <View style={styles.topBarRight}>
-            <TouchableOpacity onPress={handleToggleViewMode} style={styles.viewModeButton}>
-              <Text style={styles.viewModeButtonText}>📋 时间线</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={toggleVoice} style={styles.topBarButton}>
-              <Text style={styles.topBarButtonText}>{voiceEnabled ? '🔊' : '🔇'}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Progress area */}
-        <View style={styles.progressArea}>
-          <Text style={styles.progressLabel}>
-            步骤 {currentIndex + 1} / {totalPhases}
-          </Text>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` as `${number}%` }]} />
-          </View>
-        </View>
-
-        {/* Content area */}
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {currentPhase.type === 'baby' ? (
-            <BabyStepCard
-              phase={currentPhase}
-              babyAgeMonths={babyAgeMonths}
-              ingredients={[]}
-            />
-          ) : (
-            <StepCard
-              phase={currentPhase}
-              parallelPhase={parallelPhase}
-              isCurrent={true}
-            />
-          )}
-
-          {currentPhase.duration > 0 && (
-            <View style={styles.timerContainer}>
-              <StepTimer
-                stepId={`step_${currentIndex}`}
-                stepName={currentPhase.action}
-                durationMinutes={currentPhase.duration}
-              />
-            </View>
-          )}
-        </ScrollView>
-
-        {/* Bottom navigation */}
-        <View style={styles.bottomNav}>
-          <TouchableOpacity
-            style={[styles.navButton, styles.prevButton, isFirst && styles.navButtonDisabled]}
-            onPress={goPrev}
-            disabled={isFirst}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.navButtonText, isFirst && styles.navButtonTextDisabled]}>
-              ← 上一步
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.navButton, styles.nextButton]}
-            onPress={handleMarkComplete}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.nextButtonText}>
-              {isLast ? '🎉 完成烹饪' : '完成此步 →'}
-            </Text>
+          <TouchableOpacity onPress={handleToggleViewMode} style={styles.viewModeButton}>
+            <Text style={styles.viewModeButtonText}>📝 步骤</Text>
           </TouchableOpacity>
         </View>
-        <CrossLineAlert
-          visible={alertVisible}
-          message={alertMessage}
-          onDismiss={() => setAlertVisible(false)}
-        />
-      </View>
-    </GestureDetector>
-  );
-
-  // 渲染时间线视图
-  const renderTimelineView = () => (
-    <View style={styles.container}>
-      {/* Top bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={handleExit} style={styles.topBarButton}>
-          <Text style={styles.topBarButtonText}>← 退出</Text>
-        </TouchableOpacity>
-        <Text style={styles.topBarTitle}>同步烹饪</Text>
-        <TouchableOpacity onPress={handleToggleViewMode} style={styles.viewModeButton}>
-          <Text style={styles.viewModeButtonText}>📝 步骤</Text>
-        </TouchableOpacity>
+        <View style={styles.timelineHeroInfo}>
+          <Text style={styles.timelineHeroTitle}>完整时间线</Text>
+          <Text style={styles.timelineHeroText}>按全局顺序查看大人版和宝宝版分叉点，适合开火前整体过一遍。</Text>
+        </View>
       </View>
 
-      {/* Timeline content */}
       <SyncCookingTimeline
         timeline={timeline}
         babyAgeMonths={babyAgeMonths}
@@ -305,11 +245,7 @@ export function CookingModeScreen({ route, navigation }: Props) {
         onPhaseComplete={handleTimelinePhaseComplete}
       />
 
-      <CrossLineAlert
-        visible={alertVisible}
-        message={alertMessage}
-        onDismiss={() => setAlertVisible(false)}
-      />
+      <CrossLineAlert visible={alertVisible} message={alertMessage} onDismiss={() => setAlertVisible(false)} />
     </View>
   );
 
@@ -319,7 +255,7 @@ export function CookingModeScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: Colors.background.secondary,
   },
   flex1: {
     flex: 1,
@@ -328,54 +264,58 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: Colors.background.secondary,
     padding: 24,
   },
+  heroShell: {
+    backgroundColor: Colors.background.primary,
+    borderBottomLeftRadius: BorderRadius.xl,
+    borderBottomRightRadius: BorderRadius.xl,
+    ...Shadows.sm,
+  },
   loadingText: {
-    fontSize: 16,
-    color: '#757575',
+    fontSize: Typography.fontSize.base,
+    color: Colors.text.secondary,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#757575',
+    fontSize: Typography.fontSize.base,
+    color: Colors.text.secondary,
     marginBottom: 16,
     textAlign: 'center',
   },
   backButton: {
-    backgroundColor: '#FF9800',
+    backgroundColor: Colors.primary.main,
     paddingHorizontal: 24,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: BorderRadius.full,
   },
   backButtonText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
+    color: Colors.text.inverse,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
   },
-  // Top bar
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: Colors.border.light,
   },
   topBarButton: {
     padding: 4,
     minWidth: 60,
   },
   topBarButtonText: {
-    fontSize: 16,
-    color: '#FF9800',
-    fontWeight: '500',
+    fontSize: Typography.fontSize.sm,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.medium,
   },
   topBarTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#212121',
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
   },
   topBarRight: {
     flexDirection: 'row',
@@ -383,44 +323,48 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   viewModeButton: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: Colors.primary.light,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#FF9800',
+    borderColor: Colors.primary.main,
   },
   viewModeButtonText: {
-    fontSize: 13,
-    color: '#E65100',
-    fontWeight: '600',
+    fontSize: Typography.fontSize.xs,
+    color: Colors.primary.dark,
+    fontWeight: Typography.fontWeight.semibold,
   },
-  // Progress
   progressArea: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    paddingVertical: 12,
+  },
+  progressHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
   },
   progressLabel: {
-    fontSize: 13,
-    color: '#757575',
-    marginBottom: 6,
-    fontWeight: '500',
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  progressHint: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
   },
   progressTrack: {
     height: 6,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: Colors.border.light,
     borderRadius: 3,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#FF9800',
+    backgroundColor: Colors.primary.main,
     borderRadius: 3,
   },
-  // Scroll
   scrollView: {
     flex: 1,
   },
@@ -431,14 +375,13 @@ const styles = StyleSheet.create({
   timerContainer: {
     marginTop: 12,
   },
-  // Bottom nav
   bottomNav: {
     flexDirection: 'row',
     gap: 12,
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.background.primary,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: Colors.border.light,
   },
   navButton: {
     flex: 1,
@@ -448,27 +391,42 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   prevButton: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: Colors.background.secondary,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: Colors.border.light,
   },
   navButtonDisabled: {
     opacity: 0.3,
   },
   navButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#424242',
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.text.primary,
   },
   navButtonTextDisabled: {
-    color: '#9E9E9E',
+    color: Colors.text.tertiary,
   },
   nextButton: {
-    backgroundColor: '#FF9800',
+    backgroundColor: Colors.primary.main,
   },
   nextButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.inverse,
+  },
+  timelineHeroInfo: {
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+  },
+  timelineHeroTitle: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+  },
+  timelineHeroText: {
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    lineHeight: 20,
   },
 });

@@ -87,6 +87,7 @@ export function BabyStageScreen({ navigation }: Props) {
         {stageList.map((stage) => {
           const color = STAGE_COLORS[stage.stage] ?? Colors.primary.main;
           const nutrientPreview = (stage.key_nutrients || []).slice(0, 3);
+          const guidePreview = (stage.guide_tips || []).slice(0, 2);
 
           return (
             <TouchableOpacity
@@ -117,6 +118,13 @@ export function BabyStageScreen({ navigation }: Props) {
                     </View>
                   ))}
                 </View>
+                {guidePreview.length > 0 ? (
+                  <View style={styles.guideBox}>
+                    {guidePreview.map((item) => (
+                      <Text key={`${stage.stage}-${item}`} style={styles.guideText}>• {item}</Text>
+                    ))}
+                  </View>
+                ) : null}
               </View>
             </TouchableOpacity>
           );
@@ -289,5 +297,17 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.xs,
     color: Colors.primary.dark,
     fontWeight: Typography.fontWeight.medium,
+  },
+  guideBox: {
+    marginTop: Spacing.sm,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.sm,
+    gap: 4,
+  },
+  guideText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    lineHeight: 18,
   },
 });

@@ -53,12 +53,7 @@ export function StageDetailScreen({ route, navigation }: Props) {
     },
   });
 
-  const filters =
-    activeFilter === 'first_intro'
-      ? { first_intro: true }
-      : activeFilter
-        ? { scene_tag: activeFilter }
-        : {};
+  const filters = activeFilter === 'first_intro' ? { first_intro: true } : activeFilter ? { scene_tag: activeFilter } : {};
 
   const {
     data: recipes,
@@ -91,6 +86,7 @@ export function StageDetailScreen({ route, navigation }: Props) {
   const tipPreview = (stageData?.guide_tips || []).slice(0, 3);
   const nutrientPreview = (stageData?.key_nutrients || []).slice(0, 4);
   const cautionPreview = (stageData?.cannot_eat || []).slice(0, 4);
+  const canEatPreview = (stageData?.can_eat || []).slice(0, 4);
 
   const handleRetry = async () => {
     await Promise.allSettled([refetchStage(), refetchRecipes()]);
@@ -165,6 +161,13 @@ export function StageDetailScreen({ route, navigation }: Props) {
                 </View>
               ) : null}
             </View>
+
+            {canEatPreview.length > 0 ? (
+              <View style={styles.goodCard}>
+                <Text style={styles.sectionTitle}>本阶段可以重点尝试</Text>
+                <Text style={styles.sectionDescription}>{canEatPreview.join('、')}</Text>
+              </View>
+            ) : null}
 
             {tipPreview.length > 0 ? (
               <View style={styles.tipCard}>
@@ -345,6 +348,12 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
     ...Shadows.sm,
+  },
+  goodCard: {
+    marginTop: Spacing.md,
+    backgroundColor: Colors.functional.successLight,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
   },
   cautionCard: {
     marginTop: Spacing.md,
