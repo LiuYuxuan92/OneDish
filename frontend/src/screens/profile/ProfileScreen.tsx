@@ -31,18 +31,22 @@ interface MenuItem {
 export function ProfileScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = React.useState(false);
   const [showQuickLinks, setShowQuickLinks] = useState(false);
-  const { data: user, isLoading, error, refetch } = useUserInfo();
+  const { data: user, isLoading, refetch } = useUserInfo();
 
   const onRefresh = async () => {
     setRefreshing(true);
     try {
       await refetch();
-    } catch (err) {
-      console.error('刷新失败:', err);
     } finally {
       setRefreshing(false);
     }
   };
+
+  const stats = [
+    { label: '家庭成员', value: `${user?.family_size || 2}` },
+    { label: '宝宝月龄', value: user?.baby_age ? `${user.baby_age}` : '--' },
+    { label: '收藏菜谱', value: '15' },
+  ];
 
   const mainMenuItems: MenuItem[] = [
     {
@@ -55,28 +59,31 @@ export function ProfileScreen({ navigation }: Props) {
     {
       icon: <HeartIcon size={20} color={Colors.functional.error} />,
       title: '我的收藏',
-      subtitle: '查看已收藏的菜谱',
+      subtitle: '回看保存过的一菜两吃',
       onPress: () => navigation.navigate('Favorites'),
       showArrow: true,
     },
     {
       icon: <UtensilsIcon size={20} color={Colors.primary.main} />,
       title: '我的投稿',
-      subtitle: '创建/提交/发布一菜两吃',
+      subtitle: '创建 / 提交 / 发布一菜两吃',
       onPress: () => navigation.navigate('MyRecipes'),
       showArrow: true,
     },
     {
       icon: <ListIcon size={20} color={Colors.functional.success} />,
       title: '我的食材',
-      subtitle: '管理家中食材库存',
+      subtitle: '管理家中库存与临期提醒',
       onPress: () => navigation.navigate('Inventory'),
       showArrow: true,
     },
+  ];
+
+  const secondaryMenuItems: MenuItem[] = [
     {
       icon: <UserIcon size={20} color={Colors.secondary.main} />,
       title: '家庭空间',
-      subtitle: '统一查看家庭成员、共享计划与购物清单',
+      subtitle: '共享计划、清单和成员协作',
       onPress: () => navigation.navigate('Family'),
       showArrow: true,
     },
@@ -90,7 +97,7 @@ export function ProfileScreen({ navigation }: Props) {
     {
       icon: <InfoIcon size={20} color={Colors.primary.dark} />,
       title: '每周回顾',
-      subtitle: '基于真实 weekly review 数据的总结',
+      subtitle: '看本周做饭节奏和完成情况',
       onPress: () => navigation.navigate('WeeklyReview'),
       showArrow: true,
     },
@@ -103,41 +110,42 @@ export function ProfileScreen({ navigation }: Props) {
     },
   ];
 
-  const moreMenuItems: MenuItem[] = [
+  const supportItems: MenuItem[] = [
     {
       icon: <HelpCircleIcon size={20} color={Colors.secondary.main} />,
       title: '帮助与反馈',
+      subtitle: '问题排查与意见反馈',
       onPress: () => {},
       showArrow: true,
     },
     {
       icon: <InfoIcon size={20} color={Colors.info} />,
       title: '关于我们',
+      subtitle: '版本信息与产品说明',
       onPress: () => {},
       showArrow: true,
     },
   ];
 
-  const MenuSection = ({ items, style }: { items: MenuItem[]; style?: any }) => (
-    <View style={[styles.menuSection, style]}>
+  const MenuSection = ({ title, caption, items }: { title: string; caption?: string; items: MenuItem[] }) => (
+    <View style={styles.sectionCard}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {caption ? <Text style={styles.sectionCaption}>{caption}</Text> : null}
+      </View>
       {items.map((item, index) => (
         <TouchableOpacity
           key={index}
-          style={[
-            styles.menuItem,
-            index === items.length - 1 && styles.menuItemLast,
-          ]}
+          style={[styles.menuItem, index === items.length - 1 && styles.menuItemLast]}
           onPress={item.onPress}
-          activeOpacity={0.7}
+          activeOpacity={0.75}
         >
           <View style={styles.menuIconContainer}>{item.icon}</View>
           <View style={styles.menuContent}>
             <Text style={styles.menuTitle}>{item.title}</Text>
-            {item.subtitle && <Text style={styles.menuSubtitle}>{item.subtitle}</Text>}
+            {item.subtitle ? <Text style={styles.menuSubtitle}>{item.subtitle}</Text> : null}
           </View>
-          {item.showArrow && (
-            <ChevronRightIcon size={20} color={Colors.text.tertiary} />
-          )}
+          {item.showArrow ? <ChevronRightIcon size={20} color={Colors.text.tertiary} /> : null}
         </TouchableOpacity>
       ))}
     </View>
@@ -166,53 +174,38 @@ export function ProfileScreen({ navigation }: Props) {
           />
         }
         contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.userCard}>
-          <View style={styles.profileHeroTopRow}>
-            <View style={styles.profileHeroTextBlock}>
-              <Text style={styles.profileEyebrow}>个人中心</Text>
-              <Text style={styles.username}>{user?.username || '美食家'}</Text>
-              <Text style={styles.userEmail}>{user?.email || '欢迎回来'}</Text>
-              <Text style={styles.profileNarrative}>
-                把家庭资料、宝宝阶段、收藏与反馈回顾收在一个更轻的个人中心入口里。
-              </Text>
+        <View style={styles.heroCard}>
+          <View style={styles.heroTopRow}>
+            <View style={styles.avatarWrap}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>👨‍🍳</Text>
+              </View>
+              <View style={styles.userStatus}>
+                <Text style={styles.statusIcon}>✓</Text>
+              </View>
             </View>
             <TouchableOpacity style={styles.profileActionButton} onPress={() => setShowQuickLinks((prev) => !prev)}>
-              <Text style={styles.profileActionButtonText}>{showQuickLinks ? '收起' : '快捷入口'}</Text>
+              <Text style={styles.profileActionButtonText}>{showQuickLinks ? '收起快捷入口' : '快捷入口'}</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>👨‍🍳</Text>
-            </View>
-            <View style={styles.userStatus}>
-              <Text style={styles.statusIcon}>✓</Text>
-            </View>
+          <Text style={styles.profileEyebrow}>个人中心</Text>
+          <Text style={styles.username}>{user?.username || '美食家'}</Text>
+          <Text style={styles.userEmail}>{user?.email || '欢迎回来'}</Text>
+          <Text style={styles.profileNarrative}>把家庭资料、宝宝阶段、收藏、库存和反馈回顾，收成一个更清爽的个人工作台。</Text>
+
+          <View style={styles.statsRow}>
+            {stats.map((item) => (
+              <View key={item.label} style={styles.statCard}>
+                <Text style={styles.statValue}>{item.value}</Text>
+                <Text style={styles.statLabel}>{item.label}</Text>
+              </View>
+            ))}
           </View>
 
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{user?.family_size || 2}</Text>
-              <Text style={styles.statLabel}>家庭成员</Text>
-            </View>
-            <View style={styles.statDivider} />
-            {user?.baby_age ? (
-              <>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{user.baby_age}</Text>
-                  <Text style={styles.statLabel}>宝宝月龄</Text>
-                </View>
-                <View style={styles.statDivider} />
-              </>
-            ) : null}
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>15</Text>
-              <Text style={styles.statLabel}>收藏菜谱</Text>
-            </View>
-          </View>
-
-          {showQuickLinks && (
+          {showQuickLinks ? (
             <View style={styles.quickLinksRow}>
               <TouchableOpacity style={styles.quickLinkChip} onPress={() => navigation.navigate('Family')}>
                 <Text style={styles.quickLinkChipText}>家庭空间</Text>
@@ -224,27 +217,19 @@ export function ProfileScreen({ navigation }: Props) {
                 <Text style={styles.quickLinkChipText}>每周回顾</Text>
               </TouchableOpacity>
             </View>
-          )}
+          ) : null}
         </View>
 
-        {/* 宝宝月龄卡片 - 当有宝宝时显示 */}
         {user?.baby_age ? (
           <View style={styles.babyAgeSection}>
-            <BabyAgeCard
-              babyAge={user.baby_age}
-              editable
-              onEdit={() => navigation.navigate('EditProfile')}
-            />
+            <BabyAgeCard babyAge={user.baby_age} editable onEdit={() => navigation.navigate('EditProfile')} />
           </View>
         ) : null}
 
-        {/* 功能菜单 */}
-        <MenuSection items={mainMenuItems} />
-        
-        {/* 更多选项 */}
-        <MenuSection items={moreMenuItems} style={styles.moreSection} />
+        <MenuSection title="常用功能" caption="日常最常回来的入口先放前面" items={mainMenuItems} />
+        <MenuSection title="家庭与反馈" caption="协作、反馈、回顾放到同一组" items={secondaryMenuItems} />
+        <MenuSection title="帮助与信息" items={supportItems} />
 
-        {/* 版本信息 */}
         <Text style={styles.versionText}>简家厨 v1.0.0 · 让做饭变得简单</Text>
       </ScrollView>
     </SafeAreaView>
@@ -270,58 +255,27 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.text.secondary,
   },
-  userCard: {
-    padding: Spacing['2xl'],
+  heroCard: {
+    margin: Spacing.lg,
+    marginBottom: Spacing.md,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius['2xl'],
     backgroundColor: Colors.background.primary,
-    marginBottom: Spacing.lg,
     ...Shadows.sm,
   },
-  profileHeroTopRow: {
+  heroTopRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     gap: Spacing.md,
   },
-  profileHeroTextBlock: {
-    flex: 1,
-  },
-  profileEyebrow: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.primary.main,
-    fontWeight: Typography.fontWeight.bold,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: Spacing.xs,
-  },
-  profileNarrative: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.text.secondary,
-    lineHeight: 20,
-    marginTop: Spacing.sm,
-  },
-  profileActionButton: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.background.secondary,
-  },
-  profileActionButtonText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.text.primary,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  babyAgeSection: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  avatarContainer: {
+  avatarWrap: {
     position: 'relative',
-    marginBottom: Spacing.md,
   },
   avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     backgroundColor: Colors.primary.light,
     alignItems: 'center',
     justifyContent: 'center',
@@ -329,7 +283,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary.main,
   },
   avatarText: {
-    fontSize: 40,
+    fontSize: 38,
   },
   userStatus: {
     position: 'absolute',
@@ -349,33 +303,69 @@ const styles = StyleSheet.create({
     color: Colors.text.inverse,
     fontWeight: 'bold',
   },
+  profileActionButton: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.background.secondary,
+  },
+  profileActionButtonText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.primary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  profileEyebrow: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.xs,
+  },
   username: {
-    fontSize: Typography.fontSize.xl,
+    fontSize: Typography.fontSize['2xl'],
     fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
-    marginBottom: Spacing.xs,
   },
   userEmail: {
     fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
-    marginBottom: Spacing.lg,
+    marginTop: Spacing.xs,
   },
-  statsContainer: {
+  profileNarrative: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    lineHeight: 20,
+    marginTop: Spacing.sm,
+  },
+  statsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  statCard: {
+    flex: 1,
     backgroundColor: Colors.background.secondary,
-    borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.xl,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.md,
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.primary.main,
+  },
+  statLabel: {
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
   },
   quickLinksRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.sm,
     marginTop: Spacing.md,
-    justifyContent: 'center',
   },
   quickLinkChip: {
     paddingHorizontal: Spacing.md,
@@ -388,47 +378,48 @@ const styles = StyleSheet.create({
     color: Colors.primary.dark,
     fontWeight: Typography.fontWeight.semibold,
   },
-  statItem: {
-    alignItems: 'center',
+  babyAgeSection: {
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
   },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: Colors.border.light,
-  },
-  statValue: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.primary.main,
-  },
-  statLabel: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.text.secondary,
-    marginTop: Spacing.xs,
-  },
-  menuSection: {
+  sectionCard: {
     backgroundColor: Colors.background.primary,
     marginHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.md,
+    borderRadius: BorderRadius.xl,
+    overflow: 'hidden',
     ...Shadows.sm,
   },
-  moreSection: {
-    marginTop: Spacing.lg,
+  sectionHeader: {
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
+  },
+  sectionTitle: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+  },
+  sectionCaption: {
+    marginTop: 4,
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border.light,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border.light,
   },
   menuItemLast: {
     borderBottomWidth: 0,
   },
   menuIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: BorderRadius.md,
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.lg,
     backgroundColor: Colors.background.secondary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -446,11 +437,12 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     color: Colors.text.tertiary,
     marginTop: Spacing.xs,
+    lineHeight: 18,
   },
   versionText: {
     textAlign: 'center',
     fontSize: Typography.fontSize.sm,
     color: Colors.text.disabled,
-    marginTop: Spacing.xl,
+    marginTop: Spacing.lg,
   },
 });
