@@ -1,10 +1,4 @@
-// @ts-nocheck
-/**
- * 简家厨 - 食材库存管理页面
- * 用于管理家中食材库存，记录食材数量和保质期
- */
-
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -14,41 +8,28 @@ import {
   TextInput,
   Alert,
   Modal,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
-import { useIngredientInventory, useAddInventory, useDeleteInventory, useUpdateInventory } from '../../hooks/useIngredientInventory';
+import { useIngredientInventory, useAddInventory, useDeleteInventory } from '../../hooks/useIngredientInventory';
 import { EmptyState } from '../../components/common/EmptyState';
 import { SkeletonList } from '../../components/common/Skeleton';
 import { Button } from '../../components/common/Button';
-import {
-  PlusIcon,
-  TrashIcon,
-  CloseIcon,
-  AlertIcon,
-  ChevronRightIcon,
-} from '../../components/common/Icons';
+import { PlusIcon, TrashIcon, CloseIcon, AlertIcon } from '../../components/common/Icons';
 import { useSuggestByInventory } from '../../hooks/useRecipes';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ProfileStackParamList } from '../../types';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Inventory'>;
 
-// 食材位置选项
 const LOCATION_OPTIONS = ['冷藏', '冷冻', '常温'];
-
-// 单位选项
 const UNIT_OPTIONS = ['个', '千克', '克', '斤', '两', '袋', '盒', '瓶', '把'];
 
 export function InventoryScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<any>(null);
   const [filter, setFilter] = useState<'all' | 'expiring' | 'expired'>('all');
-  
-  // 添加表单状态
   const [formData, setFormData] = useState({
     ingredient_name: '',
     quantity: '1',
@@ -61,9 +42,52 @@ export function InventoryScreen({ navigation }: Props) {
   const { data, isLoading, error, refetch } = useIngredientInventory();
   const addMutation = useAddInventory();
   const deleteMutation = useDeleteInventory();
-  const updateMutation = useUpdateInventory();
   const { data: suggestData } = useSuggestByInventory();
-  const highlightCount = suggestData?.suggestions?.length || 0;
+
+  const inventory = data?.inventory || [];
+  const suggestions = suggestData?.suggestions || [];
+
+  const summaryCards = useMemo(
+    () => [
+      {
+        label: '库存总数',
+        value: `${data?.stats?.total || 0}`,
+        helper: '先看家里有什么再决定做什么',
+      },
+      {
+        label: '临期提醒',
+        value: `${data?.stats?.expiring || 0}`,
+        helper: '适合优先做掉这些食材',
+      },
+      {
+        label: '可消耗菜谱',
+        value: `${suggestions.length}`,
+        helper: '库存命中的推荐会优先显示',
+      },
+    ],
+    [data?.stats?.expiring, data?.stats?.total, suggestions.length]
+  );
+
+  const insightChips = useMemo(() => {
+    const chips = [`${inventory.length} 项库存`];
+    if (data?.stats?.expired) chips.push(`${data.stats.expired} 项已过期`);
+    if (data?.stats?.expiring) chips.push('优先消耗临期食材');
+    if (suggestions.length) chips.push('可联动推荐菜谱');
+    return chips;
+  }, [data?.stats?.expired, data?.stats?.expiring, inventory.length, suggestions.length]);
+
+  const filteredItems = useMemo(() => {
+    const now = new Date();
+    const threeDaysLater = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+
+    return inventory.filter((item) => {
+      if (!item.expiry_date) return filter === 'all';
+      const expiryDate = new Date(item.expiry_date);
+      if (filter === 'expired') return expiryDate < now;
+      if (filter === 'expiring') return expiryDate >= now && expiryDate <= threeDaysLater;
+      return true;
+    });
+  }, [filter, inventory]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -72,6 +96,17 @@ export function InventoryScreen({ navigation }: Props) {
     } finally {
       setRefreshing(false);
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      ingredient_name: '',
+      quantity: '1',
+      unit: '个',
+      location: '冷藏',
+      expiry_date: '',
+      notes: '',
+    });
   };
 
   const handleAddItem = async () => {
@@ -89,8 +124,6 @@ export function InventoryScreen({ navigation }: Props) {
         expiry_date: formData.expiry_date || undefined,
         notes: formData.notes || undefined,
       });
-      
-      Alert.alert('成功', '食材添加成功');
       setShowAddModal(false);
       resetForm();
     } catch (err: any) {
@@ -99,66 +132,23 @@ export function InventoryScreen({ navigation }: Props) {
   };
 
   const handleDeleteItem = (id: string) => {
-    Alert.alert(
-      '确认删除',
-      '确定要删除该食材吗？',
-      [
-        { text: '取消', style: 'cancel' },
-        {
-          text: '删除',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteMutation.mutateAsync(id);
-              Alert.alert('成功', '食材已删除');
-            } catch (err) {
-              Alert.alert('错误', '删除失败，请重试');
-            }
-          },
+    Alert.alert('确认删除', '确定要删除该食材吗？', [
+      { text: '取消', style: 'cancel' },
+      {
+        text: '删除',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteMutation.mutateAsync(id);
+          } catch {
+            Alert.alert('错误', '删除失败，请重试');
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
-  const resetForm = () => {
-    setFormData({
-      ingredient_name: '',
-      quantity: '1',
-      unit: '个',
-      location: '冷藏',
-      expiry_date: '',
-      notes: '',
-    });
-  };
-
-  // 过滤食材
-  const filteredItems = React.useMemo(() => {
-    if (!data?.inventory) return [];
-    
-    const now = new Date();
-    const threeDaysLater = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-
-    return data.inventory.filter(item => {
-      if (!item.expiry_date) return filter === 'all';
-      
-      const expiryDate = new Date(item.expiry_date);
-      
-      if (filter === 'expired') {
-        return expiryDate < now;
-      } else if (filter === 'expiring') {
-        return expiryDate >= now && expiryDate <= threeDaysLater;
-      }
-      return true;
-    });
-  }, [data, filter]);
-
-  // 检查是否过期
-  const isExpired = (expiryDate: string | null) => {
-    if (!expiryDate) return false;
-    return new Date(expiryDate) < new Date();
-  };
-
-  // 检查是否即将过期（3天内）
+  const isExpired = (expiryDate: string | null) => !!expiryDate && new Date(expiryDate) < new Date();
   const isExpiringSoon = (expiryDate: string | null) => {
     if (!expiryDate) return false;
     const expiry = new Date(expiryDate);
@@ -182,9 +172,9 @@ export function InventoryScreen({ navigation }: Props) {
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <EmptyState
           type="error"
-          title="加载失败"
-          description="无法获取食材库存，请检查网络连接"
-          buttonText="重试"
+          title="库存暂时没拉回来"
+          description="请检查网络后重新试一次"
+          buttonText="重新加载"
           onButtonPress={() => refetch()}
         />
       </SafeAreaView>
@@ -193,180 +183,148 @@ export function InventoryScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <View style={styles.heroCard}>
-        <View style={styles.heroTopRow}>
-          <View style={styles.heroTextBlock}>
-            <Text style={styles.heroEyebrow}>库存管理</Text>
-            <Text style={styles.heroTitle}>先看库存状态，再决定本周做什么</Text>
-            <Text style={styles.heroSubtitle}>把临期提醒、库存覆盖和推荐菜谱放在同一屏里，方便和首页、周计划联动。</Text>
-          </View>
-          <TouchableOpacity style={styles.heroAction} onPress={() => setShowAddModal(true)}>
-            <Text style={styles.heroActionText}>添加食材</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.heroSummaryRow}>
-          <View style={styles.heroSummaryItem}>
-            <Text style={styles.heroSummaryValue}>{data?.stats?.total || 0}</Text>
-            <Text style={styles.heroSummaryLabel}>库存总数</Text>
-          </View>
-          <View style={styles.heroSummaryItem}>
-            <Text style={styles.heroSummaryValue}>{data?.stats?.expiring || 0}</Text>
-            <Text style={styles.heroSummaryLabel}>临期提醒</Text>
-          </View>
-          <View style={styles.heroSummaryItem}>
-            <Text style={styles.heroSummaryValue}>{highlightCount}</Text>
-            <Text style={styles.heroSummaryLabel}>可消耗菜谱</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* 统计卡片 */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{data?.stats?.total || 0}</Text>
-          <Text style={styles.statLabel}>总计</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={[styles.statNumber, styles.statWarning]}>{data?.stats?.expiring || 0}</Text>
-          <Text style={styles.statLabel}>即将过期</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={[styles.statNumber, styles.statDanger]}>{data?.stats?.expired || 0}</Text>
-          <Text style={styles.statLabel}>已过期</Text>
-        </View>
-      </View>
-
-      {/* 筛选标签 */}
-      <View style={styles.filterContainer}>
-        <TouchableOpacity
-          style={[styles.filterTab, filter === 'all' && styles.filterTabActive]}
-          onPress={() => setFilter('all')}
-        >
-          <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>
-            全部
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterTab, filter === 'expiring' && styles.filterTabActive]}
-          onPress={() => setFilter('expiring')}
-        >
-          <Text style={[styles.filterText, filter === 'expiring' && styles.filterTextActive]}>
-            即将过期
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterTab, filter === 'expired' && styles.filterTabActive]}
-          onPress={() => setFilter('expired')}
-        >
-          <Text style={[styles.filterText, filter === 'expired' && styles.filterTextActive]}>
-            已过期
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* 即将过期食材推荐菜谱 */}
-      {suggestData?.suggestions && suggestData.suggestions.length > 0 && (
-        <View style={styles.suggestSection}>
-          <Text style={styles.suggestTitle}>🍳 临期食材推荐菜谱</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestList}>
-            {suggestData.suggestions.slice(0, 5).map((item: any) => (
-              <TouchableOpacity key={item.id} style={styles.suggestCard}>
-                <Text style={styles.suggestName} numberOfLines={1}>{item.name}</Text>
-                <Text style={styles.suggestMatch} numberOfLines={1}>
-                  可用: {item.matched_ingredients.join('、')}
-                </Text>
-                <Text style={styles.suggestTime}>⏱ {item.prep_time}分钟</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-      {/* 食材列表 */}
       <ScrollView
-        style={styles.listContainer}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
+        <View style={styles.heroCard}>
+          <View style={styles.heroTopRow}>
+            <View style={styles.heroTextBlock}>
+              <Text style={styles.eyebrow}>库存管理</Text>
+              <Text style={styles.heroTitle}>先看库存状态，再决定本周做什么</Text>
+              <Text style={styles.heroSubtitle}>把临期提醒、库存覆盖和推荐菜谱放在同一屏里，方便和首页、周计划联动。</Text>
+            </View>
+            <TouchableOpacity style={styles.heroAction} onPress={() => setShowAddModal(true)}>
+              <Text style={styles.heroActionText}>添加食材</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.chipRow}>
+            {insightChips.map((chip) => (
+              <View key={chip} style={styles.insightChip}>
+                <Text style={styles.insightChipText}>{chip}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.summaryRow}>
+            {summaryCards.map((card) => (
+              <View key={card.label} style={styles.summaryCard}>
+                <Text style={styles.summaryValue}>{card.value}</Text>
+                <Text style={styles.summaryLabel}>{card.label}</Text>
+                <Text style={styles.summaryHelper}>{card.helper}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.filterRow}>
+          {[
+            { key: 'all', label: '全部' },
+            { key: 'expiring', label: '即将过期' },
+            { key: 'expired', label: '已过期' },
+          ].map((item) => (
+            <TouchableOpacity
+              key={item.key}
+              style={[styles.filterChip, filter === item.key && styles.filterChipActive]}
+              onPress={() => setFilter(item.key as 'all' | 'expiring' | 'expired')}
+            >
+              <Text style={[styles.filterChipText, filter === item.key && styles.filterChipTextActive]}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {suggestions.length > 0 ? (
+          <View style={styles.suggestCard}>
+            <View style={styles.sectionHeaderRow}>
+              <View>
+                <Text style={styles.sectionTitle}>库存命中的推荐菜谱</Text>
+                <Text style={styles.sectionSubtitle}>优先消耗家里已有或临期的食材。</Text>
+              </View>
+              <TouchableOpacity onPress={() => navigation.navigate('Recipes')}>
+                <Text style={styles.sectionLink}>去看菜谱</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestList}>
+              {suggestions.slice(0, 5).map((item: any) => (
+                <View key={item.id} style={styles.suggestItem}>
+                  <Text style={styles.suggestName} numberOfLines={1}>{item.name}</Text>
+                  <Text style={styles.suggestMatch} numberOfLines={2}>可用：{item.matched_ingredients.join('、')}</Text>
+                  <Text style={styles.suggestMeta}>⏱ {item.prep_time} 分钟</Text>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
+
         {filteredItems.length === 0 ? (
-          <EmptyState
-            type="no-inventory"
-            title={filter === 'all' ? '还没有食材' : '没有符合条件的食材'}
-            description={filter === 'all' ? '添加你家厨房的食材，方便搭配菜谱' : '试试其他筛选条件'}
-            buttonText="添加食材"
-            onButtonPress={() => setShowAddModal(true)}
-          />
+          <View style={styles.emptyWrap}>
+            <EmptyState
+              type="no-inventory"
+              title={filter === 'all' ? '还没有食材' : '没有符合条件的食材'}
+              description={filter === 'all' ? '添加你家厨房的食材，方便搭配菜谱' : '换个筛选条件看看'}
+              buttonText="添加食材"
+              onButtonPress={() => setShowAddModal(true)}
+            />
+          </View>
         ) : (
           filteredItems.map((item) => (
             <View key={item.id} style={styles.inventoryItem}>
               <View style={styles.itemMain}>
-                <View style={styles.itemInfo}>
+                <View style={styles.itemTopRow}>
                   <Text style={styles.itemName}>{item.ingredient_name}</Text>
-                  <Text style={styles.itemQuantity}>
-                    {item.quantity} {item.unit}
-                  </Text>
+                  <Text style={styles.itemQuantity}>{item.quantity} {item.unit}</Text>
                 </View>
-                
-                <View style={styles.itemMeta}>
-                  <View style={styles.locationTag}>
-                    <Text style={styles.locationTagText}>{item.location}</Text>
+                <View style={styles.itemMetaRow}>
+                  <View style={styles.metaPill}>
+                    <Text style={styles.metaPillText}>{item.location}</Text>
                   </View>
-                  
-                  {item.expiry_date && (
-                    <View style={[
-                      styles.expiryTag,
-                      isExpired(item.expiry_date) && styles.expiryTagExpired,
-                      isExpiringSoon(item.expiry_date) && styles.expiryTagWarning,
-                    ]}>
-                      <AlertIcon size={12} color={
-                        isExpired(item.expiry_date) 
-                          ? Colors.functional.error 
-                          : isExpiringSoon(item.expiry_date)
-                            ? Colors.functional.warning
-                            : Colors.text.secondary
-                      } />
-                      <Text style={[
-                        styles.expiryText,
-                        isExpired(item.expiry_date) && styles.expiryTextExpired,
-                        isExpiringSoon(item.expiry_date) && styles.expiryTextWarning,
-                      ]}>
+                  {item.expiry_date ? (
+                    <View
+                      style={[
+                        styles.expiryPill,
+                        isExpired(item.expiry_date) && styles.expiryPillExpired,
+                        isExpiringSoon(item.expiry_date) && styles.expiryPillWarning,
+                      ]}
+                    >
+                      <AlertIcon
+                        size={12}
+                        color={
+                          isExpired(item.expiry_date)
+                            ? Colors.functional.error
+                            : isExpiringSoon(item.expiry_date)
+                              ? Colors.functional.warning
+                              : Colors.text.secondary
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.expiryText,
+                          isExpired(item.expiry_date) && styles.expiryTextExpired,
+                          isExpiringSoon(item.expiry_date) && styles.expiryTextWarning,
+                        ]}
+                      >
                         {new Date(item.expiry_date).toLocaleDateString('zh-CN')}
                       </Text>
                     </View>
-                  )}
+                  ) : null}
                 </View>
+                {item.notes ? <Text style={styles.itemNote}>{item.notes}</Text> : null}
               </View>
-              
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => handleDeleteItem(item.id)}
-              >
-                <TrashIcon size={20} color={Colors.functional.error} />
+              <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteItem(item.id)}>
+                <TrashIcon size={18} color={Colors.functional.error} />
               </TouchableOpacity>
             </View>
           ))
         )}
       </ScrollView>
 
-      {/* 添加按钮 */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => setShowAddModal(true)}
-      >
-        <PlusIcon size={28} color={Colors.text.inverse} />
+      <TouchableOpacity style={styles.fab} onPress={() => setShowAddModal(true)}>
+        <PlusIcon size={24} color={Colors.text.inverse} />
       </TouchableOpacity>
 
-      {/* 添加食材弹窗 */}
-      <Modal
-        visible={showAddModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowAddModal(false)}
-      >
+      <Modal visible={showAddModal} animationType="slide" transparent onRequestClose={() => setShowAddModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -377,7 +335,6 @@ export function InventoryScreen({ navigation }: Props) {
             </View>
 
             <ScrollView style={styles.modalBody}>
-              {/* 食材名称 */}
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>食材名称 *</Text>
                 <TextInput
@@ -389,9 +346,8 @@ export function InventoryScreen({ navigation }: Props) {
                 />
               </View>
 
-              {/* 数量和单位 */}
               <View style={styles.formRow}>
-                <View style={[styles.formGroup, { flex: 1 }]}>
+                <View style={[styles.formGroup, { flex: 1 }]}> 
                   <Text style={styles.formLabel}>数量</Text>
                   <TextInput
                     style={styles.input}
@@ -402,25 +358,17 @@ export function InventoryScreen({ navigation }: Props) {
                     placeholderTextColor={Colors.text.tertiary}
                   />
                 </View>
-                <View style={[styles.formGroup, { flex: 1, marginLeft: Spacing.md }]}>
+                <View style={[styles.formGroup, { flex: 1, marginLeft: Spacing.md }]}> 
                   <Text style={styles.formLabel}>单位</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    <View style={styles.unitOptions}>
+                    <View style={styles.optionRow}>
                       {UNIT_OPTIONS.map((unit) => (
                         <TouchableOpacity
                           key={unit}
-                          style={[
-                            styles.unitOption,
-                            formData.unit === unit && styles.unitOptionActive,
-                          ]}
+                          style={[styles.optionChip, formData.unit === unit && styles.optionChipActive]}
                           onPress={() => setFormData({ ...formData, unit })}
                         >
-                          <Text style={[
-                            styles.unitOptionText,
-                            formData.unit === unit && styles.unitOptionTextActive,
-                          ]}>
-                            {unit}
-                          </Text>
+                          <Text style={[styles.optionChipText, formData.unit === unit && styles.optionChipTextActive]}>{unit}</Text>
                         </TouchableOpacity>
                       ))}
                     </View>
@@ -428,51 +376,40 @@ export function InventoryScreen({ navigation }: Props) {
                 </View>
               </View>
 
-              {/* 存储位置 */}
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>存储位置</Text>
                 <View style={styles.locationOptions}>
                   {LOCATION_OPTIONS.map((location) => (
                     <TouchableOpacity
                       key={location}
-                      style={[
-                        styles.locationOption,
-                        formData.location === location && styles.locationOptionActive,
-                      ]}
+                      style={[styles.locationOption, formData.location === location && styles.locationOptionActive]}
                       onPress={() => setFormData({ ...formData, location })}
                     >
-                      <Text style={[
-                        styles.locationOptionText,
-                        formData.location === location && styles.locationOptionTextActive,
-                      ]}>
-                        {location}
-                      </Text>
+                      <Text style={[styles.locationOptionText, formData.location === location && styles.locationOptionTextActive]}>{location}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               </View>
 
-              {/* 保质期 */}
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>保质期（可选）</Text>
                 <TextInput
                   style={styles.input}
                   value={formData.expiry_date}
                   onChangeText={(text) => setFormData({ ...formData, expiry_date: text })}
-                  placeholder="格式：2024-12-31"
+                  placeholder="格式：2026-03-31"
                   placeholderTextColor={Colors.text.tertiary}
                 />
-                <Text style={styles.formHint}>格式：年-月-日，例如 2024-12-31</Text>
+                <Text style={styles.formHint}>格式：年-月-日，例如 2026-03-31</Text>
               </View>
 
-              {/* 备注 */}
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>备注（可选）</Text>
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   value={formData.notes}
                   onChangeText={(text) => setFormData({ ...formData, notes: text })}
-                  placeholder="添加备注信息"
+                  placeholder="补充数量来源、适合哪顿饭等"
                   placeholderTextColor={Colors.text.tertiary}
                   multiline
                   numberOfLines={3}
@@ -480,20 +417,14 @@ export function InventoryScreen({ navigation }: Props) {
               </View>
             </ScrollView>
 
-            {/* 底部按钮 */}
             <View style={styles.modalFooter}>
               <Button
                 title="取消"
-                variant="outline"
                 onPress={() => setShowAddModal(false)}
-                style={{ flex: 1, marginRight: Spacing.sm }}
+                style={{ flex: 1, marginRight: Spacing.sm, backgroundColor: Colors.background.secondary }}
+                textStyle={{ color: Colors.text.primary }}
               />
-              <Button
-                title="添加"
-                onPress={handleAddItem}
-                loading={addMutation.isPending}
-                style={{ flex: 1, marginLeft: Spacing.sm }}
-              />
+              <Button title="添加" onPress={handleAddItem} loading={addMutation.isPending} style={{ flex: 1, marginLeft: Spacing.sm }} />
             </View>
           </View>
         </View>
@@ -507,40 +438,48 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background.secondary,
   },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: Spacing.md,
+    paddingBottom: 100,
+  },
   loadingContainer: {
     flex: 1,
     padding: Spacing.md,
   },
   heroCard: {
     backgroundColor: Colors.background.primary,
-    marginHorizontal: Spacing.md,
-    marginTop: Spacing.md,
     borderRadius: BorderRadius.xl,
-    padding: Spacing.md,
+    padding: Spacing.lg,
+    ...Shadows.sm,
   },
   heroTopRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     gap: Spacing.md,
   },
   heroTextBlock: {
     flex: 1,
   },
-  heroEyebrow: {
-    ...Typography.body.caption,
+  eyebrow: {
+    fontSize: Typography.fontSize.xs,
     color: Colors.primary.main,
     fontWeight: Typography.fontWeight.bold,
     textTransform: 'uppercase',
     marginBottom: Spacing.xs,
   },
   heroTitle: {
-    ...Typography.heading.h3,
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
-    marginBottom: Spacing.xs,
+    lineHeight: 28,
   },
   heroSubtitle: {
-    ...Typography.body.small,
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
     lineHeight: 20,
   },
@@ -555,188 +494,196 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold,
   },
-  heroSummaryRow: {
+  chipRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.sm,
     marginTop: Spacing.md,
   },
-  heroSummaryItem: {
-    flex: 1,
+  insightChip: {
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  insightChipText: {
+    color: Colors.text.secondary,
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  summaryCard: {
+    flexGrow: 1,
+    minWidth: '30%',
     backgroundColor: Colors.background.secondary,
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
   },
-  heroSummaryValue: {
-    ...Typography.heading.h3,
+  summaryValue: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
   },
-  heroSummaryLabel: {
-    ...Typography.body.caption,
-    color: Colors.text.secondary,
+  summaryLabel: {
     marginTop: Spacing.xs,
-  },
-  // 统计卡片样式
-  statsContainer: {
-    flexDirection: 'row',
-    backgroundColor: Colors.background.card,
-    marginHorizontal: Spacing.md,
-    marginTop: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    ...Shadows.sm,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statNumber: {
-    ...Typography.heading.h2,
-    color: Colors.text.primary,
-  },
-  statWarning: {
-    color: Colors.functional.warning,
-  },
-  statDanger: {
-    color: Colors.functional.error,
-  },
-  statLabel: {
-    ...Typography.body.caption,
+    fontSize: Typography.fontSize.xs,
     color: Colors.text.secondary,
-    marginTop: 2,
   },
-  statDivider: {
-    width: 1,
-    backgroundColor: Colors.border.light,
-    marginVertical: Spacing.xs,
+  summaryHelper: {
+    marginTop: 4,
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
+    lineHeight: 18,
   },
-  // 筛选标签
-  filterContainer: {
+  filterRow: {
     flexDirection: 'row',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
     gap: Spacing.sm,
+    marginTop: Spacing.md,
   },
-  filterTab: {
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.md,
+  filterChip: {
+    backgroundColor: Colors.background.primary,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.neutral.gray100,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
   },
-  filterTabActive: {
+  filterChipActive: {
     backgroundColor: Colors.primary.main,
   },
-  filterText: {
-    ...Typography.body.small,
+  filterChipText: {
+    fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
   },
-  filterTextActive: {
+  filterChipTextActive: {
     color: Colors.text.inverse,
-    fontWeight: Typography.fontWeight.medium,
-  },
-  // 推荐菜谱区域
-  suggestSection: {
-    paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.sm,
-  },
-  suggestTitle: {
-    ...Typography.body.regular,
     fontWeight: Typography.fontWeight.semibold,
+  },
+  suggestCard: {
+    marginTop: Spacing.md,
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    ...Shadows.sm,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+  },
+  sectionTitle: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
-    marginBottom: Spacing.sm,
+  },
+  sectionSubtitle: {
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+  },
+  sectionLink: {
+    color: Colors.primary.main,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
   },
   suggestList: {
     gap: Spacing.sm,
+    marginTop: Spacing.md,
   },
-  suggestCard: {
-    backgroundColor: Colors.background.card,
+  suggestItem: {
+    width: 160,
+    backgroundColor: Colors.background.secondary,
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
-    width: 140,
-    ...Shadows.sm,
   },
   suggestName: {
-    ...Typography.body.small,
-    fontWeight: Typography.fontWeight.medium,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
     color: Colors.text.primary,
-    marginBottom: Spacing.xs,
   },
   suggestMatch: {
-    ...Typography.body.caption,
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.xs,
     color: Colors.functional.success,
-    marginBottom: Spacing.xs,
+    lineHeight: 18,
   },
-  suggestTime: {
-    ...Typography.body.caption,
+  suggestMeta: {
+    marginTop: Spacing.sm,
+    fontSize: Typography.fontSize.xs,
     color: Colors.text.tertiary,
   },
-  // 列表样式
-  listContainer: {
-    flex: 1,
-  },
-  listContent: {
-    padding: Spacing.md,
-    paddingBottom: 100,
+  emptyWrap: {
+    marginTop: Spacing.md,
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.xl,
+    overflow: 'hidden',
+    ...Shadows.sm,
   },
   inventoryItem: {
+    marginTop: Spacing.md,
     flexDirection: 'row',
-    backgroundColor: Colors.background.card,
-    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.xl,
     padding: Spacing.md,
-    marginBottom: Spacing.sm,
     ...Shadows.sm,
   },
   itemMain: {
     flex: 1,
   },
-  itemInfo: {
+  itemTopRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.xs,
-  },
-  itemName: {
-    ...Typography.body.regular,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.text.primary,
-    marginRight: Spacing.sm,
-  },
-  itemQuantity: {
-    ...Typography.body.regular,
-    color: Colors.text.secondary,
-  },
-  itemMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: Spacing.sm,
   },
-  locationTag: {
-    backgroundColor: Colors.neutral.gray100,
-    paddingVertical: 2,
+  itemName: {
+    flex: 1,
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.text.primary,
+  },
+  itemQuantity: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.primary.dark,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  itemMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  metaPill: {
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.full,
     paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.sm,
+    paddingVertical: Spacing.xs,
   },
-  locationTagText: {
-    ...Typography.body.caption,
+  metaPillText: {
     color: Colors.text.secondary,
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.medium,
   },
-  expiryTag: {
+  expiryPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-  },
-  expiryTagExpired: {
-    backgroundColor: `${Colors.functional.error}15`,
-    paddingVertical: 2,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.full,
     paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.sm,
+    paddingVertical: Spacing.xs,
   },
-  expiryTagWarning: {
-    backgroundColor: `${Colors.functional.warning}15`,
-    paddingVertical: 2,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.sm,
+  expiryPillExpired: {
+    backgroundColor: Colors.functional.errorLight,
+  },
+  expiryPillWarning: {
+    backgroundColor: Colors.functional.warningLight,
   },
   expiryText: {
-    ...Typography.body.caption,
+    fontSize: Typography.fontSize.xs,
     color: Colors.text.secondary,
   },
   expiryTextExpired: {
@@ -745,11 +692,16 @@ const styles = StyleSheet.create({
   expiryTextWarning: {
     color: Colors.functional.warning,
   },
+  itemNote: {
+    marginTop: Spacing.sm,
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    lineHeight: 18,
+  },
   deleteButton: {
-    padding: Spacing.sm,
+    marginLeft: Spacing.sm,
     justifyContent: 'center',
   },
-  // 浮动添加按钮
   fab: {
     position: 'absolute',
     right: Spacing.lg,
@@ -762,7 +714,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...Shadows.lg,
   },
-  // 弹窗样式
   modalOverlay: {
     flex: 1,
     backgroundColor: Colors.background.scrim,
@@ -783,7 +734,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border.light,
   },
   modalTitle: {
-    ...Typography.heading.h3,
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
   },
   modalBody: {
@@ -795,7 +747,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.border.light,
   },
-  // 表单样式
   formGroup: {
     marginBottom: Spacing.lg,
   },
@@ -803,48 +754,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   formLabel: {
-    ...Typography.body.regular,
-    fontWeight: Typography.fontWeight.medium,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
     color: Colors.text.primary,
     marginBottom: Spacing.xs,
   },
   formHint: {
-    ...Typography.body.caption,
-    color: Colors.text.tertiary,
     marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
   },
   input: {
-    backgroundColor: Colors.neutral.gray100,
+    backgroundColor: Colors.background.secondary,
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    ...Typography.body.regular,
     color: Colors.text.primary,
   },
   textArea: {
     height: 80,
     textAlignVertical: 'top',
   },
-  unitOptions: {
+  optionRow: {
     flexDirection: 'row',
     gap: Spacing.xs,
   },
-  unitOption: {
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.md,
+  optionChip: {
+    backgroundColor: Colors.background.secondary,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.neutral.gray100,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
   },
-  unitOptionActive: {
+  optionChipActive: {
     backgroundColor: Colors.primary.main,
   },
-  unitOptionText: {
-    ...Typography.body.small,
+  optionChipText: {
+    fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
   },
-  unitOptionTextActive: {
+  optionChipTextActive: {
     color: Colors.text.inverse,
-    fontWeight: Typography.fontWeight.medium,
+    fontWeight: Typography.fontWeight.semibold,
   },
   locationOptions: {
     flexDirection: 'row',
@@ -852,21 +802,21 @@ const styles = StyleSheet.create({
   },
   locationOption: {
     flex: 1,
-    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.background.secondary,
     borderRadius: BorderRadius.md,
-    backgroundColor: Colors.neutral.gray100,
+    paddingVertical: Spacing.sm,
     alignItems: 'center',
   },
   locationOptionActive: {
     backgroundColor: Colors.primary.main,
   },
   locationOptionText: {
-    ...Typography.body.regular,
+    fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
   },
   locationOptionTextActive: {
     color: Colors.text.inverse,
-    fontWeight: Typography.fontWeight.medium,
+    fontWeight: Typography.fontWeight.semibold,
   },
 });
 

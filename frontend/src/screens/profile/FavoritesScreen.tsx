@@ -1,5 +1,4 @@
-// @ts-nocheck
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -24,18 +23,43 @@ export function FavoritesScreen({ navigation }: Props) {
   const { data, isLoading, error, refetch } = useFavorites({ page: 1, limit: 50 });
   const removeFavoriteMutation = useRemoveFavorite();
   const favorites = data?.items || [];
+
   const averagePrepTime = favorites.length
-    ? Math.round(
-        favorites.reduce((sum, item) => sum + Number(item.recipe?.prep_time || 0), 0) / favorites.length
-      )
+    ? Math.round(favorites.reduce((sum, item) => sum + Number(item.recipe?.prep_time || 0), 0) / favorites.length)
     : 0;
+
+  const insightChips = useMemo(() => {
+    const chips = [`共 ${favorites.length} 道收藏`];
+    if (averagePrepTime > 0) chips.push(`平均 ${averagePrepTime} 分钟`);
+    chips.push(favorites.length > 0 ? '可直接回看详情复做' : '先去挑一菜两吃');
+    return chips;
+  }, [averagePrepTime, favorites.length]);
+
+  const summaryCards = useMemo(
+    () => [
+      {
+        label: '当前收藏',
+        value: `${favorites.length}`,
+        helper: '喜欢的菜先留在这里',
+      },
+      {
+        label: '平均时长',
+        value: averagePrepTime > 0 ? `${averagePrepTime} 分钟` : '--',
+        helper: '方便挑适合今天节奏的菜',
+      },
+      {
+        label: '复做状态',
+        value: favorites.length > 0 ? '随时复做' : '待补充',
+        helper: '从收藏直接回到详情页继续做',
+      },
+    ],
+    [averagePrepTime, favorites.length]
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
     try {
       await refetch();
-    } catch (error) {
-      console.error('刷新失败:', error);
     } finally {
       setRefreshing(false);
     }
@@ -45,11 +69,11 @@ export function FavoritesScreen({ navigation }: Props) {
     navigation.navigate('RecipeDetail', { recipeId });
   };
 
-  const handleRemoveFavorite = async (recipeId: string, recipeName: string) => {
+  const handleRemoveFavorite = async (recipeId: string) => {
     try {
       await removeFavoriteMutation.mutateAsync(recipeId);
-    } catch (error) {
-      console.error('取消收藏失败:', error);
+    } catch (removeError) {
+      console.error('取消收藏失败:', removeError);
     }
   };
 
@@ -58,7 +82,7 @@ export function FavoritesScreen({ navigation }: Props) {
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={Colors.primary.main} />
-          <Text style={styles.loadingText}>加载收藏中...</Text>
+          <Text style={styles.loadingText}>正在加载收藏...</Text>
         </View>
       </SafeAreaView>
     );
@@ -69,10 +93,10 @@ export function FavoritesScreen({ navigation }: Props) {
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <View style={styles.centerContent}>
           <Text style={styles.errorIcon}>⚠️</Text>
-          <Text style={styles.errorTitle}>加载失败</Text>
-          <Text style={styles.errorText}>请稍后重试</Text>
+          <Text style={styles.errorTitle}>收藏列表暂时没拉回来</Text>
+          <Text style={styles.errorText}>请稍后再试一次。</Text>
           <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
-            <Text style={styles.retryButtonText}>重试</Text>
+            <Text style={styles.retryButtonText}>重新加载</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -81,63 +105,54 @@ export function FavoritesScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <View style={styles.header}>
-        <View style={styles.headerBadge}>
-          <HeartIcon size={16} color={Colors.functional.error} fill={Colors.functional.error} />
-          <Text style={styles.headerBadgeText}>我的收藏</Text>
-        </View>
-        <Text style={styles.headerTitle}>把值得反复做的一菜两吃，先收在这里</Text>
-        <Text style={styles.headerSubtitle}>共 {data?.total || 0} 道精选菜谱，可直接回看或重新进入详情页继续做。</Text>
-        <View style={styles.headerStatsRow}>
-          <View style={styles.headerStatCard}>
-            <Text style={styles.headerStatValue}>{favorites.length}</Text>
-            <Text style={styles.headerStatLabel}>当前收藏</Text>
-          </View>
-          <View style={styles.headerStatCard}>
-            <Text style={styles.headerStatValue}>{averagePrepTime > 0 ? `${averagePrepTime} 分钟` : '--'}</Text>
-            <Text style={styles.headerStatLabel}>平均时长</Text>
-          </View>
-          <View style={styles.headerStatCard}>
-            <Text style={styles.headerStatValue}>{favorites.length > 0 ? '随时复做' : '先去挑菜'}</Text>
-            <Text style={styles.headerStatLabel}>当前状态</Text>
-          </View>
-        </View>
-      </View>
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[Colors.primary.main]}
-            tintColor={Colors.primary.main}
-          />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary.main]} tintColor={Colors.primary.main} />}
       >
+        <View style={styles.heroCard}>
+          <View style={styles.heroBadge}>
+            <HeartIcon size={16} color={Colors.functional.error} fill={Colors.functional.error} />
+            <Text style={styles.heroBadgeText}>我的收藏</Text>
+          </View>
+          <Text style={styles.heroTitle}>把值得反复做的一菜两吃，先收在这里</Text>
+          <Text style={styles.heroSubtitle}>共 {data?.total || 0} 道精选菜谱，可直接回看或重新进入详情页继续做。</Text>
+
+          <View style={styles.chipRow}>
+            {insightChips.map((chip) => (
+              <View key={chip} style={styles.insightChip}>
+                <Text style={styles.insightChipText}>{chip}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.summaryRow}>
+            {summaryCards.map((card) => (
+              <View key={card.label} style={styles.summaryCard}>
+                <Text style={styles.summaryValue}>{card.value}</Text>
+                <Text style={styles.summaryLabel}>{card.label}</Text>
+                <Text style={styles.summaryHelper}>{card.helper}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
         {favorites.length === 0 ? (
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconContainer}>
               <HeartIcon size={48} color={Colors.text.disabled} />
             </View>
             <Text style={styles.emptyTitle}>还没有收藏</Text>
-            <Text style={styles.emptyText}>点击菜谱卡片上的 ♥ 收藏喜欢的菜谱</Text>
-            <TouchableOpacity 
-              style={styles.browseButton}
-              onPress={() => navigation.navigate('Recipes')}
-            >
-              <Text style={styles.browseButtonText}>去逛逛菜谱</Text>
+            <Text style={styles.emptyText}>把喜欢的菜谱先收藏起来，之后就能在这里快速回看。</Text>
+            <TouchableOpacity style={styles.primaryAction} onPress={() => navigation.navigate('Recipes')}>
+              <Text style={styles.primaryActionText}>去逛逛菜谱</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.recipeList}>
-            {favorites.map((item, index) => (
+            {favorites.map((item) => (
               <View key={item.id} style={styles.recipeCardWrapper}>
-                <TouchableOpacity
-                  activeOpacity={0.9}
-                  onPress={() => handleRecipePress(item.recipe.id)}
-                >
+                <TouchableOpacity activeOpacity={0.9} onPress={() => handleRecipePress(item.recipe.id)}>
                   <RecipeCard
                     recipe={{
                       id: item.recipe.id,
@@ -149,9 +164,9 @@ export function FavoritesScreen({ navigation }: Props) {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.removeButton}
-                  onPress={() => handleRemoveFavorite(item.recipe.id, item.recipe.name)}
+                  onPress={() => handleRemoveFavorite(item.recipe.id)}
                   disabled={removeFavoriteMutation.isPending}
-                  activeOpacity={0.7}
+                  activeOpacity={0.75}
                 >
                   <TrashIcon size={16} color={Colors.functional.error} />
                   <Text style={styles.removeButtonText}>取消收藏</Text>
@@ -170,22 +185,57 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background.secondary,
   },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: Spacing.md,
+    paddingBottom: Spacing['3xl'],
+  },
   centerContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.xl,
   },
-  header: {
-    backgroundColor: Colors.background.primary,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.md,
-    margin: Spacing.md,
-    marginBottom: 0,
-    borderRadius: BorderRadius.xl,
+  loadingText: {
+    marginTop: Spacing.md,
+    fontSize: Typography.fontSize.base,
+    color: Colors.text.secondary,
   },
-  headerBadge: {
+  errorIcon: {
+    fontSize: 36,
+    marginBottom: Spacing.sm,
+  },
+  errorTitle: {
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+  },
+  errorText: {
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.lg,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+  },
+  retryButton: {
+    backgroundColor: Colors.primary.main,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+  },
+  retryButtonText: {
+    color: Colors.text.inverse,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  heroCard: {
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    ...Shadows.sm,
+  },
+  heroBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
@@ -195,63 +245,86 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.functional.errorLight,
     marginBottom: Spacing.sm,
   },
-  headerBadgeText: {
+  heroBadgeText: {
     marginLeft: Spacing.xs,
     fontSize: Typography.fontSize.xs,
     color: Colors.functional.error,
     fontWeight: Typography.fontWeight.semibold,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
-  headerTitle: {
+  heroTitle: {
     fontSize: Typography.fontSize.xl,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
+    lineHeight: 28,
   },
-  headerSubtitle: {
+  heroSubtitle: {
+    marginTop: Spacing.xs,
     fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
-    marginTop: Spacing.xs,
     lineHeight: 20,
   },
-  headerStatsRow: {
+  chipRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.sm,
     marginTop: Spacing.md,
   },
-  headerStatCard: {
-    flex: 1,
+  insightChip: {
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  insightChipText: {
+    color: Colors.text.secondary,
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  summaryCard: {
+    flexGrow: 1,
+    minWidth: '30%',
     backgroundColor: Colors.background.secondary,
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
   },
-  headerStatValue: {
+  summaryValue: {
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
   },
-  headerStatLabel: {
+  summaryLabel: {
+    marginTop: Spacing.xs,
     fontSize: Typography.fontSize.xs,
     color: Colors.text.secondary,
-    marginTop: Spacing.xs,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: Spacing.lg,
+  summaryHelper: {
+    marginTop: 4,
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
+    lineHeight: 18,
   },
   emptyContainer: {
+    marginTop: Spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.xl,
     padding: Spacing['3xl'],
-    minHeight: 400,
+    ...Shadows.sm,
   },
   emptyIconContainer: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: Colors.neutral.gray100,
+    backgroundColor: Colors.background.secondary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.lg,
@@ -260,31 +333,36 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.xl,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
-    marginBottom: Spacing.sm,
   },
   emptyText: {
-    fontSize: Typography.fontSize.base,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.lg,
+    fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
     textAlign: 'center',
-    marginBottom: Spacing.lg,
+    lineHeight: 20,
   },
-  browseButton: {
+  primaryAction: {
     backgroundColor: Colors.primary.main,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
     ...Shadows.sm,
   },
-  browseButtonText: {
+  primaryActionText: {
     color: Colors.text.inverse,
-    fontSize: Typography.fontSize.base,
+    fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold,
   },
   recipeList: {
     gap: Spacing.lg,
+    marginTop: Spacing.md,
   },
   recipeCardWrapper: {
-    marginBottom: Spacing.md,
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.sm,
+    ...Shadows.sm,
   },
   removeButton: {
     flexDirection: 'row',
@@ -302,36 +380,5 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold,
     marginLeft: Spacing.xs,
-  },
-  loadingText: {
-    marginTop: Spacing.md,
-    fontSize: Typography.fontSize.base,
-    color: Colors.text.secondary,
-  },
-  errorIcon: {
-    fontSize: 48,
-    marginBottom: Spacing.md,
-  },
-  errorTitle: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.functional.error,
-    marginBottom: Spacing.sm,
-  },
-  errorText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.text.secondary,
-    marginBottom: Spacing.lg,
-  },
-  retryButton: {
-    backgroundColor: Colors.primary.main,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
-  },
-  retryButtonText: {
-    color: Colors.text.inverse,
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.semibold,
   },
 });

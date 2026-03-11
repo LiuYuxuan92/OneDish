@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Typography, Spacing, BorderRadius } from '../../styles/theme';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
 import { useJoinShoppingListShare, useShoppingLists } from '../../hooks/useShoppingLists';
 import { useJoinFamily } from '../../hooks/useFamilies';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -21,7 +21,6 @@ import { trackEvent } from '../../analytics/sdk';
 
 type Props = NativeStackScreenProps<PlanStackParamList, 'ShoppingListHistory'>;
 
-// 存储区域显示标签
 const AREA_LABELS: Record<string, string> = {
   produce: '🥬',
   protein: '🥩',
@@ -34,13 +33,29 @@ const AREA_LABELS: Record<string, string> = {
 
 const AREA_ORDER = ['produce', 'protein', 'staple', 'seasoning', 'snack_dairy', 'household', 'other'];
 
+const formatDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) return '今天';
+  if (date.toDateString() === yesterday.toDateString()) return '昨天';
+  return `${date.getMonth() + 1}/${date.getDate()}`;
+};
+
+const formatFullDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  return `${date.getMonth() + 1}月${date.getDate()}日 ${weekdays[date.getDay()]}`;
+};
+
 export function ShoppingListHistoryScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const joinShareMutation = useJoinShoppingListShare();
   const joinFamilyMutation = useJoinFamily();
 
-  // 获取过去30天的购物清单
   const endDate = new Date().toISOString().split('T')[0];
   const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
@@ -51,13 +66,44 @@ export function ShoppingListHistoryScreen({ navigation }: Props) {
 
   const shoppingLists = shoppingListsData?.items || [];
 
-  // 下拉刷新
+  const summaryCards = useMemo(
+    () => [
+      {
+        label: '历史清单',
+        value: `${shoppingLists.length}`,
+        helper: '最近 30 天都留在这里',
+      },
+      {
+        label: '已完成',
+        value: `${shoppingLists.filter((item) => item.is_completed).length}`,
+        helper: '买完后可以回看采购节奏',
+      },
+      {
+        label: '待购累计',
+        value: `${shoppingLists.reduce((sum, item) => sum + (item.unchecked_items || 0), 0)}`,
+        helper: '适合快速找回未收口的旧单',
+      },
+    ],
+    [shoppingLists]
+  );
+
+  const insightChips = useMemo(() => {
+    const chips = [`${shoppingLists.length} 张清单`];
+    const latestPending = shoppingLists.find((item) => !item.is_completed);
+    if (latestPending) {
+      chips.push(`最近待购 ${latestPending.unchecked_items || 0} 项`);
+    }
+    if (shoppingLists.some((item) => item.is_completed)) {
+      chips.push('可回看已完成采购单');
+    }
+    chips.push('支持邀请码加入共享');
+    return chips;
+  }, [shoppingLists]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     try {
       await refetch();
-    } catch (error) {
-      console.error('刷新失败:', error);
     } finally {
       setRefreshing(false);
     }
@@ -85,86 +131,50 @@ export function ShoppingListHistoryScreen({ navigation }: Props) {
     }
   };
 
-  // 格式化日期显示
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    // 判断是否是今天
-    if (date.toDateString() === today.toDateString()) {
-      return '今天';
-    }
-    // 判断是否是昨天
-    if (date.toDateString() === yesterday.toDateString()) {
-      return '昨天';
-    }
-    // 其他情况显示月/日
-    return `${date.getMonth() + 1}/${date.getDate()}`;
-  };
-
-  // 格式化完整日期
-  const formatFullDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-    return `${date.getMonth() + 1}月${date.getDate()}日 ${weekdays[date.getDay()]}`;
-  };
-
-  // 渲染购物清单卡片
   const ListCard = ({ list }: { list: any }) => {
     const totalItems = list.total_items || 0;
     const uncheckedItems = list.unchecked_items || 0;
-    const isCompleted = list.is_completed;
     const estimatedCost = list.total_estimated_cost || 0;
-
-    // 计算各个区域的数量
-    const areaCounts = AREA_ORDER.map(area => ({
+    const areaCounts = AREA_ORDER.map((area) => ({
       area,
       count: list.items?.[area]?.length || 0,
-    })).filter(item => item.count > 0);
+    })).filter((item) => item.count > 0);
 
     return (
       <Pressable
-        style={({ pressed }) => [
-          styles.listCard,
-          pressed && styles.listCardPressed,
-          isCompleted && styles.listCardCompleted,
-        ]}
+        style={({ pressed }) => [styles.listCard, pressed && styles.listCardPressed, list.is_completed && styles.listCardCompleted]}
         onPress={() => navigation.navigate('ShoppingListDetail', { listId: list.id })}
-        accessibilityLabel={`${formatFullDate(list.list_date)}的购物清单，共${totalItems}项${isCompleted ? '，已完成' : ''}`}
         accessibilityRole="button"
+        accessibilityLabel={`${formatFullDate(list.list_date)} 的购物清单`}
       >
-        <View style={styles.listCardHeader}>
-          <View style={styles.listCardHeaderLeft}>
-            <Text style={styles.listCardDate}>{formatDate(list.list_date)}</Text>
-            <Text style={styles.listCardFullDate}>{formatFullDate(list.list_date)}</Text>
+        <View style={styles.listCardTopRow}>
+          <View>
+            <Text style={styles.listDateLabel}>{formatDate(list.list_date)}</Text>
+            <Text style={styles.listFullDate}>{formatFullDate(list.list_date)}</Text>
           </View>
-          {isCompleted && (
-            <View style={styles.completedBadge}>
-              <Text style={styles.completedBadgeText}>✓ 已完成</Text>
-            </View>
-          )}
+          <View style={[styles.statusPill, list.is_completed ? styles.statusPillDone : styles.statusPillPending]}>
+            <Text style={[styles.statusPillText, list.is_completed ? styles.statusPillTextDone : styles.statusPillTextPending]}>
+              {list.is_completed ? '已完成' : `${uncheckedItems} 项待购`}
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.listCardStats}>
-          <View style={styles.statItem}>
-            <Text style={styles.statIcon}>🛒</Text>
-            <Text style={styles.statText}>{totalItems}项</Text>
+        <View style={styles.listStatsRow}>
+          <View style={styles.listStatBox}>
+            <Text style={styles.listStatValue}>{totalItems}</Text>
+            <Text style={styles.listStatLabel}>总项数</Text>
           </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statIcon}>💰</Text>
-            <Text style={styles.statText}>¥{estimatedCost.toFixed(0)}</Text>
+          <View style={styles.listStatBox}>
+            <Text style={styles.listStatValue}>¥{estimatedCost.toFixed(0)}</Text>
+            <Text style={styles.listStatLabel}>预计花费</Text>
           </View>
-          {!isCompleted && (
-            <View style={styles.statItem}>
-              <Text style={styles.statIcon}>⏳</Text>
-              <Text style={styles.statText}>{uncheckedItems}待购</Text>
-            </View>
-          )}
+          <View style={styles.listStatBox}>
+            <Text style={styles.listStatValue}>{areaCounts.length}</Text>
+            <Text style={styles.listStatLabel}>采购分区</Text>
+          </View>
         </View>
 
-        {areaCounts.length > 0 && (
+        {areaCounts.length > 0 ? (
           <View style={styles.areaTags}>
             {areaCounts.map(({ area, count }) => (
               <View key={area} style={styles.areaTag}>
@@ -173,7 +183,7 @@ export function ShoppingListHistoryScreen({ navigation }: Props) {
               </View>
             ))}
           </View>
-        )}
+        ) : null}
       </Pressable>
     );
   };
@@ -183,7 +193,7 @@ export function ShoppingListHistoryScreen({ navigation }: Props) {
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={Colors.primary.main} />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>正在整理历史清单...</Text>
         </View>
       </SafeAreaView>
     );
@@ -193,9 +203,11 @@ export function ShoppingListHistoryScreen({ navigation }: Props) {
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <View style={styles.centerContent}>
-          <Text style={styles.errorTitle}>加载失败</Text>
+          <Text style={styles.errorIcon}>⚠️</Text>
+          <Text style={styles.errorTitle}>历史清单暂时没拉回来</Text>
+          <Text style={styles.errorText}>重新试一次就好。</Text>
           <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
-            <Text style={styles.retryButtonText}>重试</Text>
+            <Text style={styles.retryButtonText}>重新加载</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -204,87 +216,81 @@ export function ShoppingListHistoryScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <View style={styles.header}>
-        <Text style={styles.eyebrow}>历史清单</Text>
-        <Text style={styles.title}>把历史清单、共享入口和回看操作收在一起</Text>
-        <Text style={styles.subtitle}>最近 30 天的购物清单会保留在这里，也可以通过邀请码加入共享清单。</Text>
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>{shoppingLists.length}</Text>
-            <Text style={styles.summaryLabel}>历史清单</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>{shoppingLists.filter((item) => item.is_completed).length}</Text>
-            <Text style={styles.summaryLabel}>已完成</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>{shoppingLists.reduce((sum, item) => sum + (item.unchecked_items || 0), 0)}</Text>
-            <Text style={styles.summaryLabel}>待购累计</Text>
-          </View>
-        </View>
-        <View style={styles.joinRow}>
-          <TextInput
-            style={styles.joinInput}
-            placeholder="输入共享邀请码"
-            value={inviteCode}
-            onChangeText={setInviteCode}
-          />
-          <TouchableOpacity style={styles.joinButton} onPress={handleJoinShare}>
-            <Text style={styles.joinButtonText}>加入共享</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
       <ScrollView
         style={styles.content}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[Colors.primary.main]}
-            tintColor={Colors.primary.main}
-          />
-        }
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary.main]} tintColor={Colors.primary.main} />}
       >
+        <View style={styles.heroCard}>
+          <Text style={styles.eyebrow}>历史清单</Text>
+          <Text style={styles.heroTitle}>把历史采购、共享入口和回看操作收在一起</Text>
+          <Text style={styles.heroSubtitle}>最近 30 天的购物清单会保留在这里，也可以通过邀请码直接加入共享清单。</Text>
+
+          <View style={styles.chipRow}>
+            {insightChips.map((chip) => (
+              <View key={chip} style={styles.insightChip}>
+                <Text style={styles.insightChipText}>{chip}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.summaryRow}>
+            {summaryCards.map((card) => (
+              <View key={card.label} style={styles.summaryCard}>
+                <Text style={styles.summaryValue}>{card.value}</Text>
+                <Text style={styles.summaryLabel}>{card.label}</Text>
+                <Text style={styles.summaryHelper}>{card.helper}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.joinPanel}>
+            <Text style={styles.joinTitle}>加入共享清单</Text>
+            <Text style={styles.joinHint}>输入家人发来的邀请码，直接接手同一张采购单。</Text>
+            <View style={styles.joinRow}>
+              <TextInput
+                style={styles.joinInput}
+                placeholder="输入共享邀请码"
+                placeholderTextColor={Colors.text.tertiary}
+                value={inviteCode}
+                onChangeText={setInviteCode}
+                autoCapitalize="characters"
+              />
+              <TouchableOpacity style={styles.joinButton} onPress={handleJoinShare}>
+                <Text style={styles.joinButtonText}>加入共享</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
         {shoppingLists.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📋</Text>
-            <Text style={styles.emptyTitle}>还没有购物清单</Text>
-            <Text style={styles.emptyText}>生成您的第一个购物清单</Text>
-            <TouchableOpacity
-              style={styles.createButton}
-              onPress={() => navigation.navigate('ShoppingList')}
-            >
-              <Text style={styles.createButtonText}>去创建</Text>
+            <Text style={styles.emptyIcon}>🧺</Text>
+            <Text style={styles.emptyTitle}>最近还没有历史清单</Text>
+            <Text style={styles.emptyText}>先去当前购物清单生成一张，之后这里就能回看采购记录。</Text>
+            <TouchableOpacity style={styles.primaryAction} onPress={() => navigation.navigate('ShoppingList')}>
+              <Text style={styles.primaryActionText}>去清单首页</Text>
             </TouchableOpacity>
           </View>
         ) : (
-          <>
-            {shoppingLists.map((list) => (
-              <ListCard key={list.id} list={list} />
-            ))}
-          </>
+          shoppingLists.map((list) => <ListCard key={list.id} list={list} />)
         )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// 简化的阴影引用
-const Shadows = {
-  sm: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-};
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background.secondary,
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: Spacing.md,
+    paddingBottom: Spacing['3xl'],
   },
   centerContent: {
     flex: 1,
@@ -297,29 +303,37 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.text.secondary,
   },
+  errorIcon: {
+    fontSize: 36,
+    marginBottom: Spacing.sm,
+  },
   errorTitle: {
     fontSize: Typography.fontSize.xl,
     fontWeight: Typography.fontWeight.bold,
-    color: Colors.functional.error,
-    marginBottom: Spacing.md,
+    color: Colors.text.primary,
+  },
+  errorText: {
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.lg,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
   },
   retryButton: {
     backgroundColor: Colors.primary.main,
-    paddingHorizontal: Spacing.xl,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
   },
   retryButtonText: {
     color: Colors.text.inverse,
-    fontSize: Typography.fontSize.base,
+    fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold,
   },
-  header: {
-    padding: Spacing.lg,
+  heroCard: {
     backgroundColor: Colors.background.primary,
-    margin: Spacing.md,
-    marginBottom: 0,
     borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    ...Shadows.sm,
   },
   eyebrow: {
     fontSize: Typography.fontSize.xs,
@@ -328,51 +342,94 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: Spacing.xs,
   },
-  title: {
+  heroTitle: {
     fontSize: Typography.fontSize.xl,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
+    lineHeight: 28,
   },
-  subtitle: {
+  heroSubtitle: {
+    marginTop: Spacing.xs,
     fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
-    marginTop: Spacing.xs,
     lineHeight: 20,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  insightChip: {
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  insightChipText: {
+    color: Colors.text.secondary,
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.medium,
   },
   summaryRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.sm,
     marginTop: Spacing.md,
   },
   summaryCard: {
-    flex: 1,
+    flexGrow: 1,
+    minWidth: '30%',
     backgroundColor: Colors.background.secondary,
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
   },
   summaryValue: {
-    fontSize: Typography.fontSize.base,
+    fontSize: Typography.fontSize.lg,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
   },
   summaryLabel: {
+    marginTop: Spacing.xs,
     fontSize: Typography.fontSize.xs,
     color: Colors.text.secondary,
+  },
+  summaryHelper: {
+    marginTop: 4,
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
+    lineHeight: 18,
+  },
+  joinPanel: {
+    marginTop: Spacing.md,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+  },
+  joinTitle: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.text.primary,
+  },
+  joinHint: {
     marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
   },
   joinRow: {
-    marginTop: Spacing.sm,
     flexDirection: 'row',
     gap: Spacing.sm,
+    marginTop: Spacing.sm,
   },
   joinInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: Colors.neutral.gray300,
+    borderColor: Colors.border.default,
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
+    paddingVertical: Spacing.sm,
     backgroundColor: Colors.background.primary,
+    color: Colors.text.primary,
   },
   joinButton: {
     backgroundColor: Colors.primary.main,
@@ -385,117 +442,127 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold,
   },
-  content: {
-    flex: 1,
-  },
   emptyState: {
+    marginTop: Spacing.md,
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.xl,
     padding: Spacing['3xl'],
-    minHeight: 300,
+    ...Shadows.sm,
   },
   emptyIcon: {
-    fontSize: 64,
+    fontSize: 48,
     marginBottom: Spacing.md,
   },
   emptyTitle: {
     fontSize: Typography.fontSize.xl,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
-    marginBottom: Spacing.sm,
   },
   emptyText: {
-    fontSize: Typography.fontSize.base,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.lg,
+    fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
     textAlign: 'center',
-    marginBottom: Spacing.lg,
+    lineHeight: 20,
   },
-  createButton: {
+  primaryAction: {
     backgroundColor: Colors.primary.main,
-    paddingHorizontal: Spacing.xl,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.lg,
   },
-  createButtonText: {
+  primaryActionText: {
     color: Colors.text.inverse,
-    fontSize: Typography.fontSize.base,
+    fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold,
   },
   listCard: {
-    marginHorizontal: Spacing.md,
-    marginBottom: Spacing.md,
+    marginTop: Spacing.md,
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.xl,
     padding: Spacing.md,
-    backgroundColor: Colors.background.card,
-    borderRadius: BorderRadius.lg,
     ...Shadows.sm,
   },
   listCardPressed: {
-    backgroundColor: Colors.neutral.gray50,
+    opacity: 0.9,
   },
   listCardCompleted: {
-    opacity: 0.7,
+    opacity: 0.82,
   },
-  listCardHeader: {
+  listCardTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
+    alignItems: 'flex-start',
+    gap: Spacing.md,
   },
-  listCardHeaderLeft: {
-    flex: 1,
-  },
-  listCardDate: {
+  listDateLabel: {
     fontSize: Typography.fontSize.xl,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
   },
-  listCardFullDate: {
+  listFullDate: {
+    marginTop: 2,
     fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
-    marginTop: 2,
   },
-  completedBadge: {
-    backgroundColor: Colors.functional.success,
+  statusPill: {
+    borderRadius: BorderRadius.full,
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.sm,
   },
-  completedBadgeText: {
+  statusPillPending: {
+    backgroundColor: Colors.functional.warningLight,
+  },
+  statusPillDone: {
+    backgroundColor: Colors.functional.successLight,
+  },
+  statusPillText: {
     fontSize: Typography.fontSize.xs,
     fontWeight: Typography.fontWeight.semibold,
-    color: Colors.text.inverse,
   },
-  listCardStats: {
+  statusPillTextPending: {
+    color: Colors.functional.warning,
+  },
+  statusPillTextDone: {
+    color: Colors.functional.success,
+  },
+  listStatsRow: {
     flexDirection: 'row',
-    marginBottom: Spacing.sm,
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
   },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: Spacing.lg,
+  listStatBox: {
+    flex: 1,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
   },
-  statIcon: {
-    fontSize: Typography.fontSize.sm,
-    marginRight: 2,
+  listStatValue: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
   },
-  statText: {
-    fontSize: Typography.fontSize.sm,
+  listStatLabel: {
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.xs,
     color: Colors.text.secondary,
   },
   areaTags: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginRight: -Spacing.xs,
+    gap: Spacing.xs,
+    marginTop: Spacing.md,
   },
   areaTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.neutral.gray100,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.full,
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.sm,
-    marginRight: Spacing.xs,
-    marginBottom: Spacing.xs,
+    gap: 4,
   },
   areaTagIcon: {
     fontSize: Typography.fontSize.xs,
@@ -503,5 +570,6 @@ const styles = StyleSheet.create({
   areaTagText: {
     fontSize: Typography.fontSize.xs,
     color: Colors.text.secondary,
+    fontWeight: Typography.fontWeight.medium,
   },
 });
