@@ -260,7 +260,7 @@ export function FamilyScreen({ navigation }: Props) {
 
           {isWebLocalGuestMode() && (
             <Text style={styles.previewHint}>
-              当前是 web 本地未登录预览：家庭空间已切到稳定 guest/mock 数据，不再继续请求失败后刷 401 噪音。
+              当前为未登录预览：家庭空间会先展示示例数据，方便你继续查看页面。
             </Text>
           )}
 

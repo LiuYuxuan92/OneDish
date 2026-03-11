@@ -23,7 +23,7 @@ export function buildSearchCardModel(item: SearchResult, lovedRecipeNames: Set<s
     id: `${item.source}-${item.id}`,
     title: item.name,
     source: item.source,
-    subtitle: item.description || recommendationText || '保留真实搜索来源与接线能力',
+    subtitle: item.description || recommendationText || '保留真实搜索来源，后续也方便继续补全',
     meta: [
       typeof item.prep_time === 'number' ? `${item.prep_time}分钟` : null,
       item.difficulty || null,

@@ -155,14 +155,14 @@ export function WeeklyPlanScreen({ navigation }: Props) {
       if (effectiveExcludeIngredients.length > 0) params.exclude_ingredients = effectiveExcludeIngredients;
       await generateMutation.mutateAsync(params);
       if (isWebLocalGuestMode()) {
-        Alert.alert('预览模式', '当前是本地未登录预览，已为你生成一份示例周计划，方便继续联调和验收。');
+        Alert.alert('预览模式', '当前为未登录预览，已为你生成一份示例周计划，方便先看整体效果。');
       }
     } catch (genErr: unknown) {
       const err = genErr as { response?: { status: number }; statusCode?: number };
       if (err?.response?.status === 429 || err?.statusCode === 429) console.warn('请求过于频繁，请稍后再试');
       else {
         console.error('生成计划失败:', genErr);
-        Alert.alert('生成失败', isWebLocalGuestMode() ? '当前为未登录预览模式，稍后重试或继续查看示例计划。' : '请稍后重试');
+        Alert.alert('生成失败', isWebLocalGuestMode() ? '当前为未登录预览，可稍后重试，或先查看示例计划。' : '请稍后重试');
       }
     } finally { setIsGenerating(false); setRefreshingMeals(new Set()); }
   };
@@ -280,7 +280,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
           {isWebLocalGuestMode() && (
             <View style={styles.infoCard}>
               <Text style={styles.infoIcon}>👀</Text>
-              <Text style={styles.infoText}>当前为 web 本地未登录预览模式：周计划、购物摘要和家庭协作数据已自动降级为示例数据，不会因为 401 直接刷红。</Text>
+              <Text style={styles.infoText}>当前为未登录预览：周计划、购物摘要和家庭协作会先展示示例数据，方便继续查看页面。</Text>
             </View>
           )}
           <View style={styles.summaryGridCompact}>
@@ -331,7 +331,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
                 <Text style={styles.toolChipText}>{isGenerating || generateMutation.isPending ? '生成中...' : '✨ 智能生成'}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.toolChip} onPress={handleSmartRecommendation}>
-                <Text style={styles.toolChipText}>A/B 智能推荐</Text>
+                <Text style={styles.toolChipText}>双方案推荐</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.toolChip} onPress={handleOpenShareTemplate} disabled={!hasPlans}>
                 <Text style={styles.toolChipText}>💾 保存模板</Text>

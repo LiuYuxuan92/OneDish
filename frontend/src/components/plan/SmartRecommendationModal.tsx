@@ -60,7 +60,7 @@ export function SmartRecommendationModal({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.genModalOverlay}>
         <View style={styles.genModalContent}>
-          <Text style={styles.genModalTitle}>三餐智能推荐 V1（A/B）</Text>
+          <Text style={styles.genModalTitle}>三餐双方案推荐</Text>
           
           {isPending ? (
             <View style={styles.loadingContainer}>
