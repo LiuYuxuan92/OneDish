@@ -4,10 +4,10 @@ import type { PlannedMealCardViewModel, WeeklyPlanDayViewModel, MealPlanAdapterC
 import { mapRecipeToDisplayModel, mapFeedbackAcceptance } from './recipeDisplayMapper';
 
 const SLOT_LABELS: Record<string, string> = {
-  breakfast: 'Breakfast',
-  lunch: 'Lunch',
-  dinner: 'Dinner',
-  snack: 'Snack',
+  breakfast: '早餐',
+  lunch: '午餐',
+  dinner: '晚餐',
+  snack: '加餐',
 };
 
 function getReadiness(recipeId: string, context: MealPlanAdapterContext): MealReadiness {
@@ -24,10 +24,10 @@ function getReadiness(recipeId: string, context: MealPlanAdapterContext): MealRe
 
 function readinessLabel(readiness: MealReadiness): string {
   switch (readiness) {
-    case 'ready': return 'Ready';
-    case 'partial': return 'Partly stocked';
-    case 'needs-shopping': return 'Needs shopping';
-    default: return 'Readiness TBD';
+    case 'ready': return '食材齐了';
+    case 'partial': return '还差一点';
+    case 'needs-shopping': return '需要采购';
+    default: return '待确认';
   }
 }
 

@@ -220,7 +220,7 @@ export function HomeScreen({ navigation }: Props) {
                 activeOpacity={0.88}
               >
                 <View style={styles.quickEntryCopy}>
-                  <Text style={styles.quickEntryKicker}>{index === 0 ? 'Start here' : 'Quick entry'}</Text>
+                  <Text style={styles.quickEntryKicker}>{index === 0 ? '先从这里开始' : '快捷入口'}</Text>
                   <Text style={styles.quickEntryTitle}>{entry.label}</Text>
                   <Text style={styles.quickEntryHint}>{entry.hint}</Text>
                 </View>

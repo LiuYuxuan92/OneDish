@@ -84,7 +84,7 @@ export function SettingsScreen({ navigation }: Props) {
       title: '配额状态',
       type: 'navigation',
       value: quota
-        ? `AI ${quota.daily.ai_used}/${quota.daily.ai_limit} · Web ${quota.daily.web_used}/${quota.daily.web_limit}`
+        ? `AI ${quota.daily.ai_used}/${quota.daily.ai_limit} · 联网 ${quota.daily.web_used}/${quota.daily.web_limit}`
         : '加载中...',
       onPress: loadQuota,
     },

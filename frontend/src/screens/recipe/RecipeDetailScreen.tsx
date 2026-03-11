@@ -743,7 +743,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
               <View style={styles.syncHeader}>
                 <View style={styles.syncTitleRow}>
                   <Text style={styles.syncIcon}>⚡</Text>
-                  <Text style={styles.syncTitle}>同步 Cooking</Text>
+                  <Text style={styles.syncTitle}>同步烹饪</Text>
                 </View>
                 <TouchableOpacity onPress={() => setShowSyncTip(false)}>
                   <Text style={styles.closeButton}>✕</Text>
@@ -756,7 +756,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
               {syncCooking.shared_steps &&
                 syncCooking.shared_steps.length > 0 && (
                   <View style={styles.syncSteps}>
-                    <Text style={styles.syncStepsTitle}>共用步骤:</Text>
+                    <Text style={styles.syncStepsTitle}>共用步骤：</Text>
                     <View style={styles.syncStepsList}>
                       {syncCooking.shared_steps.map(
                         (step: string, index: number) => (

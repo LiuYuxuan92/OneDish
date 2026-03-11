@@ -84,7 +84,7 @@ export function FavoritesScreen({ navigation }: Props) {
       <View style={styles.header}>
         <View style={styles.headerBadge}>
           <HeartIcon size={16} color={Colors.functional.error} fill={Colors.functional.error} />
-          <Text style={styles.headerBadgeText}>Favorites</Text>
+          <Text style={styles.headerBadgeText}>我的收藏</Text>
         </View>
         <Text style={styles.headerTitle}>把值得反复做的一菜两吃，先收在这里</Text>
         <Text style={styles.headerSubtitle}>共 {data?.total || 0} 道精选菜谱，可直接回看或重新进入详情页继续做。</Text>

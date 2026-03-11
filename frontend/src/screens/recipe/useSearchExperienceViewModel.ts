@@ -57,7 +57,7 @@ export function useSearchExperienceViewModel(params: {
       ],
       taskTabs: [
         { key: 'keyword' as SearchTaskTab, label: '关键词' },
-        { key: 'dual' as SearchTaskTab, label: '2-in-1' },
+        { key: 'dual' as SearchTaskTab, label: '一菜两吃' },
         { key: 'inventory' as SearchTaskTab, label: '冰箱食材' },
         { key: 'scenario' as SearchTaskTab, label: '场景' },
         { key: 'age' as SearchTaskTab, label: '按月龄' },

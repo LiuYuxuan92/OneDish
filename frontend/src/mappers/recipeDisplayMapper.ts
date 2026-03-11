@@ -24,7 +24,29 @@ function toMinutesText(recipe: RecipeLike): string {
   const prep = 'prep_time' in recipe && typeof recipe.prep_time === 'number' ? recipe.prep_time : 0;
   const cook = 'cook_time' in recipe && typeof recipe.cook_time === 'number' ? recipe.cook_time : 0;
   const total = ('total_time' in recipe && typeof recipe.total_time === 'number' ? recipe.total_time : 0) || prep + cook;
-  return total > 0 ? `${total} min` : 'Time TBD';
+  return total > 0 ? `${total} 分钟` : '时长待定';
+}
+
+function formatExtraPrepLabel(extraPrep: ExtraPrepLevel): string {
+  switch (extraPrep) {
+    case 'minimal':
+      return '少量额外处理';
+    case 'moderate':
+      return '需适度预处理';
+    case 'heavy':
+      return '预处理较多';
+    default:
+      return '';
+  }
+}
+
+function formatDifficultyLabel(difficulty?: string): string {
+  if (!difficulty) return '简单';
+  const normalized = difficulty.toLowerCase();
+  if (normalized === 'easy') return '简单';
+  if (normalized === 'medium') return '中等';
+  if (normalized === 'hard') return '困难';
+  return difficulty;
 }
 
 function getMinAgeMonths(recipe: RecipeLike): number | undefined {
@@ -96,14 +118,14 @@ export function mapRecipeToDisplayModel(recipe: RecipeLike, context: RecipeAdapt
   if (minAgeMonths) {
     chips.push({
       key: 'age',
-      label: currentAgeSuitable === false ? `${minAgeMonths}m+ (not yet)` : `${minAgeMonths}m+`,
+      label: currentAgeSuitable === false ? `${minAgeMonths}个月后可尝试` : `${minAgeMonths}个月+`,
       tone: currentAgeSuitable === false ? 'warning' : 'success',
     } as const);
   }
-  if (dualType === 'dual') chips.push({ key: 'shared', label: 'Shared meal', tone: 'accent' as const });
-  if (extraPrep !== 'none') chips.push({ key: 'prep', label: extraPrep === 'minimal' ? 'Minimal extra' : `+${extraPrep} prep`, tone: 'neutral' as const });
+  if (dualType === 'dual') chips.push({ key: 'shared', label: '可同步做', tone: 'accent' as const });
+  if (extraPrep !== 'none') chips.push({ key: 'prep', label: formatExtraPrepLabel(extraPrep), tone: 'neutral' as const });
   if (texture) chips.push({ key: 'texture', label: String(texture), tone: 'neutral' as const });
-  if (!chips.length) chips.push({ key: 'adult-only', label: 'Adults only', tone: 'neutral' as const });
+  if (!chips.length) chips.push({ key: 'adult-only', label: '更偏大人版', tone: 'neutral' as const });
 
   const adaptation = context.aiBabyVersion
     ? {
@@ -131,8 +153,8 @@ export function mapRecipeToDisplayModel(recipe: RecipeLike, context: RecipeAdapt
     title: recipe.name,
     image: Array.isArray(recipe.image_url) ? recipe.image_url[0] : (typeof recipe.image_url === 'string' ? recipe.image_url : undefined),
     cookTimeText: toMinutesText(recipe),
-    difficultyLabel: 'difficulty' in recipe && recipe.difficulty ? String(recipe.difficulty) : 'Easy',
-    servingsLabel: 'servings' in recipe && recipe.servings ? String(recipe.servings) : 'Servings TBD',
+    difficultyLabel: formatDifficultyLabel('difficulty' in recipe ? recipe.difficulty : undefined),
+    servingsLabel: 'servings' in recipe && recipe.servings ? String(recipe.servings) : '份量待补',
     dualType,
     whyItFits: recommendationReasons[0],
     recommendationReasons,

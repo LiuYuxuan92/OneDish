@@ -201,7 +201,7 @@ export function CookingModeScreen({ route, navigation }: Props) {
           <Text style={styles.topBarTitle}>同步烹饪</Text>
           <View style={styles.topBarRight}>
             <TouchableOpacity onPress={handleToggleViewMode} style={styles.viewModeButton}>
-              <Text style={styles.viewModeButtonText}>📋 Timeline</Text>
+              <Text style={styles.viewModeButtonText}>📋 时间线</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={toggleVoice} style={styles.topBarButton}>
               <Text style={styles.topBarButtonText}>{voiceEnabled ? '🔊' : '🔇'}</Text>

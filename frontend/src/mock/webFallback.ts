@@ -172,7 +172,7 @@ export const buildMockWeeklyPlan = (): WeeklyPlanResponse => {
 
 export const buildMockUserInfo = (): UserInfo => ({
   id: 'guest-web',
-  username: 'Web Guest',
+  username: '本地访客',
   email: 'guest@local.onedish',
   family_size: 3,
   baby_age: 12,
@@ -274,10 +274,10 @@ export const buildMockFamily = (): FamilyContext => ({
   family_id: 'family-web-guest',
   owner_id: 'guest-web',
   role: 'owner',
-  name: 'Web 本地家庭',
+  name: '本地预览家庭',
   invite_code: 'LOCAL88',
   members: [
-    { user_id: 'guest-web', display_name: 'Web Guest', avatar_url: null, role: 'owner' },
+    { user_id: 'guest-web', display_name: '本地访客', avatar_url: null, role: 'owner' },
     { user_id: 'guest-partner', display_name: '搭子', avatar_url: null, role: 'member' },
   ],
 });

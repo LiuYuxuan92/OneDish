@@ -17,8 +17,22 @@ import {
 import { useUserInfo } from '../../hooks/useUsers';
 import { RiskHit } from '../../api/userRecipes';
 
+const getRiskLevelLabel = (level?: string) => {
+  if (level === 'block') return '拦截';
+  if (level === 'warn') return '提醒';
+  return level || '提示';
+};
+
 const formatRiskHits = (riskHits: RiskHit[] = []) =>
-  riskHits.map((hit) => `• [${hit.level.toUpperCase()}] ${hit.keyword}：${hit.reason}${hit.suggestion ? `（建议：${hit.suggestion}）` : ''}`).join('\n');
+  riskHits.map((hit) => `• [${getRiskLevelLabel(hit.level)}] ${hit.keyword}：${hit.reason}${hit.suggestion ? `（建议：${hit.suggestion}）` : ''}`).join('\n');
+
+const REVIEW_STATUS_LABELS = {
+  pending: '待审核',
+  rejected: '已拒绝',
+  published: '已发布',
+} as const;
+
+const getReviewStatusLabel = (status?: string) => REVIEW_STATUS_LABELS[status as keyof typeof REVIEW_STATUS_LABELS] || status || '待确认';
 
 const QualityTag = ({ inPool, score }: { inPool?: boolean; score?: number }) => (
   <View style={[styles.qualityTag, inPool ? styles.qualityGood : styles.qualityPending]}>
@@ -122,14 +136,14 @@ export function MyRecipesScreen() {
           {isLoading ? <ActivityIndicator /> : myItems.map((recipe: any) => (
             <View key={recipe.id} style={styles.card}>
               <Text style={styles.title}>{recipe.name}</Text>
-              <View style={styles.qualityRow}><Text style={styles.meta}>状态：{recipe.status}</Text><QualityTag inPool={recipe.in_recommend_pool} score={recipe.quality_score} /></View>
+              <View style={styles.qualityRow}><Text style={styles.meta}>状态：{getReviewStatusLabel(recipe.status)}</Text><QualityTag inPool={recipe.in_recommend_pool} score={recipe.quality_score} /></View>
               {recipe.reject_reason ? <Text style={styles.warn}>原因：{recipe.reject_reason}</Text> : null}
               {(recipe.risk_hits || []).length > 0 ? (
                 <View style={styles.riskBox}>
                   <Text style={styles.riskTitle}>提审反馈</Text>
                   {(recipe.risk_hits || []).map((hit: RiskHit, idx: number) => (
                     <Text key={`${recipe.id}-risk-${idx}`} style={hit.level === 'block' ? styles.blockText : styles.warnText}>
-                      {`[${hit.level.toUpperCase()}] ${hit.keyword}：${hit.reason}${hit.suggestion ? `（建议：${hit.suggestion}）` : ''}`}
+                      {`[${getRiskLevelLabel(hit.level)}] ${hit.keyword}：${hit.reason}${hit.suggestion ? `（建议：${hit.suggestion}）` : ''}`}
                     </Text>
                   ))}
                 </View>
@@ -180,11 +194,11 @@ export function MyRecipesScreen() {
       {tab === 'admin' && isAdmin && (
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.formCard}>
-            <Text style={styles.formTitle}>UGC 审核列表</Text>
+            <Text style={styles.formTitle}>投稿审核列表</Text>
             <View style={styles.row}>
               {(['pending', 'rejected', 'published'] as const).map((s) => (
                 <TouchableOpacity key={s} style={[styles.smallBtn, adminStatus === s && styles.tabBtnActive]} onPress={() => { setAdminStatus(s); setSelectedIds([]); }}>
-                  <Text>{s}</Text>
+                  <Text>{getReviewStatusLabel(s)}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -200,7 +214,7 @@ export function MyRecipesScreen() {
             return (
               <TouchableOpacity key={recipe.id} style={styles.card} onPress={() => setSelectedIds((prev) => selected ? prev.filter((id) => id !== recipe.id) : [...prev, recipe.id])}>
                 <Text style={styles.title}>{selected ? '☑' : '☐'} {recipe.name}</Text>
-                <Text style={styles.meta}>状态：{recipe.status}</Text>
+                <Text style={styles.meta}>状态：{getReviewStatusLabel(recipe.status)}</Text>
                 {recipe.reject_reason ? <Text style={styles.warn}>备注：{recipe.reject_reason}</Text> : null}
               </TouchableOpacity>
             );

@@ -39,6 +39,12 @@ interface WeeklyShareModalProps {
   isJoining: boolean;
 }
 
+function getRoleLabel(role?: string) {
+  if (role === 'owner') return '发起人';
+  if (role === 'member') return '成员';
+  return role || '待确认';
+}
+
 export function WeeklyShareModal({
   sharedData,
   inviteCode,
@@ -80,7 +86,7 @@ export function WeeklyShareModal({
       {sharedData?.plans && (
         <View style={styles.planSection}>
           <Text style={styles.sectionTitle}>共享周计划</Text>
-          <Text style={styles.shareIdentityText}>当前身份：{sharedData.role}</Text>
+          <Text style={styles.shareIdentityText}>当前身份：{getRoleLabel(sharedData.role)}</Text>
           
           {sharedData.role === 'owner' && (
             <View style={styles.shareOwnerPanel}>
