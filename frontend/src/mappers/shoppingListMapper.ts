@@ -27,6 +27,7 @@ export function mapShoppingListToSummary(list: ShoppingList | null): ShoppingLis
     coveredCount,
     missingCount,
     pantryCoverageRatio,
+    readinessPercent: Math.round(pantryCoverageRatio * 100),
     itemStatuses: items.slice(0, 6).map(item => ({
       name: item.name,
       status: getShoppingItemStatus(item),

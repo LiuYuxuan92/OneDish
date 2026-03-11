@@ -2,22 +2,38 @@ import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../common/Card';
 import { BorderRadius, Colors, Spacing, Typography } from '../../styles/theme';
-import type { PlannedMealCardViewModel } from '../../viewmodels/uiMigration';
+import type { FeedbackAcceptance, PlannedMealCardViewModel } from '../../viewmodels/uiMigration';
 import { DualBadge } from './DualBadge';
 import { AdaptationSummary } from './AdaptationSummary';
 
 interface PlannedMealCardProps {
   item: PlannedMealCardViewModel;
   onPress?: (recipeId?: string) => void;
+  onMarkComplete?: (planId?: string) => void;
   onReplace?: (planId?: string) => void;
   onRemove?: (planId?: string) => void;
   onAddEmpty?: (slotKey: string) => void;
 }
 
-export const PlannedMealCard: React.FC<PlannedMealCardProps> = ({ item, onPress, onReplace, onRemove, onAddEmpty }) => {
+const ACCEPTANCE_LABELS: Record<FeedbackAcceptance, string> = {
+  loved: '最近很喜欢',
+  okay: '吃过还行',
+  cautious: '建议谨慎回试',
+  rejected: '最近没接受',
+};
+
+function getAcceptanceLabel(acceptance?: FeedbackAcceptance) {
+  return acceptance ? ACCEPTANCE_LABELS[acceptance] : undefined;
+}
+
+export const PlannedMealCard: React.FC<PlannedMealCardProps> = ({ item, onPress, onMarkComplete, onReplace, onRemove, onAddEmpty }) => {
   if (!item.recipe) {
     return (
       <Card variant="outlined" style={styles.emptyCard}>
+        <View style={styles.header}>
+          <Text style={styles.slot}>{item.slotLabel}</Text>
+          <Text style={[styles.readiness, styles.readinessPending]}>{item.readinessLabel}</Text>
+        </View>
         <Pressable onPress={() => onAddEmpty?.(item.slotKey)} style={styles.emptyAction}>
           <Text style={styles.emptyPlus}>＋</Text>
           <Text style={styles.emptyText}>添加菜谱</Text>
@@ -26,8 +42,21 @@ export const PlannedMealCard: React.FC<PlannedMealCardProps> = ({ item, onPress,
     );
   }
 
+  const acceptanceLabel = getAcceptanceLabel(item.acceptance);
+  const actions = [
+    item.planId && item.completionStatus !== 'completed' && onMarkComplete
+      ? <Pressable key="complete" onPress={() => onMarkComplete(item.planId)}><Text style={styles.actionText}>完成</Text></Pressable>
+      : null,
+    item.planId && onReplace
+      ? <Pressable key="replace" onPress={() => onReplace(item.planId)}><Text style={styles.actionText}>替换</Text></Pressable>
+      : null,
+    item.planId && onRemove
+      ? <Pressable key="remove" onPress={() => onRemove(item.planId)}><Text style={styles.actionText}>移除</Text></Pressable>
+      : null,
+  ].filter(Boolean);
+
   return (
-    <Card variant="outlined" style={styles.card}>
+    <Card variant="outlined" style={item.completionStatus === 'completed' ? styles.cardCompleted : styles.card}>
       <View style={styles.header}>
         <Text style={styles.slot}>{item.slotLabel}</Text>
         <Text style={[styles.readiness, item.readiness === 'ready' ? styles.readinessReady : item.readiness === 'partial' ? styles.readinessPartial : styles.readinessPending]}>{item.readinessLabel}</Text>
@@ -39,15 +68,13 @@ export const PlannedMealCard: React.FC<PlannedMealCardProps> = ({ item, onPress,
           <Text style={styles.meta}>{item.recipe.cookTimeText} · {item.recipe.difficultyLabel}</Text>
           <View style={styles.badgesRow}>
             <DualBadge type={item.recipe.dualType} size="xs" />
-            {item.acceptance ? <Text style={styles.acceptance}>{item.acceptance}</Text> : null}
+            {acceptanceLabel ? <Text style={styles.acceptance}>{acceptanceLabel}</Text> : null}
+            {item.completionStatus === 'completed' ? <Text style={styles.completedPill}>已完成</Text> : null}
           </View>
         </View>
       </Pressable>
       {item.adaptation ? <AdaptationSummary adaptation={item.adaptation} compact /> : null}
-      <View style={styles.actionRow}>
-        <Pressable onPress={() => onReplace?.(item.planId)}><Text style={styles.actionText}>替换</Text></Pressable>
-        <Pressable onPress={() => onRemove?.(item.planId)}><Text style={styles.actionText}>移除</Text></Pressable>
-      </View>
+      {actions.length ? <View style={styles.actionRow}>{actions}</View> : null}
     </Card>
   );
 };
@@ -55,6 +82,10 @@ export const PlannedMealCard: React.FC<PlannedMealCardProps> = ({ item, onPress,
 const styles = StyleSheet.create({
   card: {
     gap: Spacing[3],
+  },
+  cardCompleted: {
+    gap: Spacing[3],
+    opacity: 0.78,
   },
   header: {
     flexDirection: 'row',
@@ -120,6 +151,14 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing[1],
     borderRadius: BorderRadius.full,
   },
+  completedPill: {
+    fontSize: Typography.fontSize['2xs'],
+    backgroundColor: Colors.secondary[50],
+    color: Colors.secondary[700],
+    paddingHorizontal: Spacing[2],
+    paddingVertical: Spacing[1],
+    borderRadius: BorderRadius.full,
+  },
   actionRow: {
     marginTop: Spacing[2],
     flexDirection: 'row',
@@ -132,6 +171,7 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.medium,
   },
   emptyCard: {
+    gap: Spacing[3],
     borderStyle: 'dashed',
     borderColor: Colors.border.default,
   },

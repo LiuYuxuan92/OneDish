@@ -75,6 +75,8 @@ export interface PlannedMealCardViewModel {
   recipe?: RecipeDisplayModel;
   completionStatus: 'planned' | 'completed' | 'empty';
   acceptance?: FeedbackAcceptance;
+  isBabyFriendly?: boolean;
+  prepMinutes?: number;
   readiness: MealReadiness;
   readinessLabel: string;
   adaptation?: AdaptationSummaryModel;
@@ -92,7 +94,25 @@ export interface ShoppingListSummaryViewModel {
   coveredCount: number;
   missingCount: number;
   pantryCoverageRatio: number;
+  readinessPercent: number;
   itemStatuses: Array<{ name: string; status: StatusTagType; detail?: string }>;
+}
+
+export interface WeeklyPlanSummaryViewModel {
+  totalMeals: number;
+  completedMeals: number;
+  babyFriendlyMeals: number;
+  totalPrepTime: number;
+  todayCount: number;
+  completionPercent: number;
+}
+
+export interface WeeklyPlanPageViewModel {
+  days: WeeklyPlanDayViewModel[];
+  today?: WeeklyPlanDayViewModel;
+  summary: WeeklyPlanSummaryViewModel;
+  shoppingSummary: ShoppingListSummaryViewModel | null;
+  hasPlans: boolean;
 }
 
 export interface RecipeAdapterContext {

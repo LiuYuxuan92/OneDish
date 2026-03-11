@@ -4,7 +4,6 @@ import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../styles/theme';
 import { useWeeklyPlan, useGenerateWeeklyPlan, useMarkMealComplete, useSmartRecommendations, useSubmitRecommendationFeedback, useCreateWeeklyShare, useJoinWeeklyShare, useSharedWeeklyPlan, useMarkSharedMealComplete, useRegenerateWeeklyShareInvite, useRemoveWeeklyShareMember } from '../../hooks/useMealPlans';
-import { useLatestShoppingList } from '../../hooks/useShoppingLists';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { PlanStackParamList } from '../../types';
 import { ShoppingBagIcon, RefreshCwIcon } from '../../components/common/Icons';
@@ -20,6 +19,7 @@ import { weeklyPlanStyles as styles } from './weeklyPlanStyles';
 import { useUserInfo } from '../../hooks/useUsers';
 import { useCreateFamily, useJoinFamily, useMyFamily, useRegenerateFamilyInvite, useRemoveFamilyMember } from '../../hooks/useFamilies';
 import { isWebLocalGuestMode } from '../../mock/webFallback';
+import { useWeeklyPlanPageViewModel } from '../../viewmodels/useWeeklyPlanPageViewModel';
 
 type Props = NativeStackScreenProps<PlanStackParamList, 'WeeklyPlan'>;
 
@@ -45,7 +45,6 @@ export function WeeklyPlanScreen({ navigation }: Props) {
 
   const { data: userInfo } = useUserInfo();
   const { data: myFamily } = useMyFamily();
-  const { data: shoppingList } = useLatestShoppingList();
   const createFamilyMutation = useCreateFamily();
   const joinFamilyMutation = useJoinFamily();
   const regenerateFamilyInviteMutation = useRegenerateFamilyInvite(myFamily?.family_id);
@@ -56,6 +55,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
     : [];
   const preferredCookingTimeLimit = userInfo?.preferences?.cooking_time_limit ?? userInfo?.preferences?.max_prep_time;
 
+  const { data: pageVm, isLoading: isPageVmLoading } = useWeeklyPlanPageViewModel(preferredBabyAge);
   const { data: weeklyData, isLoading, error, refetch } = useWeeklyPlan();
   const generateMutation = useGenerateWeeklyPlan();
   const markCompleteMutation = useMarkMealComplete();
@@ -74,45 +74,16 @@ export function WeeklyPlanScreen({ navigation }: Props) {
   }, [activeShareId, sharedWeeklyData]);
 
   const todayDate = formatDate(new Date());
-  const todayPlans = weeklyData?.plans?.[todayDate] || {};
-
-  const weekSummary = useMemo(() => {
-    const summary = {
-      totalMeals: 0,
-      completedMeals: 0,
-      babyFriendlyMeals: 0,
-      totalPrepTime: 0,
-      todayCount: 0,
-    };
-
-    dates.forEach((dateStr) => {
-      const dayPlans = weeklyData?.plans?.[dateStr] || {};
-      MEAL_TYPES.forEach((mealType) => {
-        const plan = dayPlans?.[mealType];
-        if (!plan) return;
-        summary.totalMeals += 1;
-        if (plan.is_completed) summary.completedMeals += 1;
-        if (plan.is_baby_suitable) summary.babyFriendlyMeals += 1;
-        summary.totalPrepTime += Number(plan.prep_time || 0);
-        if (dateStr === todayDate) summary.todayCount += 1;
-      });
-    });
-
-    return summary;
-  }, [dates, todayDate, weeklyData]);
-
-  const shoppingSummary = useMemo(() => {
-    const inventorySummary = shoppingList?.inventory_summary;
-    return {
-      totalItems: shoppingList?.total_items || 0,
-      uncheckedItems: shoppingList?.unchecked_items || 0,
-      coveredCount: inventorySummary?.covered_count || 0,
-      missingCount: inventorySummary?.missing_count || 0,
-      readinessRatio: shoppingList?.total_items
-        ? Math.round(((shoppingList.total_items - (shoppingList.unchecked_items || 0)) / shoppingList.total_items) * 100)
-        : 0,
-    };
-  }, [shoppingList]);
+  const weekSummary = pageVm.summary;
+  const shoppingSummary = pageVm.shoppingSummary || {
+    totalItems: 0,
+    uncheckedItems: 0,
+    coveredCount: 0,
+    missingCount: 0,
+    pantryCoverageRatio: 0,
+    readinessPercent: 0,
+    itemStatuses: [],
+  };
 
   const preferenceHint = useMemo(() => {
     const parts = [
@@ -124,19 +95,18 @@ export function WeeklyPlanScreen({ navigation }: Props) {
   }, [preferredBabyAge, preferredCookingTimeLimit, preferredExcludeIngredients]);
 
   const todayMealHighlights = useMemo(() => {
-    return MEAL_TYPES
-      .map((mealType) => ({
-        mealType,
-        label: MEAL_LABELS[mealType].label,
-        icon: MEAL_LABELS[mealType].icon,
-        plan: todayPlans?.[mealType],
-      }))
-      .filter((item) => item.plan);
-  }, [todayPlans]);
+    return (pageVm.today?.meals || [])
+      .filter((meal) => meal.recipe)
+      .map((meal) => ({
+        mealType: meal.slotKey,
+        label: meal.slotLabel,
+        icon: MEAL_LABELS[meal.slotKey]?.icon || '🍽️',
+        recipeId: meal.recipe?.id,
+        title: meal.recipe?.title || '',
+      }));
+  }, [pageVm.today?.meals]);
 
-  const completionPct = weekSummary.totalMeals
-    ? Math.round((weekSummary.completedMeals / weekSummary.totalMeals) * 100)
-    : 0;
+  const completionPct = weekSummary.completionPercent;
 
   const handleGenerate = async () => {
     if (isGenerating || generateMutation.isPending) return;
@@ -243,10 +213,10 @@ export function WeeklyPlanScreen({ navigation }: Props) {
     setShowShareTemplate(true);
   };
 
-  if (isLoading) return <SafeAreaView style={styles.container} edges={['bottom']}><View style={styles.centerContent}><ActivityIndicator size="large" color={Colors.primary.main} /><Text style={styles.loadingText}>加载计划中...</Text></View></SafeAreaView>;
+  if (isLoading || isPageVmLoading) return <SafeAreaView style={styles.container} edges={['bottom']}><View style={styles.centerContent}><ActivityIndicator size="large" color={Colors.primary.main} /><Text style={styles.loadingText}>加载计划中...</Text></View></SafeAreaView>;
   if (error) return <SafeAreaView style={styles.container} edges={['bottom']}><View style={styles.centerContent}><Text style={styles.errorIcon}>⚠️</Text><Text style={styles.errorTitle}>加载失败</Text><TouchableOpacity style={styles.retryButton} onPress={() => refetch()}><Text style={styles.retryButtonText}>重试</Text></TouchableOpacity></View></SafeAreaView>;
 
-  const hasPlans = weeklyData?.plans && Object.keys(weeklyData.plans).length > 0;
+  const hasPlans = pageVm.hasPlans;
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -293,7 +263,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
               <Text style={styles.summaryChipLabel}>双版本</Text>
             </View>
             <View style={styles.summaryChip}>
-              <Text style={styles.summaryChipValue}>{shoppingSummary.readinessRatio}%</Text>
+              <Text style={styles.summaryChipValue}>{shoppingSummary.readinessPercent}%</Text>
               <Text style={styles.summaryChipLabel}>采购准备</Text>
             </View>
             <View style={styles.summaryChip}>
@@ -310,7 +280,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
               <View style={[styles.progressFill, { width: `${completionPct}%` }]} />
             </View>
             <Text style={styles.progressCaption}>
-              已完成 {weekSummary.completedMeals}/{weekSummary.totalMeals || 0} 餐，购物准备度 {shoppingSummary.readinessRatio}%
+              已完成 {weekSummary.completedMeals}/{weekSummary.totalMeals || 0} 餐，购物准备度 {shoppingSummary.readinessPercent}%
             </Text>
           </View>
           {isHeaderExpanded && (
@@ -343,9 +313,9 @@ export function WeeklyPlanScreen({ navigation }: Props) {
           <View style={styles.todayHighlightStrip}>
             <Text style={styles.todayHighlightLabel}>今日安排</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.todayHighlightScrollContent}>
-              {todayMealHighlights.map(({ mealType, label, icon, plan }) => (
-                <TouchableOpacity key={mealType} style={styles.todayHighlightChip} onPress={() => handleMealPress(plan.id)}>
-                  <Text style={styles.todayHighlightChipText}>{icon} {label} · {plan.name}</Text>
+              {todayMealHighlights.map(({ mealType, label, icon, recipeId, title }) => (
+                <TouchableOpacity key={mealType} style={styles.todayHighlightChip} onPress={() => recipeId && handleMealPress(recipeId)} disabled={!recipeId}>
+                  <Text style={styles.todayHighlightChipText}>{icon} {label} · {title}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -375,7 +345,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
                 <Text style={styles.sectionCaption}>共 {weekSummary.totalMeals} 餐 · 预计总备餐 {weekSummary.totalPrepTime} 分钟</Text>
               </View>
               <View style={styles.planSection}>
-                {dates.map((dateStr, index) => <WeekDayCard key={dateStr} dateStr={dateStr} weekday={WEEKDAYS[index]} isToday={dateStr === formatDate(new Date())} dayPlans={weeklyData?.plans?.[dateStr] as unknown as Parameters<typeof WeekDayCard>[0]['dayPlans']} refreshingMeals={refreshingMeals} onRefreshMeal={() => {}} onMarkComplete={handleMarkComplete} onMealPress={handleMealPress} onAddMeal={handleAddMeal} />)}
+                {pageVm.days.map((day, index) => <WeekDayCard key={day.date} day={day} weekday={WEEKDAYS[index]} isToday={day.date === todayDate} refreshingMeals={refreshingMeals} onMarkComplete={handleMarkComplete} onMealPress={handleMealPress} onAddMeal={handleAddMeal} />)}
               </View>
             </View>
             <TouchableOpacity style={[styles.regenerateButton, (isGenerating || generateMutation.isPending) && styles.regenerateButtonDisabled]} onPress={handleGenerate} disabled={isGenerating || generateMutation.isPending}>
@@ -383,7 +353,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
             </TouchableOpacity>
             <View style={styles.infoCard}><Text style={styles.infoIcon}>💡</Text><Text style={styles.infoText}>智能推荐会优先避开不想吃的食材，并把备餐时长控制在更顺手的范围。</Text></View>
           </>
-        ) : (<TodayDetailTab currentDate={todayDate} weeklyData={weeklyData} navigation={navigation} />)}
+        ) : (<TodayDetailTab day={pageVm.today} onMealPress={handleMealPress} onMarkComplete={handleMarkComplete} onAddMeal={handleAddMeal} />)}
       </ScrollView>
       <SmartRecommendationModal visible={showSmartRec} onClose={() => setShowSmartRec(false)} data={smartRecMutation.data as Parameters<typeof SmartRecommendationModal>[0]['data']} mealType={smartMealType} onMealTypeChange={setSmartMealType} isPending={smartRecMutation.isPending} rejectReason={rejectReason} onRejectReasonChange={setRejectReason} onSubmitFeedback={handleSubmitFeedback} />
       <GenerateOptionsModal visible={showGenOptions} onClose={() => setShowGenOptions(false)} babyAge={genBabyAge} onBabyAgeChange={setGenBabyAge} exclude={genExclude} onExcludeChange={setGenExclude} onGenerate={handleGenerate} />

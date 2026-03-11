@@ -10,7 +10,10 @@ const SLOT_LABELS: Record<string, string> = {
   snack: '加餐',
 };
 
-function getReadiness(recipeId: string, context: MealPlanAdapterContext): MealReadiness {
+const SLOT_ORDER = ['breakfast', 'lunch', 'dinner'];
+
+function getReadiness(recipeId: string | undefined, context: MealPlanAdapterContext): MealReadiness {
+  if (!recipeId) return 'unknown';
   const shoppingList = context.shoppingList;
   if (!shoppingList) return 'unknown';
   const items = Object.values(shoppingList.items || {}).flat();
@@ -24,14 +27,38 @@ function getReadiness(recipeId: string, context: MealPlanAdapterContext): MealRe
 
 function readinessLabel(readiness: MealReadiness): string {
   switch (readiness) {
-    case 'ready': return '食材齐了';
-    case 'partial': return '还差一点';
-    case 'needs-shopping': return '需要采购';
-    default: return '待确认';
+    case 'ready':
+      return '食材齐了';
+    case 'partial':
+      return '还差一点';
+    case 'needs-shopping':
+      return '需要采购';
+    default:
+      return '待确认';
   }
 }
 
-export function mapMealPlanToCardViewModel(meal: MealPlan, slotKey: string, context: MealPlanAdapterContext): PlannedMealCardViewModel {
+function getOrderedSlots(daily: Record<string, MealPlan> | undefined): string[] {
+  const dynamicSlots = Object.keys(daily || {});
+  return Array.from(new Set([...SLOT_ORDER, ...dynamicSlots]));
+}
+
+export function mapMealPlanToCardViewModel(meal: MealPlan | null | undefined, slotKey: string, context: MealPlanAdapterContext): PlannedMealCardViewModel {
+  if (!meal) {
+    return {
+      slotKey,
+      slotLabel: SLOT_LABELS[slotKey] || slotKey,
+      completionStatus: 'empty',
+      readiness: 'unknown',
+      readinessLabel: '待安排',
+    };
+  }
+
+  const extendedMeal = meal as MealPlan & {
+    prep_time?: number;
+    is_completed?: boolean;
+    is_baby_suitable?: boolean;
+  };
   const recipe = context.recipesById?.[meal.recipe_id] as Recipe | RecipeSummary | undefined;
   const readiness = getReadiness(meal.recipe_id, context);
   const feedback = context.feedbackByRecipeId?.[meal.recipe_id];
@@ -48,8 +75,10 @@ export function mapMealPlanToCardViewModel(meal: MealPlan, slotKey: string, cont
     slotKey,
     slotLabel: SLOT_LABELS[slotKey] || slotKey,
     recipe: displayRecipe,
-    completionStatus: 'planned',
+    completionStatus: extendedMeal.is_completed ? 'completed' : 'planned',
     acceptance: mapFeedbackAcceptance(feedback),
+    isBabyFriendly: extendedMeal.is_baby_suitable ?? (displayRecipe ? displayRecipe.dualType !== 'family-only' : undefined),
+    prepMinutes: extendedMeal.prep_time,
     readiness,
     readinessLabel: readinessLabel(readiness),
     adaptation: displayRecipe?.adaptation,
@@ -58,8 +87,11 @@ export function mapMealPlanToCardViewModel(meal: MealPlan, slotKey: string, cont
 
 export function mapWeeklyPlanToDays(source: WeeklyPlanResponse | null, context: MealPlanAdapterContext): WeeklyPlanDayViewModel[] {
   if (!source?.plans) return [];
-  return Object.entries(source.plans).map(([date, daily]) => ({
+
+  return Object.entries(source.plans)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([date, daily]) => ({
     date,
-    meals: Object.entries(daily || {}).map(([slotKey, meal]) => mapMealPlanToCardViewModel(meal, slotKey, context)),
+    meals: getOrderedSlots(daily).map(slotKey => mapMealPlanToCardViewModel(daily?.[slotKey] || null, slotKey, context)),
   }));
 }
