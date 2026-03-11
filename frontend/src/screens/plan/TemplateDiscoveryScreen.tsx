@@ -20,22 +20,40 @@ function getUpcomingMonday() {
 }
 
 export function TemplateDiscoveryScreen({ navigation }: Props) {
-  const [targetStartDate, setTargetStartDate] = useState(getUpcomingMonday());
+  const [targetStartDate] = useState(getUpcomingMonday());
   const params = useMemo(() => ({ mine: true, page: 1, pageSize: 50 }), []);
   const { data, isLoading, isRefetching, refetch } = useMealPlanTemplates(params);
   const applyMutation = useApplyTemplate();
   const deleteMutation = useDeleteTemplate();
 
+  const templates = data?.templates || [];
+  const summaryCards = useMemo(
+    () => [
+      {
+        label: '模板数量',
+        value: `${templates.length}`,
+        helper: '把顺手的周计划留作复用底板',
+      },
+      {
+        label: '默认目标周',
+        value: targetStartDate,
+        helper: '当前最小版默认套用到下一个周一',
+      },
+      {
+        label: '当前状态',
+        value: templates.length > 0 ? '可直接复用' : '待补充',
+        helper: '套用后会自动回到周计划继续调整',
+      },
+    ],
+    [targetStartDate, templates.length]
+  );
+
   const handleApplyTemplate = async (template: MealPlanTemplate) => {
     try {
       const result = await applyMutation.mutateAsync({ templateId: template.id, input: { targetStartDate } });
       const skipped = result?.skippedMissingRecipeCount || 0;
-      const message = skipped > 0
-        ? `${result.message}\n\n已自动跳过 ${skipped} 个已失效菜谱。`
-        : result.message;
-      Alert.alert('套用完成', message, [
-        { text: '查看周计划', onPress: () => navigation.navigate('WeeklyPlan') },
-      ]);
+      const message = skipped > 0 ? `${result.message}\n\n已自动跳过 ${skipped} 个已失效菜谱。` : result.message;
+      Alert.alert('套用完成', message, [{ text: '查看周计划', onPress: () => navigation.navigate('WeeklyPlan') }]);
     } catch (error: any) {
       Alert.alert('套用失败', error?.message || '请稍后重试');
     }
@@ -66,35 +84,26 @@ export function TemplateDiscoveryScreen({ navigation }: Props) {
       <View style={styles.templateCard}>
         <View style={styles.templateHeader}>
           <Text style={styles.templateTitle} numberOfLines={2}>{item.title}</Text>
+          <View style={styles.metaTag}><Text style={styles.metaTagText}>{mealsCount} 餐</Text></View>
         </View>
 
-        {item.description ? (
-          <Text style={styles.templateDescription} numberOfLines={2}>{item.description}</Text>
-        ) : null}
+        {item.description ? <Text style={styles.templateDescription} numberOfLines={2}>{item.description}</Text> : null}
 
         <View style={styles.templateMeta}>
-          <View style={styles.metaTag}>
-            <Text style={styles.metaTagText}>🍽️ {mealsCount} 餐</Text>
-          </View>
+          <View style={styles.metaTag}><Text style={styles.metaTagText}>目标周：{targetStartDate}</Text></View>
           {tags.slice(0, 3).map((tag, index) => (
-            <View key={index} style={styles.metaTag}>
-              <Text style={styles.metaTagText}>#{tag}</Text>
-            </View>
+            <View key={index} style={styles.metaTag}><Text style={styles.metaTagText}>#{tag}</Text></View>
           ))}
         </View>
 
-        <Text style={styles.cloneCount}>套用目标周起始：{targetStartDate}</Text>
+        <Text style={styles.cloneCount}>套用后可继续在周计划里替换菜谱、补购物清单和分享给家人。</Text>
 
         <View style={styles.templateFooter}>
-          <TouchableOpacity style={[styles.cloneButton, { backgroundColor: '#EEF2FF' }]} onPress={() => handleDeleteTemplate(item)} disabled={deleteMutation.isPending}>
+          <TouchableOpacity style={[styles.cloneButton, { backgroundColor: '#FEE2E2' }]} onPress={() => handleDeleteTemplate(item)} disabled={deleteMutation.isPending}>
             <Text style={[styles.cloneButtonText, { color: Colors.functional.error }]}>删除</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.cloneButton} onPress={() => handleApplyTemplate(item)} disabled={applyMutation.isPending}>
-            {applyMutation.isPending ? (
-              <ActivityIndicator size="small" color={Colors.text.inverse} />
-            ) : (
-              <Text style={styles.cloneButtonText}>套用到新一周</Text>
-            )}
+            {applyMutation.isPending ? <ActivityIndicator size="small" color={Colors.text.inverse} /> : <Text style={styles.cloneButtonText}>套用到新一周</Text>}
           </TouchableOpacity>
         </View>
       </View>
@@ -111,25 +120,28 @@ export function TemplateDiscoveryScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <View style={styles.header}>
-        <Text style={styles.templateTitle}>我的模板</Text>
-        <Text style={styles.templateDescription}>这里保存你自己的周计划模板。当前最小版默认套用到下一个周一开始的一周：{targetStartDate}</Text>
-      </View>
-
       <FlatList
-        data={data?.templates || []}
+        data={templates}
         renderItem={renderTemplateCard}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.content}
-        ListEmptyComponent={!isLoading ? renderEmpty : null}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={refetch}
-            colors={[Colors.primary.main]}
-            tintColor={Colors.primary.main}
-          />
+        ListHeaderComponent={
+          <View style={styles.header}>
+            <Text style={styles.templateTitle}>我的模板</Text>
+            <Text style={styles.templateDescription}>这里保存你自己的周计划模板，方便快速复用一周节奏和一菜两吃搭配。</Text>
+            <View style={styles.templateMeta}>
+              {summaryCards.map((card) => (
+                <View key={card.label} style={[styles.metaTag, { minWidth: '31%', paddingVertical: 12, paddingHorizontal: 12 }]}> 
+                  <Text style={[styles.metaTagText, { fontWeight: '700', color: Colors.text.primary }]}>{card.value}</Text>
+                  <Text style={[styles.metaTagText, { marginTop: 4 }]}>{card.label}</Text>
+                  <Text style={[styles.metaTagText, { marginTop: 4, color: Colors.text.tertiary }]}>{card.helper}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
         }
+        ListEmptyComponent={!isLoading ? renderEmpty : null}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={[Colors.primary.main]} tintColor={Colors.primary.main} />}
         ListFooterComponent={
           isLoading ? (
             <View style={styles.loadingMore}>
