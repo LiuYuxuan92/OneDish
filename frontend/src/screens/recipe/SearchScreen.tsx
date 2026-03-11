@@ -17,17 +17,19 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RecipeStackParamList } from '../../types';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
 import { SearchIcon, XIcon, ClockIcon, ChefHatIcon, ChevronLeftIcon, FlameIcon, BabyIcon } from '../../components/common/Icons';
+import { SearchResultCard } from '../../components/ui-migration/SearchResultCard';
 import { useUnifiedSearch, useSourceSearch } from '../../hooks/useSearch';
 import type { SearchResult } from '../../api/search';
 import { recipesApi, TransformResult } from '../../api/recipes';
 import { useSaveSearchResult } from '../../hooks/useUserRecipes';
 import { trackEvent } from '../../analytics/sdk';
 import { useUserInfo } from '../../hooks/useUsers';
-import { buildSearchPreferenceHint, buildPreferenceLeadText } from '../../utils/preferenceCopy';
 import { ingredientInventoryApi } from '../../api/ingredientInventory';
 import { feedingFeedbackApi } from '../../api/feedingFeedback';
-import { useSearchExperienceViewModel, SearchTaskTab } from './useSearchExperienceViewModel';
+import { getSearchResultKey } from '../../mappers/searchMapper';
 import { buildMockFeedingFeedback, buildMockInventory, shouldUseWebMockFallback } from '../../mock/webFallback';
+import { useSearchPageViewModel } from '../../viewmodels/useSearchPageViewModel';
+import type { SearchTaskTab } from '../../viewmodels/uiMigration';
 
 type Props = NativeStackScreenProps<RecipeStackParamList, 'Search'>;
 
@@ -124,14 +126,28 @@ export function SearchScreen({ navigation }: Props) {
   const total = searchResults.length;
   const isLoading = hasSearched && (searchSource === 'all' ? isUnifiedLoading : isSourceLoading);
 
-  const experienceVm = useSearchExperienceViewModel({
+  const searchPageVm = useSearchPageViewModel({
     searchResults,
+    total,
+    routeSource,
     lovedRecipeNames,
     rejectedRecipeNames,
     selectedScenario,
     inventoryFirstEnabled,
     inventoryIngredients,
+    preferences: {
+      defaultBabyAge: userInfo?.preferences?.default_baby_age,
+      preferIngredients: userInfo?.preferences?.prefer_ingredients,
+      excludeIngredients: userInfo?.preferences?.exclude_ingredients,
+      cookingTimeLimit: userInfo?.preferences?.cooking_time_limit ?? userInfo?.preferences?.max_prep_time,
+      difficultyPreference: userInfo?.preferences?.difficulty_preference,
+    },
   });
+
+  const searchResultLookup = useMemo(
+    () => new Map(searchResults.map((item) => [getSearchResultKey(item), item])),
+    [searchResults]
+  );
 
   useEffect(() => {
     if (!hasSearched || isLoading) return;
@@ -187,6 +203,13 @@ export function SearchScreen({ navigation }: Props) {
       setTransformError(null);
     }
   }, [navigation]);
+
+  const handleSearchResultPress = useCallback((resultKey: string) => {
+    const recipe = searchResultLookup.get(resultKey);
+    if (recipe) {
+      handleRecipePress(recipe);
+    }
+  }, [handleRecipePress, searchResultLookup]);
 
   const handleBack = useCallback(() => {
     setSelectedRecipe(null);
@@ -358,7 +381,7 @@ export function SearchScreen({ navigation }: Props) {
 
   const renderTaskRow = () => (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.taskRow}>
-      {experienceVm.taskTabs.slice(0, 3).map((tab) => (
+      {searchPageVm.taskTabs.slice(0, 3).map((tab) => (
         <TouchableOpacity
           key={tab.key}
           style={[styles.taskChip, taskTab === tab.key && styles.taskChipActive]}
@@ -406,53 +429,15 @@ export function SearchScreen({ navigation }: Props) {
 
       <View style={styles.exploreSection}>
         <Text style={styles.exploreSectionTitle}>大家常搜</Text>
-        <View style={styles.exploreTagWrap}>{experienceVm.explore.popularSearches.slice(0, 4).map((item) => <TouchableOpacity key={item} style={styles.exploreTag} onPress={() => applyQuickSearch(item, 'keyword')}><Text style={styles.exploreTagText}>{item}</Text></TouchableOpacity>)}</View>
+        <View style={styles.exploreTagWrap}>{searchPageVm.explore.popularSearches.slice(0, 4).map((item) => <TouchableOpacity key={item} style={styles.exploreTag} onPress={() => applyQuickSearch(item, 'keyword')}><Text style={styles.exploreTagText}>{item}</Text></TouchableOpacity>)}</View>
       </View>
 
       <View style={styles.exploreSection}>
         <Text style={styles.exploreSectionTitle}>按月龄找</Text>
-        <View style={styles.exploreTagWrap}>{experienceVm.explore.ageFilters.slice(0, 4).map((item) => <TouchableOpacity key={item} style={styles.exploreTag} onPress={() => applyQuickSearch(item, 'age')}><Text style={styles.exploreTagText}>{item}</Text></TouchableOpacity>)}</View>
+        <View style={styles.exploreTagWrap}>{searchPageVm.explore.ageFilters.slice(0, 4).map((item) => <TouchableOpacity key={item} style={styles.exploreTag} onPress={() => applyQuickSearch(item, 'age')}><Text style={styles.exploreTagText}>{item}</Text></TouchableOpacity>)}</View>
       </View>
     </View>
   );
-
-  const renderRecipeCard = useCallback(({ item }: { item: SearchResult }) => {
-    const card = experienceVm.cards.find((entry) => entry.item === item);
-    const sourceLabel = item.source === 'local' ? '📚 本地' : item.source === 'tianxing' ? '🌐 联网' : '🤖 AI';
-    const timeLabel = typeof item.prep_time === 'number' ? `⏱ ${item.prep_time}分钟` : '';
-    const diffLabel = item.difficulty ? ` · ${item.difficulty}` : '';
-    const preferenceHint = buildSearchPreferenceHint({
-      recipe: item,
-      preferenceSummary: {
-        defaultBabyAge: userInfo?.preferences?.default_baby_age,
-        preferIngredients: Array.isArray(userInfo?.preferences?.prefer_ingredients)
-          ? userInfo?.preferences?.prefer_ingredients
-          : typeof userInfo?.preferences?.prefer_ingredients === 'string'
-            ? userInfo.preferences.prefer_ingredients.split(/[,，、]/).map((token) => token.trim()).filter(Boolean)
-            : [],
-        excludeIngredients: userInfo?.preferences?.exclude_ingredients,
-        cookingTimeLimit: userInfo?.preferences?.cooking_time_limit ?? userInfo?.preferences?.max_prep_time,
-        difficultyPreference: userInfo?.preferences?.difficulty_preference,
-      },
-    });
-
-    return (
-      <TouchableOpacity style={styles.recipeCard} onPress={() => handleRecipePress(item)} activeOpacity={0.7}>
-        <View style={styles.recipeImagePlaceholder}><Text style={styles.recipeImagePlaceholderText}>🍽️</Text></View>
-        <View style={styles.recipeInfo}>
-          <View style={styles.recipeTopRow}>
-            <Text style={styles.recipeName}>{item.name || '未命名菜谱'}</Text>
-            <Text style={styles.recipeSourceText}>{sourceLabel}</Text>
-          </View>
-          {item.description ? <Text style={styles.recipeDescription} numberOfLines={2}>{item.description}</Text> : null}
-          <Text style={styles.recipeMetaText}>{timeLabel}{diffLabel}</Text>
-          {!!card?.labels?.length && <View style={styles.labelRow}>{card.labels.slice(0, 3).map((label) => <View key={label} style={styles.contextPill}><Text style={styles.contextPillText}>{label}</Text></View>)}</View>}
-          {!!card?.whyItFits && <Text style={styles.whyItFitsText} numberOfLines={2}>{card.whyItFits}</Text>}
-          {!!preferenceHint && <View style={styles.preferenceHintBadge}><Text style={styles.preferenceHintBadgeText} numberOfLines={2}>{preferenceHint}</Text></View>}
-        </View>
-      </TouchableOpacity>
-    );
-  }, [experienceVm.cards, handleRecipePress, userInfo?.preferences]);
 
   const renderEmptyState = () => {
     if (!hasSearched) return renderExplore();
@@ -474,29 +459,21 @@ export function SearchScreen({ navigation }: Props) {
       {renderSourceTabs()}
       {renderTaskRow()}
 
-      {hasSearched && !isLoading && total > 0 && (
+      {hasSearched && !isLoading && searchPageVm.resultSummary.total > 0 && (
         <View style={styles.resultStats}>
           <View style={styles.resultStatsContent}>
-            <Text style={styles.resultStatsText}>找到 {total} 个结果</Text>
-            <View style={styles.resultSourceBadge}><Text style={styles.resultSourceBadgeText}>{routeSource === 'local' ? '📚 Local' : routeSource === 'cache' ? '⚡ Cache' : routeSource === 'web' || routeSource === 'tianxing' ? '🌐 Web' : routeSource === 'ai' ? '🤖 AI' : '🔍 全部'}</Text></View>
+            <Text style={styles.resultStatsText}>找到 {searchPageVm.resultSummary.total} 个结果</Text>
+            <View style={styles.resultSourceBadge}><Text style={styles.resultSourceBadgeText}>{searchPageVm.resultSummary.routeSourceLabel}</Text></View>
           </View>
-          <Text style={styles.preferenceLeadText} numberOfLines={1}>{buildPreferenceLeadText({
-            defaultBabyAge: userInfo?.preferences?.default_baby_age,
-            preferIngredients: Array.isArray(userInfo?.preferences?.prefer_ingredients)
-              ? userInfo?.preferences?.prefer_ingredients
-              : typeof userInfo?.preferences?.prefer_ingredients === 'string'
-                ? userInfo.preferences.prefer_ingredients.split(/[,，、]/).map((token) => token.trim()).filter(Boolean)
-                : [],
-            excludeIngredients: userInfo?.preferences?.exclude_ingredients,
-            cookingTimeLimit: userInfo?.preferences?.cooking_time_limit ?? userInfo?.preferences?.max_prep_time,
-            difficultyPreference: userInfo?.preferences?.difficulty_preference,
-          })}</Text>
+          <Text style={styles.preferenceLeadText} numberOfLines={1}>{searchPageVm.resultSummary.preferenceLeadText}</Text>
         </View>
       )}
 
       {isLoading ? renderLoading() : (
         <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-          {hasSearched && searchResults.length > 0 ? searchResults.map((item, index) => <React.Fragment key={`${item.source}_${item.id}_${index}`}>{renderRecipeCard({ item })}</React.Fragment>) : renderEmptyState()}
+          {hasSearched && searchPageVm.cards.length > 0
+            ? searchPageVm.cards.map((item) => <SearchResultCard key={item.id} item={item} onPress={handleSearchResultPress} />)
+            : renderEmptyState()}
         </ScrollView>
       )}
     </SafeAreaView>

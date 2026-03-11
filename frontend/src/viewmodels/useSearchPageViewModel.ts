@@ -1,26 +1,60 @@
 import { useMemo } from 'react';
-import { useUnifiedSearch } from '../hooks/useRecipes';
-import { mapRecommendationToCardViewModel } from '../mappers/recipeDisplayMapper';
-import type { SearchExperienceViewModel, SearchResultSource } from './uiMigration';
+import { buildSearchResultSummary, mapSearchResultToCardViewModel } from '../mappers/searchMapper';
+import type { SearchPageViewModel, SearchPreferenceSource, SearchResultSource } from './uiMigration';
 
-const SEARCH_TAG_LABELS: Record<string, string> = {
-  local: '本地',
-  tianxing: '联网',
-  ai: 'AI推荐',
-  search: '搜索结果',
+const TASK_TABS: SearchPageViewModel['taskTabs'] = [
+  { key: 'keyword', label: '关键词' },
+  { key: 'dual', label: '一菜两吃' },
+  { key: 'inventory', label: '冰箱食材' },
+  { key: 'scenario', label: '场景' },
+  { key: 'age', label: '按月龄' },
+];
+
+const EXPLORE: SearchPageViewModel['explore'] = {
+  popularSearches: ['番茄炒蛋', '三文鱼', '鸡肉', '快手晚餐'],
+  scenarioHints: ['赶时间', '清淡点', '宝宝没胃口', '库存优先'],
+  ageFilters: ['6个月+', '9个月+', '12个月+', '18个月+'],
 };
 
-export function useSearchPageViewModel(keyword: string): { data: SearchExperienceViewModel; isLoading: boolean } {
-  const search = useUnifiedSearch(keyword);
-
-  const data = useMemo<SearchExperienceViewModel>(() => {
-    const searchData = (search.data as any)?.data || search.data;
-    const items = (searchData?.results || []).map((item: SearchResultSource) => mapRecommendationToCardViewModel({ ...item, prep_time: item.prep_time ?? 0 }, {
-      recommendationReason: item.recommendation_explain?.[0] || item.ranking_reasons?.[0]?.detail,
-      recommendationTags: [SEARCH_TAG_LABELS[item.source || 'search'] || '搜索结果'].filter(Boolean),
-    }));
-    return { items, total: searchData?.total || items.length };
-  }, [search.data]);
-
-  return { data, isLoading: search.isLoading };
+export function useSearchPageViewModel(params: {
+  searchResults: SearchResultSource[];
+  total: number;
+  routeSource?: string;
+  selectedScenario: string;
+  inventoryFirstEnabled: boolean;
+  inventoryIngredients: string[];
+  lovedRecipeNames: Set<string>;
+  rejectedRecipeNames: Set<string>;
+  preferences?: SearchPreferenceSource | null;
+}): SearchPageViewModel {
+  return useMemo<SearchPageViewModel>(() => ({
+    taskTabs: TASK_TABS,
+    explore: EXPLORE,
+    activeContext: {
+      selectedScenario: params.selectedScenario,
+      inventoryFirstEnabled: params.inventoryFirstEnabled,
+      inventoryCount: params.inventoryIngredients.length,
+    },
+    cards: params.searchResults.map((item) => mapSearchResultToCardViewModel({
+      item,
+      lovedRecipeNames: params.lovedRecipeNames,
+      rejectedRecipeNames: params.rejectedRecipeNames,
+      preferenceSummary: params.preferences,
+    })),
+    resultSummary: buildSearchResultSummary({
+      total: params.total,
+      routeSource: params.routeSource,
+      preferenceSummary: params.preferences,
+    }),
+  }), [
+    params.inventoryFirstEnabled,
+    params.inventoryIngredients,
+    params.lovedRecipeNames,
+    params.preferences,
+    params.rejectedRecipeNames,
+    params.routeSource,
+    params.searchResults,
+    params.selectedScenario,
+    params.total,
+  ]);
 }

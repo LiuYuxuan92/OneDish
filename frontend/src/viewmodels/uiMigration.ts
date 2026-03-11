@@ -167,6 +167,7 @@ export interface HomeRecommendationSource {
 export interface SearchResultSource {
   id: string;
   name: string;
+  description?: string;
   image_url?: string[];
   prep_time?: number;
   difficulty?: string;
@@ -177,6 +178,54 @@ export interface SearchResultSource {
   stage?: string;
   texture_level?: string;
   baby_version?: unknown;
+}
+
+export interface SearchPreferenceSource {
+  defaultBabyAge?: number | null;
+  preferIngredients?: string[] | string | null;
+  excludeIngredients?: string[] | null;
+  cookingTimeLimit?: number | null;
+  difficultyPreference?: string | null;
+}
+
+export type SearchTaskTab = 'keyword' | 'dual' | 'inventory' | 'scenario' | 'age';
+
+export interface SearchTaskTabViewModel {
+  key: SearchTaskTab;
+  label: string;
+}
+
+export interface SearchExploreViewModel {
+  popularSearches: string[];
+  scenarioHints: string[];
+  ageFilters: string[];
+}
+
+export interface SearchResultCardViewModel {
+  id: string;
+  resultKey: string;
+  recommendation: RecommendationCardViewModel;
+  sourceLabel: string;
+  description?: string;
+  preferenceHint?: string;
+}
+
+export interface SearchResultSummaryViewModel {
+  total: number;
+  routeSourceLabel: string;
+  preferenceLeadText: string;
+}
+
+export interface SearchPageViewModel {
+  taskTabs: SearchTaskTabViewModel[];
+  explore: SearchExploreViewModel;
+  activeContext: {
+    selectedScenario: string;
+    inventoryFirstEnabled: boolean;
+    inventoryCount: number;
+  };
+  cards: SearchResultCardViewModel[];
+  resultSummary: SearchResultSummaryViewModel;
 }
 
 export interface SearchExperienceViewModel {
