@@ -147,6 +147,7 @@ export interface HomeDashboardViewModel {
 }
 
 export interface RecipeDetailViewModel {
+  sourceRecipe?: Recipe;
   recipe?: RecipeDisplayModel;
   adultVersion?: RecipeVersion;
   babyVersion?: RecipeVersion;
@@ -155,6 +156,97 @@ export interface RecipeDetailViewModel {
   inPlan: boolean;
   onShoppingList: boolean;
   latestFeedback?: FeedbackAcceptance;
+  page?: RecipeDetailPageViewModel;
+}
+
+export type RecipeDetailTabKey = 'adult' | 'baby' | 'timeline';
+
+export interface RecipeDetailMetaItemViewModel {
+  key: string;
+  label: string;
+}
+
+export interface RecipeDetailVersionCardViewModel {
+  key: Extract<RecipeDetailTabKey, 'adult' | 'baby'>;
+  title: string;
+  subtitle: string;
+  description: string;
+}
+
+export interface RecipeDetailHeroViewModel {
+  title: string;
+  summary: string;
+  imageUrls: string[];
+  meta: RecipeDetailMetaItemViewModel[];
+  statusTags: Array<{ type: StatusTagType; detail?: string }>;
+  whyItFits: string[];
+  versionCards: RecipeDetailVersionCardViewModel[];
+}
+
+export interface RecipeDetailIngredientCompareItemViewModel {
+  name: string;
+  adultAmount: string;
+  babyAmount?: string;
+}
+
+export interface RecipeDetailIngredientViewModel {
+  name: string;
+  amount: string;
+  note?: string;
+}
+
+export interface RecipeDetailStepViewModel {
+  id: string;
+  indexLabel: string;
+  action: string;
+  timeText?: string;
+  toolsText?: string;
+  note?: string;
+  highlighted?: boolean;
+}
+
+export interface RecipeDetailVersionSectionViewModel {
+  key: Extract<RecipeDetailTabKey, 'adult' | 'baby'>;
+  title: string;
+  ageBadge?: string;
+  ingredients: RecipeDetailIngredientViewModel[];
+  seasonings: RecipeDetailIngredientViewModel[];
+  steps: RecipeDetailStepViewModel[];
+  nutritionTips?: string;
+  allergyAlert?: string;
+  preparationNotes?: string;
+}
+
+export interface RecipeDetailTimelinePanelViewModel {
+  hasTimeline: boolean;
+  summary: string;
+  totalTimeText?: string;
+  savedTimeText?: string;
+  sharedSteps: string[];
+  syncTips?: string;
+}
+
+export interface RecipeDetailFeedbackItemViewModel {
+  id: string;
+  label: string;
+  dateText: string;
+  note?: string;
+}
+
+export interface RecipeDetailFeedbackViewModel {
+  latestLabel?: string;
+  items: RecipeDetailFeedbackItemViewModel[];
+}
+
+export interface RecipeDetailPageViewModel {
+  isPaired: boolean;
+  hero: RecipeDetailHeroViewModel;
+  ingredientComparison: RecipeDetailIngredientCompareItemViewModel[];
+  currentVersion?: RecipeDetailVersionSectionViewModel;
+  timerSteps: Array<{ id: string; name: string; minutes: number }>;
+  tips: string[];
+  timelinePanel: RecipeDetailTimelinePanelViewModel;
+  feedback: RecipeDetailFeedbackViewModel;
 }
 
 export interface HomeRecommendationSource {

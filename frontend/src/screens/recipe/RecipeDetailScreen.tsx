@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -23,12 +23,10 @@ import {
   BorderRadius,
   Shadows,
 } from "../../styles/theme";
-import { useRecipeDetail } from "../../hooks/useRecipes";
 import { useAddFavorite, useRemoveFavorite } from "../../hooks/useFavorites";
 import { useAddRecipeToShoppingList } from "../../hooks/useShoppingLists";
 import { useUserInfo } from "../../hooks/useUsers";
 import { useBabyVersion } from "../../hooks/useRecipeTransform";
-import { useAIBabyVersion } from "../../hooks/useAIBabyVersion";
 import {
   getBabyAgeInfo,
   formatBabyAge,
@@ -37,13 +35,10 @@ import { Button } from "../../components/common/Button";
 import {
   ChevronLeftIcon,
   ClockIcon,
-  UsersIcon,
-  ChefHatIcon,
   FlameIcon,
   BabyIcon,
   HeartIcon,
   ShareIcon,
-  InfoIcon,
   TimerIcon,
 } from "../../components/common/Icons";
 import { shareRecipe } from "../../utils/share";
@@ -51,11 +46,12 @@ import { NutritionInfoCard } from "../../components/common/NutritionInfo";
 import { CookingTimerModal } from "../../components/common/CookingTimerModal";
 import { ImageCarousel } from "../../components/common/ImageCarousel";
 import { TimelineView } from "../../components/recipe/TimelineView";
-import { useTimeline } from "../../hooks/useTimeline";
+import { useCreateFeedingFeedback } from "../../hooks/useFeedingFeedback";
 import {
-  useCreateFeedingFeedback,
-  useRecentFeedingFeedback,
-} from "../../hooks/useFeedingFeedback";
+  RecipeHeroPanel,
+  RecipeVersionPanel,
+} from "../../components/ui-migration";
+import { useRecipeDetailViewModel } from "../../viewmodels/useRecipeDetailViewModel";
 
 type Props = NativeStackScreenProps<RecipeStackParamList, "RecipeDetail">;
 
@@ -63,18 +59,6 @@ const { width } = Dimensions.get("window");
 
 // 宝宝月龄选项 (6-36个月)
 const BABY_AGE_OPTIONS = Array.from({ length: 31 }, (_, i) => 6 + i);
-
-const normalizeArray = <T,>(value: T[] | T | null | undefined): T[] => {
-  if (Array.isArray(value)) return value.filter(Boolean as any);
-  if (value === null || value === undefined || value === "") return [];
-  return [value as T];
-};
-
-const safeDateText = (value?: string | null) => {
-  if (!value) return "时间未知";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "时间未知" : date.toLocaleDateString();
-};
 
 const navigateToFeedingFeedback = (navigation: any) => {
   const parent = navigation.getParent?.();
@@ -95,7 +79,6 @@ const navigateToFeedingFeedback = (navigation: any) => {
 
 export function RecipeDetailScreen({ route, navigation }: Props) {
   const { recipeId } = route.params;
-  const { data: recipe, isLoading, error } = useRecipeDetail(recipeId);
   const [activeTab, setActiveTab] = useState<"adult" | "baby" | "timeline">(
     "adult",
   );
@@ -109,28 +92,12 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
   const [selectedBabyAge, setSelectedBabyAge] = useState<number>(12);
   const addRecipeToShoppingList = useAddRecipeToShoppingList();
   const { data: user } = useUserInfo();
-  const { data: recentFeedbacks = [] } = useRecentFeedingFeedback({
-    limit: 3,
-    recipe_id: recipeId,
-  });
-  const normalizedRecentFeedbacks = useMemo(
-    () => normalizeArray<any>(recentFeedbacks),
-    [recentFeedbacks],
-  );
   const createFeedingFeedback = useCreateFeedingFeedback();
 
   // AI 宝宝版本生成相关状态
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
   const [showAIResultModal, setShowAIResultModal] = useState(false);
   const [generateUseAI, setGenerateUseAI] = useState(true);
-  const aiBabyVersion = useAIBabyVersion();
-
-  // 从后端返回的 is_favorited 初始化收藏状态
-  React.useEffect(() => {
-    if (recipe?.is_favorited !== undefined) {
-      setIsFavorite(recipe.is_favorited);
-    }
-  }, [recipe?.is_favorited]);
 
   // 统一宝宝版数据获取
   const { data: babyData, isLoading: isTransforming } = useBabyVersion(
@@ -138,16 +105,32 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
     selectedBabyAge,
     {
       enabled: activeTab === "baby",
-      staticBabyVersion: recipe?.baby_version,
+      staticBabyVersion: undefined,
     },
   );
 
-  // 获取同步烹饪时间线
-  const { data: timelineData, isLoading: isTimelineLoading } = useTimeline(
-    recipeId,
-    selectedBabyAge,
-    activeTab === "timeline",
-  );
+  const {
+    data: recipeVm,
+    isLoading,
+    isTimelineLoading,
+    error,
+    aiActions: aiBabyVersion,
+  } = useRecipeDetailViewModel(recipeId, {
+    babyAgeMonths: selectedBabyAge,
+    timelineEnabled: activeTab === "timeline",
+    activeTab,
+    babyVersionOverride: babyData?.baby_version,
+  });
+  const recipe = recipeVm.sourceRecipe;
+  const pageVm = recipeVm.page;
+  const timelineData = recipeVm.timeline;
+
+  // 从后端返回的 is_favorited 初始化收藏状态
+  React.useEffect(() => {
+    if (recipe?.is_favorited !== undefined) {
+      setIsFavorite(recipe.is_favorited);
+    }
+  }, [recipe?.is_favorited]);
 
   // 获取宝宝适龄信息
   const babyAgeInfo = user?.baby_age ? getBabyAgeInfo(user.baby_age) : null;
@@ -214,6 +197,8 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
     }
   };
 
+  const effectiveBaby = babyData?.baby_version || recipeVm.babyVersion || null;
+
   const handleShare = async () => {
     await shareRecipe({
       recipeName: recipe.name,
@@ -224,16 +209,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
         : undefined,
     });
   };
-
-  // 从步骤中提取需要计时的步骤
-  const timerSteps =
-    parsedCurrent?.steps
-      ?.filter((step: any) => step.time > 0)
-      .map((step: any, index: number) => ({
-        id: `step_${index}`,
-        name: `步骤${step.step || index + 1}`,
-        minutes: step.time,
-      })) || [];
+  const timerSteps = pageVm?.timerSteps || [];
 
   if (isLoading) {
     return (
@@ -268,91 +244,8 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
     );
   }
 
-  // 判断是否为配对菜谱
-  const isPaired = recipe.name && recipe.name.includes("/");
-
-  // 安全解析数据
-  const parseJSON = (data: any) => {
-    if (!data) return null;
-    if (typeof data === "string") {
-      try {
-        return JSON.parse(data);
-      } catch {
-        return null;
-      }
-    }
-    return data;
-  };
-
-  const parsedAdult = parseJSON(recipe.adult_version);
-  const parsedTips = parseJSON(recipe.cooking_tips);
-
-  // 宝宝版数据统一从 useBabyVersion hook 获取
-  const effectiveBaby = babyData?.baby_version || null;
-  const parsedCurrent = activeTab === "adult" ? parsedAdult : effectiveBaby;
-
-  // 获取同步烹饪信息
   const syncCooking = effectiveBaby?.sync_cooking;
-
-  // 获取主食材列表
-  const mainIngredients = parsedAdult?.main_ingredients || [];
-  const whyItFits = [
-    isPaired
-      ? "这道菜天然符合“一菜两吃”，能先做家庭主菜，再顺手分出宝宝版本。"
-      : "这道菜可以在现有成人做法上继续延展出宝宝版本。",
-    effectiveBaby?.texture
-      ? `当前宝宝版质地建议：${effectiveBaby.texture}。`
-      : null,
-    recipe?.tags?.length
-      ? `命中标签：${recipe.tags.slice(0, 3).join("、")}。`
-      : null,
-    normalizedRecentFeedbacks[0]?.accepted_level === "like"
-      ? "最近一次反馈是喜欢，可以放心继续轮换。"
-      : null,
-    normalizedRecentFeedbacks[0]?.accepted_level === "reject"
-      ? "最近一次反馈是拒绝，建议换质地或搭配后再试。"
-      : null,
-  ].filter(Boolean);
-  const statusTags = [
-    isPaired ? "一菜两吃" : "可转宝宝版",
-    effectiveBaby ? "大人版 / 宝宝版已接通" : null,
-    syncCooking ? "同步烹饪时间线已接通" : null,
-    normalizedRecentFeedbacks.length ? "有真实喂养反馈" : "反馈数据积累中",
-  ].filter(Boolean);
-  const adaptationBullets = [
-    effectiveBaby?.texture ? `质地：${effectiveBaby.texture}` : null,
-    effectiveBaby?.preparation_notes
-      ? `处理要点：${effectiveBaby.preparation_notes}`
-      : null,
-    effectiveBaby?.allergy_alert
-      ? `过敏提醒：${effectiveBaby.allergy_alert}`
-      : null,
-    syncCooking?.tips ? `同步烹饪：${syncCooking.tips}` : null,
-  ].filter(Boolean);
-  const heroSummary = isPaired
-    ? "先按家庭主菜来理解，再顺手分出宝宝版本；这是这道菜最适合的阅读方式。"
-    : "先看成人主菜，再决定是否切到宝宝版做适配；页面按这个决策顺序重排。";
-  const versionCards = [
-    {
-      key: "adult",
-      title: "大人版",
-      subtitle: `${recipe.prep_time} 分钟 · ${recipe.difficulty}`,
-      description:
-        parsedAdult?.steps?.[0]?.action ||
-        recipe.description ||
-        "先按成人版判断这道菜值不值得做。",
-    },
-    {
-      key: "baby",
-      title: "宝宝版",
-      subtitle:
-        effectiveBaby?.age_range || `${formatBabyAge(selectedBabyAge)} 适配`,
-      description:
-        effectiveBaby?.preparation_notes ||
-        effectiveBaby?.texture ||
-        "切换后查看真实宝宝适配、质地和月龄版本。",
-    },
-  ];
+  const parsedTips = pageVm?.tips || [];
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
@@ -390,46 +283,10 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
       >
         {/* 内容页首屏 */}
         <View style={styles.heroSection}>
-          <View style={styles.titleSection}>
-            {isPaired && (
-              <View style={styles.pairBadge}>
-                <Text style={styles.pairBadgeIcon}>👨‍🍳👶</Text>
-                <Text style={styles.pairBadgeText}>一菜两吃</Text>
-              </View>
-            )}
-            <Text style={styles.recipeName}>{recipe.name}</Text>
-            <Text style={styles.heroSummary}>{heroSummary}</Text>
-
-            <View style={styles.metaContainer}>
-              <View style={styles.metaItem}>
-                <ClockIcon size={16} color={Colors.text.secondary} />
-                <Text style={styles.metaText}>{recipe.prep_time}分钟</Text>
-              </View>
-              <View style={styles.metaDivider} />
-              <View style={styles.metaItem}>
-                <ChefHatIcon size={16} color={Colors.text.secondary} />
-                <Text style={styles.metaText}>{recipe.difficulty}</Text>
-              </View>
-              <View style={styles.metaDivider} />
-              <View style={styles.metaItem}>
-                <UsersIcon size={16} color={Colors.text.secondary} />
-                <Text style={styles.metaText}>{recipe.servings}</Text>
-              </View>
-            </View>
-
-            <View style={styles.statusTagRow}>
-              {statusTags.map((tag: string) => (
-                <View key={tag} style={styles.statusTag}>
-                  <Text style={styles.statusTagText}>{tag}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          {normalizeArray<string>(recipe.image_url).length > 0 && (
+          {pageVm?.hero.imageUrls?.length > 0 && (
             <View style={styles.imageSection}>
               <ImageCarousel
-                images={normalizeArray<string>(recipe.image_url)}
+                images={pageVm.hero.imageUrls}
                 height={220}
                 autoPlay={true}
                 autoPlayInterval={4000}
@@ -437,74 +294,14 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
             </View>
           )}
 
-          <View style={styles.heroCardsSection}>
-            <View style={[styles.detailCard, styles.detailCardEmphasis]}>
-              <Text style={styles.eyebrow}>一菜两吃</Text>
-              <Text style={styles.detailCardTitle}>
-                先决定这是不是你们今天要做的那一道
-              </Text>
-              <View style={styles.versionCompareRow}>
-                {versionCards.map((card: any) => {
-                  const selected = activeTab === card.key;
-                  return (
-                    <TouchableOpacity
-                      key={card.key}
-                      style={[
-                        styles.versionCard,
-                        selected && styles.versionCardActive,
-                      ]}
-                      onPress={() => setActiveTab(card.key as "adult" | "baby")}
-                    >
-                      <Text style={styles.versionCardTitle}>{card.title}</Text>
-                      <Text style={styles.versionCardSubtitle}>
-                        {card.subtitle}
-                      </Text>
-                      <Text
-                        style={styles.versionCardDescription}
-                        numberOfLines={3}
-                      >
-                        {card.description}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.versionCardCta,
-                          selected && styles.versionCardCtaActive,
-                        ]}
-                      >
-                        {selected
-                          ? "当前查看中"
-                          : card.key === "adult"
-                            ? "看大人版"
-                            : "看宝宝版"}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-              {!!adaptationBullets.length && (
-                <View style={styles.miniNarrativeBox}>
-                  {adaptationBullets.slice(0, 3).map((line: string) => (
-                    <View key={line} style={styles.tipItem}>
-                      <Text style={styles.tipBullet}>•</Text>
-                      <Text style={styles.tipText}>{line}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-            </View>
-
-            <View style={[styles.detailCard, styles.detailCardSoft]}>
-              <Text style={styles.detailCardTitle}>
-                为什么适合你家今天来做
-              </Text>
-              {whyItFits.map((line: string) => (
-                <View key={line} style={styles.tipItem}>
-                  <Text style={styles.tipBullet}>•</Text>
-                  <Text style={styles.tipText}>{line}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
+          {pageVm?.hero ? (
+            <RecipeHeroPanel
+              hero={pageVm.hero}
+              recipe={recipeVm.recipe}
+              activeTab={activeTab === "baby" ? "baby" : "adult"}
+              onSelectTab={setActiveTab}
+            />
+          ) : null}
         </View>
 
         <View style={styles.tabContainer}>
@@ -548,7 +345,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                 activeTab === "baby" && styles.tabTextActive,
               ]}
             >
-              宝宝版 {isPaired ? "" : "(智能转换)"}
+              宝宝版 {pageVm?.isPaired ? "" : "(智能转换)"}
             </Text>
             {activeTab === "baby" && (
               <View style={[styles.tabIndicator, styles.tabIndicatorBaby]} />
@@ -750,15 +547,16 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                 </TouchableOpacity>
               </View>
               <Text style={styles.syncTimeSaving}>
-                ⏱ {syncCooking.time_saving}
+                ⏱ {pageVm?.timelinePanel.savedTimeText || syncCooking.time_saving}
               </Text>
-              <Text style={styles.syncTips}>{syncCooking.tips}</Text>
-              {syncCooking.shared_steps &&
-                syncCooking.shared_steps.length > 0 && (
+              <Text style={styles.syncTips}>
+                {pageVm?.timelinePanel.syncTips || syncCooking.tips}
+              </Text>
+              {pageVm?.timelinePanel.sharedSteps?.length > 0 && (
                   <View style={styles.syncSteps}>
                     <Text style={styles.syncStepsTitle}>共用步骤：</Text>
                     <View style={styles.syncStepsList}>
-                      {syncCooking.shared_steps.map(
+                      {pageVm.timelinePanel.sharedSteps.map(
                         (step: string, index: number) => (
                           <View key={index} style={styles.syncStepItem}>
                             <Text style={styles.syncStepCheck}>✓</Text>
@@ -774,28 +572,28 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
         )}
 
         {/* 主要食材 - 仅配对菜谱显示 */}
-        {isPaired && mainIngredients.length > 0 && (
+        {pageVm?.isPaired && pageVm.ingredientComparison.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionIcon}>🥬</Text>
               <Text style={styles.sectionTitle}>主要食材</Text>
             </View>
             <View style={styles.ingredientsCard}>
-              {mainIngredients.map((item: any, index: number) => (
-                <View key={index} style={styles.ingredientRow}>
+              {pageVm.ingredientComparison.map((item) => (
+                <View key={`${item.name}-${item.adultAmount}`} style={styles.ingredientRow}>
                   <Text style={styles.ingredientName}>{item.name}</Text>
                   <View style={styles.amountCompare}>
                     <View style={styles.amountTag}>
                       <Text style={styles.amountTagLabel}>大人</Text>
-                      <Text style={styles.amountTagValue}>{item.amount}</Text>
+                      <Text style={styles.amountTagValue}>{item.adultAmount}</Text>
                     </View>
-                    {effectiveBaby?.main_ingredients?.[index] && (
+                    {item.babyAmount && (
                       <>
                         <Text style={styles.amountArrow}>→</Text>
                         <View style={[styles.amountTag, styles.amountTagBaby]}>
                           <Text style={styles.amountTagLabel}>宝宝</Text>
                           <Text style={styles.amountTagValueBaby}>
-                            {effectiveBaby.main_ingredients[index].amount}
+                            {item.babyAmount}
                           </Text>
                         </View>
                       </>
@@ -809,172 +607,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
 
         {/* 版本详情 */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionIcon}>
-              {activeTab === "adult" ? "🍽️" : "👶"}
-            </Text>
-            <Text style={styles.sectionTitle}>
-              {activeTab === "adult" ? "大人版详情" : "宝宝版详情"}
-            </Text>
-            {activeTab === "baby" && effectiveBaby?.age_range && (
-              <View style={styles.ageBadge}>
-                <Text style={styles.ageBadgeText}>
-                  {effectiveBaby.age_range}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* 食材清单 */}
-          {parsedCurrent?.ingredients &&
-            parsedCurrent.ingredients.length > 0 && (
-              <View style={styles.detailCard}>
-                <Text style={styles.detailCardTitle}>📝 食材清单</Text>
-                <View style={styles.ingredientsList}>
-                  {parsedCurrent.ingredients.map((item: any, index: number) => (
-                    <View key={index} style={styles.ingredientItem}>
-                      <View style={styles.ingredientDot} />
-                      <View style={styles.ingredientInfo}>
-                        <Text style={styles.ingredientItemName}>
-                          {item.name}
-                        </Text>
-                        <Text style={styles.ingredientItemAmount}>
-                          {item.amount}
-                        </Text>
-                      </View>
-                      {item.note && (
-                        <View style={styles.ingredientNoteBadge}>
-                          <InfoIcon size={12} color={Colors.primary.main} />
-                        </View>
-                      )}
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-
-          {/* 调料 */}
-          {parsedCurrent?.seasonings && parsedCurrent.seasonings.length > 0 && (
-            <View style={styles.detailCard}>
-              <Text style={styles.detailCardTitle}>🧂 调料</Text>
-              <View style={styles.seasoningsList}>
-                {parsedCurrent.seasonings.map((item: any, index: number) => (
-                  <View key={index} style={styles.seasoningTag}>
-                    <Text style={styles.seasoningName}>{item.name}</Text>
-                    <Text style={styles.seasoningAmount}>{item.amount}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {/* 制作步骤 */}
-          {parsedCurrent?.steps && parsedCurrent.steps.length > 0 && (
-            <View style={styles.detailCard}>
-              <Text style={styles.detailCardTitle}>👨‍🍳 制作步骤</Text>
-              <View style={styles.stepsList}>
-                {parsedCurrent.steps.map((step: any, index: number) => (
-                  <View key={index} style={styles.stepItem}>
-                    <View style={styles.stepNumber}>
-                      <Text style={styles.stepNumberText}>
-                        {step.step || index + 1}
-                      </Text>
-                    </View>
-                    <View style={styles.stepContent}>
-                      <Text style={styles.stepAction}>{step.action}</Text>
-                      <View style={styles.stepMeta}>
-                        {step.time > 0 && (
-                          <View style={styles.stepMetaItem}>
-                            <ClockIcon size={12} color={Colors.primary.main} />
-                            <Text style={styles.stepMetaText}>
-                              {step.time}分钟
-                            </Text>
-                          </View>
-                        )}
-                        {step.tools && step.tools.length > 0 && (
-                          <View style={styles.stepMetaItem}>
-                            <ChefHatIcon
-                              size={12}
-                              color={Colors.text.tertiary}
-                            />
-                            <Text style={styles.stepMetaText}>
-                              {step.tools.join(", ")}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                      {step.note && (
-                        <View
-                          style={[
-                            styles.stepNote,
-                            step.note.includes("🔥") &&
-                              styles.stepNoteHighlight,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.stepNoteText,
-                              step.note.includes("🔥") &&
-                                styles.stepNoteTextHighlight,
-                            ]}
-                          >
-                            {step.note}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {/* 宝宝版专属信息 */}
-          {activeTab === "baby" && effectiveBaby && (
-            <>
-              {/* 营养要点 */}
-              {effectiveBaby.nutrition_tips && (
-                <View style={[styles.detailCard, styles.nutritionCard]}>
-                  <Text style={styles.detailCardTitle}>💡 营养要点</Text>
-                  <Text style={styles.nutritionText}>
-                    {effectiveBaby.nutrition_tips}
-                  </Text>
-                </View>
-              )}
-
-              {/* 过敏提醒 - 增强样式 */}
-              {effectiveBaby.allergy_alert && (
-                <View style={[styles.detailCard, styles.allergyCard]}>
-                  <View style={styles.allergyHeader}>
-                    <View style={styles.allergyIconBadge}>
-                      <Text style={styles.allergyIcon}>🚨</Text>
-                    </View>
-                    <Text style={styles.detailCardTitle}>过敏提醒</Text>
-                  </View>
-                  <View style={styles.allergyContent}>
-                    <Text style={styles.allergyText}>
-                      {effectiveBaby.allergy_alert}
-                    </Text>
-                  </View>
-                  <View style={styles.allergyWarning}>
-                    <Text style={styles.allergyWarningText}>
-                      首次添加辅食请遵循"3天观察期"原则，观察无过敏反应后再继续添加新食材
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              {/* 准备要点 */}
-              {effectiveBaby.preparation_notes && (
-                <View style={[styles.detailCard, styles.tipsCard]}>
-                  <Text style={styles.detailCardTitle}>📝 准备要点</Text>
-                  <Text style={styles.tipsText}>
-                    {effectiveBaby.preparation_notes}
-                  </Text>
-                </View>
-              )}
-            </>
-          )}
+          <RecipeVersionPanel section={pageVm?.currentVersion} />
         </View>
 
         {/* 时间线视图 */}
@@ -982,12 +615,18 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
           <>
             <View style={styles.sectionTightTop}>
               <View style={[styles.detailCard, styles.utilityCardMuted]}>
-                <Text style={styles.utilityCardTitle}>
-                  同步烹饪时间线
-                </Text>
+                <Text style={styles.utilityCardTitle}>同步烹饪时间线</Text>
                 <Text style={styles.utilityCardCaption}>
-                  需要时再切进来安排并行节奏；默认不抢首屏注意力。
+                  {pageVm?.timelinePanel.summary}
                 </Text>
+                {!!pageVm?.timelinePanel.totalTimeText && (
+                  <Text style={styles.utilityCardCaption}>
+                    {pageVm.timelinePanel.totalTimeText}
+                    {pageVm.timelinePanel.savedTimeText
+                      ? ` · ${pageVm.timelinePanel.savedTimeText}`
+                      : ""}
+                  </Text>
+                )}
               </View>
             </View>
             <TimelineView
@@ -997,7 +636,8 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
             <TouchableOpacity
               style={[
                 styles.startCookingButton,
-                !timelineData && styles.startCookingButtonDisabled,
+                !pageVm?.timelinePanel.hasTimeline &&
+                  styles.startCookingButtonDisabled,
               ]}
               onPress={() => {
                 navigation.navigate("CookingMode", {
@@ -1005,7 +645,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                   babyAgeMonths: selectedBabyAge ?? 12,
                 });
               }}
-              disabled={!timelineData}
+              disabled={!pageVm?.timelinePanel.hasTimeline}
             >
               <Text style={styles.startCookingButtonText}>
                 🍳 开始烹饪（同步模式）
@@ -1024,6 +664,9 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
               保留真实反馈接口：这里仍然直接提交喜欢 / 一般 /
               拒绝，并把结果回流到“喂养反馈 / 每周回顾”页面。
             </Text>
+            {!!pageVm?.feedback.latestLabel && (
+              <Text style={styles.feedbackRecentTitle}>{pageVm.feedback.latestLabel}</Text>
+            )}
             <View style={styles.feedbackActionRow}>
               <TouchableOpacity
                 style={styles.feedbackChipLike}
@@ -1048,17 +691,11 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
               </TouchableOpacity>
             </View>
             <Text style={styles.feedbackRecentTitle}>最近反馈</Text>
-            {normalizedRecentFeedbacks.length ? (
-              normalizedRecentFeedbacks.map((item: any) => (
+            {pageVm?.feedback.items.length ? (
+              pageVm.feedback.items.map((item) => (
                 <View key={item.id} style={styles.feedbackRecentItem}>
                   <Text style={styles.feedbackRecentText}>
-                    •{" "}
-                    {item.accepted_level === "like"
-                      ? "喜欢"
-                      : item.accepted_level === "ok"
-                        ? "一般"
-                        : "拒绝"}{" "}
-                    · {safeDateText(item.created_at)}
+                    • {item.label} · {item.dateText}
                   </Text>
                   {!!item.note && (
                     <Text style={styles.feedbackRecentNote}>{item.note}</Text>

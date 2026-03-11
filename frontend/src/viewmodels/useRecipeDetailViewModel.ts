@@ -6,17 +6,31 @@ import { useRecentFeedingFeedback } from '../hooks/useFeedingFeedback';
 import { useWeeklyPlan } from '../hooks/useMealPlans';
 import { useLatestShoppingList } from '../hooks/useShoppingLists';
 import { mapRecipeToDisplayModel, mapFeedbackAcceptance } from '../mappers/recipeDisplayMapper';
+import { mapRecipeDetailPage, parseRecipeVersion } from '../mappers/recipeDetailMapper';
 import type { RecipeDetailViewModel } from './uiMigration';
 
-export function useRecipeDetailViewModel(recipeId: string, babyAgeMonths?: number, timelineEnabled = false): {
+export function useRecipeDetailViewModel(recipeId: string, options: {
+  babyAgeMonths?: number;
+  timelineEnabled?: boolean;
+  activeTab?: 'adult' | 'baby' | 'timeline';
+  babyVersionOverride?: unknown;
+} = {}): {
   data: RecipeDetailViewModel;
   isLoading: boolean;
+  isTimelineLoading: boolean;
+  error: unknown;
   aiActions: ReturnType<typeof useAIBabyVersion>;
 } {
+  const {
+    babyAgeMonths,
+    timelineEnabled = false,
+    activeTab = 'adult',
+    babyVersionOverride,
+  } = options;
   const recipeQuery = useRecipeDetail(recipeId);
   const aiActions = useAIBabyVersion();
   const timelineQuery = useTimeline(recipeId, babyAgeMonths || 0, timelineEnabled);
-  const feedbackQuery = useRecentFeedingFeedback({ recipe_id: recipeId, limit: 1 });
+  const feedbackQuery = useRecentFeedingFeedback({ recipe_id: recipeId, limit: 3 });
   const weeklyPlanQuery = useWeeklyPlan();
   const shoppingListQuery = useLatestShoppingList();
 
@@ -28,6 +42,7 @@ export function useRecipeDetailViewModel(recipeId: string, babyAgeMonths?: numbe
     const latestFeedback = feedbackQuery.data?.[0];
 
     return {
+      sourceRecipe: recipe,
       recipe: recipe ? mapRecipeToDisplayModel(recipe, {
         babyAgeMonths,
         inPlan,
@@ -36,19 +51,32 @@ export function useRecipeDetailViewModel(recipeId: string, babyAgeMonths?: numbe
         aiBabyVersion: aiActions.lastResult,
         timeline: timelineQuery.data,
       }) : undefined,
-      adultVersion: recipe?.adult_version,
-      babyVersion: recipe?.baby_version,
+      adultVersion: parseRecipeVersion<RecipeDetailViewModel['adultVersion']>(recipe?.adult_version),
+      babyVersion: parseRecipeVersion<RecipeDetailViewModel['babyVersion']>((babyVersionOverride as RecipeDetailViewModel['babyVersion'] | string | null | undefined) ?? recipe?.baby_version),
       aiBabyVersion: aiActions.lastResult,
       timeline: timelineQuery.data,
       inPlan,
       onShoppingList,
       latestFeedback: mapFeedbackAcceptance(latestFeedback),
+      page: recipe ? mapRecipeDetailPage({
+        recipe,
+        babyAgeMonths,
+        activeTab,
+        babyVersion: babyVersionOverride,
+        feedbacks: feedbackQuery.data || [],
+        timeline: timelineQuery.data,
+        aiBabyVersion: aiActions.lastResult,
+        inPlan,
+        onShoppingList,
+      }) : undefined,
     };
-  }, [recipeQuery.data, weeklyPlanQuery.data, shoppingListQuery.data, feedbackQuery.data, aiActions.lastResult, timelineQuery.data, babyAgeMonths, recipeId]);
+  }, [recipeQuery.data, weeklyPlanQuery.data, shoppingListQuery.data, feedbackQuery.data, aiActions.lastResult, timelineQuery.data, babyAgeMonths, recipeId, activeTab, babyVersionOverride]);
 
   return {
     data,
     isLoading: recipeQuery.isLoading || feedbackQuery.isLoading,
+    isTimelineLoading: timelineQuery.isLoading,
+    error: recipeQuery.error,
     aiActions,
   };
 }
