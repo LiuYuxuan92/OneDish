@@ -15,7 +15,7 @@ export const weeklyPlanStyles = StyleSheet.create({
   header: {
     backgroundColor: Colors.background.primary,
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
+    paddingTop: Spacing.sm,
     paddingBottom: Spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.light,
@@ -25,9 +25,19 @@ export const weeklyPlanStyles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
+  headerTopCompact: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
   headerTextBlock: {
     flex: 1,
     paddingRight: Spacing.md,
+  },
+  headerTextBlockCompact: {
+    flex: 1,
+    paddingRight: Spacing.sm,
   },
   headerEyebrow: {
     fontSize: Typography.fontSize.xs,
@@ -42,10 +52,20 @@ export const weeklyPlanStyles = StyleSheet.create({
     fontWeight: Typography.fontWeight.bold,
     color: Colors.text.primary,
   },
+  headerTitleCompact: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+  },
   headerDate: {
     fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
     marginTop: Spacing.xs,
+  },
+  headerDateCompact: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    marginTop: 2,
   },
   headerActions: {
     flexDirection: 'row',
@@ -68,6 +88,7 @@ export const weeklyPlanStyles = StyleSheet.create({
     fontSize: 16,
   },
   heroCard: {
+    marginHorizontal: Spacing.lg,
     marginTop: Spacing.sm,
     padding: Spacing.md,
     borderRadius: BorderRadius.xl,
@@ -83,6 +104,14 @@ export const weeklyPlanStyles = StyleSheet.create({
   },
   heroTitleBlock: {
     flex: 1,
+  },
+  heroEyebrow: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 4,
   },
   heroTitle: {
     fontSize: Typography.fontSize.xl,
@@ -232,36 +261,95 @@ export const weeklyPlanStyles = StyleSheet.create({
     color: Colors.text.secondary,
     lineHeight: 20,
   },
-  todayHighlightStrip: {
+  weeklyInsightsRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
     marginTop: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+  },
+  weeklyInsightCard: {
+    flex: 1,
+    backgroundColor: Colors.background.card,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  weeklyInsightCardAccent: {
+    backgroundColor: '#FFF8EE',
+    borderColor: '#F0D4AA',
+  },
+  weeklyInsightLabel: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
+    fontWeight: Typography.fontWeight.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  weeklyInsightValue: {
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+  },
+  weeklyInsightHint: {
+    marginTop: 6,
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    lineHeight: 18,
+  },
+  todayHighlightStrip: {
+    marginTop: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    backgroundColor: Colors.background.card,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  todayHighlightHeader: {
+    marginBottom: Spacing.sm,
+    gap: 2,
   },
   todayHighlightLabel: {
-    fontSize: Typography.fontSize.sm,
+    fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
+    color: Colors.text.primary,
+  },
+  todayHighlightHelper: {
+    fontSize: Typography.fontSize.xs,
     color: Colors.text.secondary,
-    marginBottom: Spacing.sm,
   },
   todayHighlightScrollContent: {
     paddingRight: Spacing.md,
+    gap: Spacing.sm,
   },
   todayHighlightChip: {
-    marginRight: Spacing.sm,
+    width: 190,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.xl,
     backgroundColor: Colors.background.secondary,
     borderWidth: 1,
     borderColor: Colors.border.light,
+    gap: 6,
+  },
+  todayHighlightChipLabel: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.semibold,
   },
   todayHighlightChipText: {
     fontSize: Typography.fontSize.sm,
     color: Colors.text.primary,
+    lineHeight: 20,
   },
   content: {
     flex: 1,
   },
   contentContainer: {
     paddingBottom: 96,
+    paddingTop: Spacing.sm,
     flexGrow: 1,
   },
   emptyState: {
@@ -344,6 +432,7 @@ export const weeklyPlanStyles = StyleSheet.create({
   },
   sectionBlock: {
     marginTop: Spacing.lg,
+    paddingTop: Spacing.xs,
   },
   sectionHeaderRow: {
     paddingHorizontal: Spacing.lg,
@@ -425,6 +514,16 @@ export const weeklyPlanStyles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: Colors.functional.info,
   },
+  infoCardInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+    padding: Spacing.md,
+    backgroundColor: Colors.functional.infoLight,
+    borderRadius: BorderRadius.md,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.functional.info,
+  },
   infoIcon: {
     fontSize: 16,
     marginRight: Spacing.sm,
@@ -438,6 +537,14 @@ export const weeklyPlanStyles = StyleSheet.create({
   // Tab styles
   tabContainer: {
     flexDirection: 'row',
+    marginTop: Spacing.sm,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.md,
+    padding: 2,
+  },
+  tabContainerInline: {
+    flexDirection: 'row',
+    marginHorizontal: Spacing.lg,
     marginTop: Spacing.sm,
     backgroundColor: Colors.background.secondary,
     borderRadius: BorderRadius.md,

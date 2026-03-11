@@ -246,6 +246,19 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
 
   const syncCooking = effectiveBaby?.sync_cooking;
   const parsedTips = pageVm?.tips || [];
+  const currentVersionSection = pageVm?.currentVersion;
+  const adultSummaryChips = [
+    pageVm?.hero?.timeLabel || `${recipe.prep_time} 分钟`,
+    pageVm?.hero?.difficultyLabel,
+    recipeVm?.recipe?.nutrition_focus,
+  ].filter(Boolean);
+  const babySummaryChips = [
+    effectiveBaby?.prep_time ? `${effectiveBaby.prep_time} 分钟` : undefined,
+    formatBabyAge(selectedBabyAge),
+    effectiveBaby?.texture,
+  ].filter(Boolean);
+  const adultHighlights = currentVersionSection?.highlights?.slice(0, 3) || [];
+  const babyHighlights = currentVersionSection?.babyHighlights?.slice(0, 3) || [];
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
@@ -377,59 +390,171 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
           </TouchableOpacity>
         </View>
 
-        {activeTab === "adult" && (
-          <View style={styles.sectionTightTop}>
-            <View style={[styles.detailCard, styles.utilityCardMuted]}>
-              <View style={styles.utilityCardHeader}>
-                <Text style={styles.utilityCardTitle}>
-                  需要时再调用工具能力
-                </Text>
-                <Text style={styles.utilityCardCaption}>
-                  不打断先读内容、再做决定
+        <View style={styles.sectionTightTop}>
+          <View style={styles.versionShowcaseCard}>
+            <View style={styles.versionShowcaseHeader}>
+              <View style={styles.versionShowcaseHeaderCopy}>
+                <Text style={styles.versionShowcaseEyebrow}>一菜两吃</Text>
+                <Text style={styles.versionShowcaseTitle}>同一份底菜，切出两种吃法</Text>
+                <Text style={styles.versionShowcaseSubtitle}>
+                  先看差异，再决定今天做大人版、宝宝版，还是同步烹饪。
                 </Text>
               </View>
-              <TouchableOpacity
-                style={styles.aiGenerateButtonMuted}
-                onPress={() => setShowAIGenerateModal(true)}
-              >
-                <Text style={styles.aiGenerateIcon}>✨</Text>
-                <Text style={styles.aiGenerateButtonMutedText}>
-                  AI 生成宝宝版本
+              <View style={styles.versionShowcaseBadge}>
+                <Text style={styles.versionShowcaseBadgeText}>
+                  {pageVm?.isPaired ? '可同步出锅' : '支持智能转换'}
                 </Text>
-              </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        )}
 
-        {activeTab === "baby" && (
-          <View style={styles.sectionTightTop}>
-            <View style={[styles.detailCard, styles.detailCardSoft]}>
-              <Text style={styles.detailCardTitle}>宝宝适配设置</Text>
+            <View style={styles.versionCompareDeck}>
               <TouchableOpacity
-                style={styles.ageSelectorButton}
-                onPress={() => setShowAgePicker(true)}
+                activeOpacity={0.9}
+                style={[
+                  styles.versionSpotlightCard,
+                  styles.versionSpotlightAdult,
+                  activeTab === 'adult' && styles.versionSpotlightCardActive,
+                ]}
+                onPress={() => setActiveTab('adult')}
               >
-                <View style={styles.ageSelectorContent}>
-                  <BabyIcon size={18} color={Colors.secondary[500]} />
-                  <Text style={styles.ageSelectorLabel}>宝宝月龄:</Text>
-                  <Text style={styles.ageSelectorValue}>
-                    {formatBabyAge(selectedBabyAge)}
-                  </Text>
+                <View style={styles.versionSpotlightTopRow}>
+                  <View style={styles.versionSpotlightTopCopy}>
+                    <Text style={styles.versionSpotlightKicker}>成人版</Text>
+                    <Text style={styles.versionSpotlightHeading}>共享底菜后再补风味</Text>
+                  </View>
+                  <Text style={styles.versionSpotlightIcon}>🍳</Text>
                 </View>
-                <Text style={styles.ageSelectorArrow}>▼</Text>
+                <Text style={styles.versionSpotlightBody}>
+                  {currentVersionSection?.summary || recipe.description}
+                </Text>
+                <View style={styles.versionSpotlightChipRow}>
+                  {adultSummaryChips.map((chip) => (
+                    <View key={chip} style={styles.versionSpotlightChip}>
+                      <Text style={styles.versionSpotlightChipText}>{chip}</Text>
+                    </View>
+                  ))}
+                </View>
+                <View style={styles.versionSpotlightList}>
+                  {adultHighlights.length > 0 ? (
+                    adultHighlights.map((item) => (
+                      <View key={item} style={styles.versionSpotlightListItem}>
+                        <Text style={styles.versionSpotlightBullet}>•</Text>
+                        <Text style={styles.versionSpotlightListText}>{item}</Text>
+                      </View>
+                    ))
+                  ) : (
+                    <View style={styles.versionSpotlightListItem}>
+                      <Text style={styles.versionSpotlightBullet}>•</Text>
+                      <Text style={styles.versionSpotlightListText}>保留完整调味和口感层次。</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.versionSpotlightCta}>查看成人做法 →</Text>
               </TouchableOpacity>
-              {isTransforming && (
-                <View style={styles.transformingIndicator}>
-                  <ActivityIndicator
-                    size="small"
-                    color={Colors.secondary[500]}
-                  />
-                  <Text style={styles.transformingText}>转换食谱中...</Text>
+
+              <TouchableOpacity
+                activeOpacity={0.9}
+                style={[
+                  styles.versionSpotlightCard,
+                  styles.versionSpotlightBaby,
+                  activeTab === 'baby' && styles.versionSpotlightCardActive,
+                ]}
+                onPress={() => setActiveTab('baby')}
+              >
+                <View style={styles.versionSpotlightTopRow}>
+                  <View style={styles.versionSpotlightTopCopy}>
+                    <Text style={styles.versionSpotlightKicker}>宝宝版</Text>
+                    <Text style={styles.versionSpotlightHeading}>提前分出一份单独适配</Text>
+                  </View>
+                  <Text style={styles.versionSpotlightIcon}>🍼</Text>
                 </View>
-              )}
+                <Text style={styles.versionSpotlightBody}>
+                  {effectiveBaby?.texture
+                    ? `当前建议质地：${effectiveBaby.texture}`
+                    : '根据月龄自动调整颗粒度、质地和调味。'}
+                </Text>
+                <View style={styles.versionSpotlightChipRow}>
+                  {babySummaryChips.map((chip) => (
+                    <View
+                      key={chip}
+                      style={[
+                        styles.versionSpotlightChip,
+                        styles.versionSpotlightChipBaby,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.versionSpotlightChipText,
+                          styles.versionSpotlightChipTextBaby,
+                        ]}
+                      >
+                        {chip}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+                <View style={styles.versionSpotlightList}>
+                  {babyHighlights.length > 0 ? (
+                    babyHighlights.map((item) => (
+                      <View key={item} style={styles.versionSpotlightListItem}>
+                        <Text style={styles.versionSpotlightBullet}>•</Text>
+                        <Text style={styles.versionSpotlightListText}>{item}</Text>
+                      </View>
+                    ))
+                  ) : (
+                    <View style={styles.versionSpotlightListItem}>
+                      <Text style={styles.versionSpotlightBullet}>•</Text>
+                      <Text style={styles.versionSpotlightListText}>优先做无盐、细软、好吞咽的版本。</Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.versionSpotlightFooterRow}>
+                  <TouchableOpacity
+                    style={styles.versionAgeButton}
+                    onPress={() => setShowAgePicker(true)}
+                  >
+                    <Text style={styles.versionAgeButtonText}>
+                      月龄 {formatBabyAge(selectedBabyAge)}
+                    </Text>
+                  </TouchableOpacity>
+                  {isTransforming && (
+                    <View style={styles.transformingIndicatorInline}>
+                      <ActivityIndicator
+                        size="small"
+                        color={Colors.secondary[500]}
+                      />
+                      <Text style={styles.transformingInlineText}>适配中</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.versionSpotlightCta}>查看宝宝做法 →</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.versionShowcaseFooter}>
+              <View style={styles.versionShowcaseHintBlock}>
+                <Text style={styles.versionShowcaseHintTitle}>怎么用最顺手</Text>
+                <Text style={styles.versionShowcaseHintText}>
+                  先看两张卡片确认差异，再切换下方详情；想要更省事，可直接开同步烹饪或 AI 生成宝宝版本。
+                </Text>
+              </View>
+              <View style={styles.versionShowcaseActionRow}>
+                <TouchableOpacity
+                  style={styles.versionShowcasePrimaryAction}
+                  onPress={() => setShowAIGenerateModal(true)}
+                >
+                  <Text style={styles.versionShowcasePrimaryActionText}>AI 生成宝宝版</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.versionShowcaseSecondaryAction}
+                  onPress={() => setActiveTab('timeline')}
+                >
+                  <Text style={styles.versionShowcaseSecondaryActionText}>看同步时间线</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        )}
+        </View>
         {/* 月龄选择器弹窗 */}
         <Modal
           visible={showAgePicker}
@@ -627,30 +752,38 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                       : ""}
                   </Text>
                 )}
+                <View style={styles.inlineActionRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.inlineActionButton,
+                      !pageVm?.timelinePanel.hasTimeline &&
+                        styles.inlineActionButtonDisabled,
+                    ]}
+                    onPress={() => {
+                      navigation.navigate("CookingMode", {
+                        recipeId,
+                        babyAgeMonths: selectedBabyAge ?? 12,
+                      });
+                    }}
+                    disabled={!pageVm?.timelinePanel.hasTimeline}
+                  >
+                    <Text style={styles.inlineActionButtonText}>开始烹饪（同步模式）</Text>
+                  </TouchableOpacity>
+                  {timerSteps.length > 0 && (
+                    <TouchableOpacity
+                      style={styles.inlineActionButtonSecondary}
+                      onPress={() => setShowTimer(true)}
+                    >
+                      <Text style={styles.inlineActionButtonSecondaryText}>打开烹饪计时</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             </View>
             <TimelineView
               timeline={timelineData}
               isLoading={isTimelineLoading}
             />
-            <TouchableOpacity
-              style={[
-                styles.startCookingButton,
-                !pageVm?.timelinePanel.hasTimeline &&
-                  styles.startCookingButtonDisabled,
-              ]}
-              onPress={() => {
-                navigation.navigate("CookingMode", {
-                  recipeId,
-                  babyAgeMonths: selectedBabyAge ?? 12,
-                });
-              }}
-              disabled={!pageVm?.timelinePanel.hasTimeline}
-            >
-              <Text style={styles.startCookingButtonText}>
-                🍳 开始烹饪（同步模式）
-              </Text>
-            </TouchableOpacity>
           </>
         )}
 
@@ -744,15 +877,6 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
 
       {/* 底部操作栏 */}
       <View style={styles.footer}>
-        {timerSteps.length > 0 && (
-          <TouchableOpacity
-            style={styles.timerButton}
-            onPress={() => setShowTimer(true)}
-          >
-            <TimerIcon size={18} color={Colors.primary.main} />
-            <Text style={styles.timerButtonText}>烹饪计时</Text>
-          </TouchableOpacity>
-        )}
         <Button
           title={
             addRecipeToShoppingList.isPending ? "添加中..." : "🛒 加入购物清单"
@@ -1296,6 +1420,229 @@ const styles = StyleSheet.create({
   sectionTightTop: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
+  },
+  versionShowcaseCard: {
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: '#F0DDC8',
+    ...Shadows.md,
+  },
+  versionShowcaseHeader: {
+    gap: Spacing.sm,
+  },
+  versionShowcaseHeaderCopy: {
+    gap: Spacing.xs,
+  },
+  versionShowcaseEyebrow: {
+    fontSize: Typography.fontSize.xs,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.bold,
+  },
+  versionShowcaseTitle: {
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+  },
+  versionShowcaseSubtitle: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    lineHeight: 20,
+  },
+  versionShowcaseBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#FFF1E2',
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+  },
+  versionShowcaseBadgeText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.primary.dark,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  versionCompareDeck: {
+    gap: Spacing.md,
+    marginTop: Spacing.lg,
+  },
+  versionSpotlightCard: {
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    minHeight: 228,
+  },
+  versionSpotlightAdult: {
+    backgroundColor: '#FFF8EF',
+    borderColor: '#F3D8B7',
+  },
+  versionSpotlightBaby: {
+    backgroundColor: '#F6FBF8',
+    borderColor: '#CFE7D7',
+  },
+  versionSpotlightCardActive: {
+    transform: [{ scale: 1.01 }],
+    ...Shadows.sm,
+  },
+  versionSpotlightTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+  },
+  versionSpotlightTopCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  versionSpotlightKicker: {
+    fontSize: Typography.fontSize.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    color: Colors.text.tertiary,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  versionSpotlightHeading: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
+  },
+  versionSpotlightIcon: {
+    fontSize: 24,
+  },
+  versionSpotlightBody: {
+    marginTop: Spacing.md,
+    fontSize: Typography.fontSize.sm,
+    lineHeight: 21,
+    color: Colors.text.secondary,
+  },
+  versionSpotlightChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginTop: Spacing.md,
+  },
+  versionSpotlightChip: {
+    backgroundColor: 'rgba(255,255,255,0.78)',
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+  },
+  versionSpotlightChipBaby: {
+    backgroundColor: '#E6F4EC',
+  },
+  versionSpotlightChipText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  versionSpotlightChipTextBaby: {
+    color: Colors.secondary.dark,
+  },
+  versionSpotlightList: {
+    marginTop: Spacing.md,
+    gap: Spacing.xs,
+  },
+  versionSpotlightListItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.xs,
+  },
+  versionSpotlightBullet: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.primary.main,
+    lineHeight: 20,
+  },
+  versionSpotlightListText: {
+    flex: 1,
+    fontSize: Typography.fontSize.sm,
+    lineHeight: 20,
+    color: Colors.text.primary,
+  },
+  versionSpotlightFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  versionAgeButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderWidth: 1,
+    borderColor: '#D8E9DE',
+  },
+  versionAgeButtonText: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.secondary.dark,
+  },
+  transformingIndicatorInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  transformingInlineText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.secondary.dark,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  versionSpotlightCta: {
+    marginTop: Spacing.md,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  versionShowcaseFooter: {
+    marginTop: Spacing.lg,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border.light,
+    gap: Spacing.md,
+  },
+  versionShowcaseHintBlock: {
+    gap: 4,
+  },
+  versionShowcaseHintTitle: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.text.primary,
+  },
+  versionShowcaseHintText: {
+    fontSize: Typography.fontSize.sm,
+    lineHeight: 20,
+    color: Colors.text.secondary,
+  },
+  versionShowcaseActionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  versionShowcasePrimaryAction: {
+    backgroundColor: Colors.primary.main,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  versionShowcasePrimaryActionText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.inverse,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  versionShowcaseSecondaryAction: {
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  versionShowcaseSecondaryActionText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    fontWeight: Typography.fontWeight.semibold,
   },
   tab: {
     flex: 1,
@@ -2285,6 +2632,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderWidth: 1,
     borderColor: Colors.border.light,
+  },
+  inlineActionButtonDisabled: {
+    opacity: 0.45,
   },
   inlineActionButtonSecondaryText: {
     color: Colors.text.secondary,

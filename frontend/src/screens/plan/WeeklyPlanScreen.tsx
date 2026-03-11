@@ -221,11 +221,10 @@ export function WeeklyPlanScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View style={styles.headerTextBlock}>
-            <Text style={styles.headerEyebrow}>计划编排</Text>
-            <Text style={styles.headerTitle}>本周计划</Text>
-            <Text style={styles.headerDate}>{start.getMonth() + 1}月{start.getDate()}日 - {end.getMonth() + 1}月{end.getDate()}日</Text>
+        <View style={styles.headerTopCompact}>
+          <View style={styles.headerTextBlockCompact}>
+            <Text style={styles.headerTitleCompact}>本周计划</Text>
+            <Text style={styles.headerDateCompact}>{start.getMonth() + 1}月{start.getDate()}日 - {end.getMonth() + 1}月{end.getDate()}日</Text>
           </View>
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.iconButton} onPress={() => setShowPlanningTools((prev) => !prev)} accessibilityLabel="更多操作"><Text style={styles.iconButtonEmoji}>{showPlanningTools ? '−' : '+'}</Text></TouchableOpacity>
@@ -235,9 +234,12 @@ export function WeeklyPlanScreen({ navigation }: Props) {
             </TouchableOpacity>
           </View>
         </View>
+      </View>
+      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.heroCard}>
           <View style={styles.heroHeader}>
             <View style={styles.heroTitleBlock}>
+              <Text style={styles.heroEyebrow}>本周总览</Text>
               <Text style={styles.heroTitle}>这一周先看重点</Text>
               <Text style={styles.heroSubtitle} numberOfLines={isHeaderExpanded ? 3 : 1}>{preferenceHint}</Text>
             </View>
@@ -248,7 +250,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
             </View>
           </View>
           {isWebLocalGuestMode() && (
-            <View style={styles.infoCard}>
+            <View style={styles.infoCardInline}>
               <Text style={styles.infoIcon}>👀</Text>
               <Text style={styles.infoText}>当前为未登录预览：周计划、购物摘要和家庭协作会先展示示例数据，方便继续查看页面。</Text>
             </View>
@@ -309,25 +311,41 @@ export function WeeklyPlanScreen({ navigation }: Props) {
             </View>
           )}
         </View>
+
+        <View style={styles.weeklyInsightsRow}>
+          <View style={styles.weeklyInsightCard}>
+            <Text style={styles.weeklyInsightLabel}>节奏提示</Text>
+            <Text style={styles.weeklyInsightValue}>{weekSummary.totalPrepTime} 分钟</Text>
+            <Text style={styles.weeklyInsightHint}>预计全周备餐时长，方便你安排哪天做大菜、哪天轻松一点。</Text>
+          </View>
+          <View style={[styles.weeklyInsightCard, styles.weeklyInsightCardAccent]}>
+            <Text style={styles.weeklyInsightLabel}>双版本覆盖</Text>
+            <Text style={styles.weeklyInsightValue}>{weekSummary.babyFriendlyMeals} 餐</Text>
+            <Text style={styles.weeklyInsightHint}>已适合一菜两吃的餐次，点进卡片就能看成人 / 宝宝拆分。</Text>
+          </View>
+        </View>
+
         {todayMealHighlights.length > 0 && (
           <View style={styles.todayHighlightStrip}>
-            <Text style={styles.todayHighlightLabel}>今日安排</Text>
+            <View style={styles.todayHighlightHeader}>
+              <Text style={styles.todayHighlightLabel}>今日安排</Text>
+              <Text style={styles.todayHighlightHelper}>把今天要做的先拎出来，减少翻找。</Text>
+            </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.todayHighlightScrollContent}>
               {todayMealHighlights.map(({ mealType, label, icon, recipeId, title }) => (
                 <TouchableOpacity key={mealType} style={styles.todayHighlightChip} onPress={() => recipeId && handleMealPress(recipeId)} disabled={!recipeId}>
-                  <Text style={styles.todayHighlightChipText}>{icon} {label} · {title}</Text>
+                  <Text style={styles.todayHighlightChipLabel}>{icon} {label}</Text>
+                  <Text style={styles.todayHighlightChipText}>{title}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
         )}
-        <View style={styles.tabContainer}>
+        <View style={styles.tabContainerInline}>
           <TouchableOpacity style={[styles.tab, activeTab === 'week' && styles.tabActive]} onPress={() => setActiveTab('week')}><Text style={[styles.tabText, activeTab === 'week' && styles.tabTextActive]}>本周计划</Text></TouchableOpacity>
           <TouchableOpacity style={[styles.tab, activeTab === 'today' && styles.tabActive]} onPress={() => setActiveTab('today')}><Text style={[styles.tabText, activeTab === 'today' && styles.tabTextActive]}>今日详情</Text></TouchableOpacity>
         </View>
         <WeeklyShareModal sharedData={sharedWeeklyData as Parameters<typeof WeeklyShareModal>[0]['sharedData']} inviteCode={weeklyInviteCode} onInviteCodeChange={setWeeklyInviteCode} onCreateShare={handleCreateWeeklyShare} onJoinShare={handleJoinWeeklyShare} onRegenerateInvite={handleRegenerateWeeklyInvite} onRemoveMember={handleRemoveWeeklyMember} onMarkSharedMealComplete={handleMarkSharedMealComplete} isCreating={createWeeklyShareMutation.isPending} isJoining={joinWeeklyShareMutation.isPending} />
-      </View>
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
         {!hasPlans ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIconContainer}><Text style={styles.emptyIcon}>📅</Text></View>

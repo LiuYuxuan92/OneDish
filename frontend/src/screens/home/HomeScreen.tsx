@@ -46,10 +46,10 @@ export function HomeScreen({ navigation }: Props) {
   };
 
   const quickActions = [
-    { icon: '📅', text: '计划', iconBg: '#EEF4FF', onPress: nav.plan },
-    { icon: '🍲', text: '共享菜', iconBg: '#FFF4E8', onPress: nav.search },
-    { icon: '🍼', text: '喂养', iconBg: '#EEF9F0', onPress: nav.feeding },
-    { icon: '🛒', text: '采购', iconBg: '#FFF8E8', onPress: nav.shopping },
+    { icon: '📅', text: '本周计划', iconBg: '#EEF4FF', onPress: nav.plan },
+    { icon: '🍲', text: '找共享菜', iconBg: '#FFF4E8', onPress: nav.search },
+    { icon: '🍼', text: '喂养记录', iconBg: '#EEF9F0', onPress: nav.feeding },
+    { icon: '🛒', text: '采购清单', iconBg: '#FFF8E8', onPress: nav.shopping },
   ];
 
   return (
@@ -69,8 +69,24 @@ export function HomeScreen({ navigation }: Props) {
             </View>
             <TouchableOpacity style={styles.searchEntry} onPress={nav.search}>
               <SearchIcon size={18} color={Colors.primary.main} />
-              <Text style={styles.searchEntryText}>搜索</Text>
+              <Text style={styles.searchEntryText}>搜索菜谱</Text>
             </TouchableOpacity>
+          </View>
+
+          <View style={styles.heroMissionCard}>
+            <View style={styles.heroMissionCopy}>
+              <Text style={styles.heroMissionEyebrow}>今天先做什么</Text>
+              <Text style={styles.heroMissionTitle}>{vm.todaySummary.primary}</Text>
+              <Text style={styles.heroMissionText}>{vm.todaySummary.secondary}</Text>
+            </View>
+            <View style={styles.heroMissionActions}>
+              <TouchableOpacity style={styles.heroMissionPrimary} onPress={nav.plan}>
+                <Text style={styles.heroMissionPrimaryText}>打开周计划</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.heroMissionSecondary} onPress={nav.shopping}>
+                <Text style={styles.heroMissionSecondaryText}>看采购缺口</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.todayCard}>
@@ -187,6 +203,12 @@ export function HomeScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.sectionLight}>
+          <View style={styles.sectionRowBetween}>
+            <View>
+              <Text style={styles.sectionTitle}>首页常用入口</Text>
+              <Text style={styles.sectionCaption}>保留高频动作，但像产品首页一样集中、顺手、可继续往下逛。</Text>
+            </View>
+          </View>
           <ActionGrid actions={quickActions} />
         </View>
 
@@ -265,6 +287,16 @@ const styles = StyleSheet.create({
   subtitle: { marginTop: Spacing.xs, fontSize: Typography.fontSize.sm, color: Colors.text.secondary, lineHeight: 20 },
   searchEntry: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.92)', borderRadius: BorderRadius.full, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderWidth: 1, borderColor: '#F0D8BF' },
   searchEntryText: { fontSize: Typography.fontSize.sm, color: Colors.primary.main, fontWeight: Typography.fontWeight.semibold },
+  heroMissionCard: { backgroundColor: '#FFF7E8', borderRadius: BorderRadius['2xl'], padding: Spacing.lg, borderWidth: 1, borderColor: '#EFCF9D', flexDirection: 'row', gap: Spacing.md, alignItems: 'center', ...Shadows.sm },
+  heroMissionCopy: { flex: 1, gap: 4 },
+  heroMissionEyebrow: { fontSize: Typography.fontSize.xs, color: Colors.primary.dark, fontWeight: Typography.fontWeight.bold, textTransform: 'uppercase', letterSpacing: 0.7 },
+  heroMissionTitle: { fontSize: Typography.fontSize.lg, fontWeight: Typography.fontWeight.bold, color: Colors.text.primary },
+  heroMissionText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, lineHeight: 20 },
+  heroMissionActions: { gap: Spacing.sm, alignItems: 'stretch' },
+  heroMissionPrimary: { backgroundColor: Colors.primary.main, borderRadius: BorderRadius.full, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
+  heroMissionPrimaryText: { color: Colors.text.inverse, fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold },
+  heroMissionSecondary: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.full, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderWidth: 1, borderColor: '#F0D8BF' },
+  heroMissionSecondaryText: { color: Colors.primary.main, fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold },
   todayCard: { backgroundColor: '#FBF7F1', borderRadius: BorderRadius['2xl'], padding: Spacing.lg, borderWidth: 1, borderColor: '#EEDDC9', ...Shadows.sm },
   summaryHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.md },
   summaryCopyBlock: { flex: 1 },
