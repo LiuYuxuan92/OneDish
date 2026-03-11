@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import type { BabyStageGuide } from '../../types';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
 
 export interface BabySectionProps {
   currentStage: BabyStageGuide;
@@ -38,25 +39,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 10,
   },
-  title: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
+  title: { ...Typography.heading.h4, color: Colors.text.primary },
   card: {
-    marginHorizontal: 16,
-    backgroundColor: '#FFF8E1',
-    borderRadius: 14,
-    padding: 16,
+    marginHorizontal: Spacing.md,
+    backgroundColor: Colors.functional.warningLight,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     borderLeftWidth: 4,
-    borderLeftColor: '#FF7043',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
+    borderLeftColor: Colors.functional.warning,
+    ...Shadows.xs,
   },
   cardLeft: { flex: 1 },
-  stage: { fontSize: 15, fontWeight: '700', color: '#1A1A1A', marginBottom: 4 },
-  nutrients: { fontSize: 13, color: '#FF9800', marginBottom: 4 },
-  hint: { fontSize: 12, color: '#888' },
-  arrow: { fontSize: 22, color: '#CCC', marginLeft: 8 },
+  stage: { ...Typography.body.regular, fontWeight: Typography.fontWeight.bold, color: Colors.text.primary, marginBottom: Spacing.xs },
+  nutrients: { fontSize: Typography.fontSize.sm, color: Colors.functional.warning, marginBottom: Spacing.xs },
+  hint: { fontSize: Typography.fontSize.xs, color: Colors.text.tertiary },
+  arrow: { fontSize: 22, color: Colors.neutral.gray300, marginLeft: Spacing.sm },
 });

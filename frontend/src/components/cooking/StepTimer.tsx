@@ -14,6 +14,7 @@ import useCookingTimer, {
   formatTime,
   minutesToSeconds,
 } from '@hooks/useCookingTimer';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
 
 // ============================================
 // 类型定义
@@ -162,48 +163,44 @@ const StepTimer: React.FC<StepTimerProps> = ({
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    backgroundColor: Colors.background.card,
+    borderRadius: BorderRadius.lg,
+    ...Shadows.sm,
   },
   stepName: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 8,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    marginBottom: Spacing.sm,
     textAlign: 'center',
   },
   countdown: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: Typography.fontSize['3xl'],
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.text.primary,
     letterSpacing: 2,
-    marginBottom: 12,
+    marginBottom: Spacing.sm,
     fontVariant: ['tabular-nums'],
   },
   countdownCompleted: {
-    color: '#22c55e',
+    color: Colors.functional.success,
   },
   progressTrack: {
     width: '100%',
     height: 6,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 3,
+    backgroundColor: Colors.neutral.gray200,
+    borderRadius: BorderRadius.sm,
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: Spacing.md,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#f97316',
-    borderRadius: 3,
+    backgroundColor: Colors.primary.main,
+    borderRadius: BorderRadius.sm,
   },
   progressFillCompleted: {
-    backgroundColor: '#22c55e',
+    backgroundColor: Colors.functional.success,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -216,34 +213,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   completedText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#22c55e',
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.functional.success,
   },
   button: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryButton: {
-    backgroundColor: '#f97316',
+    backgroundColor: Colors.primary.main,
     minWidth: 72,
   },
   primaryButtonText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '600',
+    color: Colors.text.inverse,
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.semibold,
   },
   resetButton: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: Colors.neutral.gray100,
     minWidth: 60,
   },
   resetButtonText: {
-    color: '#374151',
-    fontSize: 15,
-    fontWeight: '500',
+    color: Colors.text.primary,
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.medium,
   },
 });
 

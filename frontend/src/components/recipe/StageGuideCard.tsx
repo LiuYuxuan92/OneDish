@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import type { BabyStageGuide } from '../../types';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
 
 interface Props {
   stage: BabyStageGuide;
@@ -65,25 +66,24 @@ function InfoRow({ icon, label, text }: { icon: string; label: string; text: str
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFF', borderRadius: 14, marginHorizontal: 16, marginBottom: 12,
-    overflow: 'hidden', elevation: 2,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4,
+    backgroundColor: Colors.background.card, borderRadius: BorderRadius.xl, marginHorizontal: Spacing.md, marginBottom: Spacing.sm,
+    overflow: 'hidden', ...Shadows.sm,
   },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 16, backgroundColor: '#FFF8E1',
+    padding: Spacing.md, backgroundColor: Colors.functional.warningLight,
   },
   headerLeft: { flex: 1 },
-  stageName: { fontSize: 16, fontWeight: '700', color: '#1A1A1A' },
-  ageRange: { fontSize: 13, color: '#888', marginTop: 2 },
-  toggle: { fontSize: 14, color: '#888' },
-  body: { padding: 16, gap: 12 },
-  row: { flexDirection: 'row', gap: 8 },
-  rowIcon: { fontSize: 16, marginTop: 1 },
+  stageName: { ...Typography.body.regular, fontWeight: Typography.fontWeight.bold, color: Colors.text.primary },
+  ageRange: { fontSize: Typography.fontSize.sm, color: Colors.text.tertiary, marginTop: 2 },
+  toggle: { fontSize: Typography.fontSize.sm, color: Colors.text.tertiary },
+  body: { padding: Spacing.md, gap: Spacing.sm },
+  row: { flexDirection: 'row', gap: Spacing.sm },
+  rowIcon: { fontSize: Typography.fontSize.base, marginTop: 1 },
   rowContent: { flex: 1 },
-  rowLabel: { fontSize: 13, fontWeight: '600', color: '#444', marginBottom: 2 },
-  rowItems: { fontSize: 13, color: '#555', lineHeight: 20 },
-  tipsSection: { backgroundColor: '#F8F9FA', borderRadius: 8, padding: 12 },
-  tipsTitle: { fontSize: 13, fontWeight: '600', color: '#FF9800', marginBottom: 8 },
-  tip: { fontSize: 13, color: '#555', lineHeight: 22 },
+  rowLabel: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.text.primary, marginBottom: 2 },
+  rowItems: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, lineHeight: 20 },
+  tipsSection: { backgroundColor: Colors.neutral.gray100, borderRadius: BorderRadius.sm, padding: Spacing.sm },
+  tipsTitle: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.functional.warning, marginBottom: Spacing.sm },
+  tip: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, lineHeight: 22 },
 });

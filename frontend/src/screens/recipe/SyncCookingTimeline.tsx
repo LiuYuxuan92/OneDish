@@ -14,6 +14,7 @@ import {
 import * as Haptics from 'expo-haptics';
 import { SyncTimeline, TimelinePhase, TimelinePhaseType } from '../../types';
 import { useCookingTimer, minutesToSeconds, formatTime } from '../../hooks/useCookingTimer';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
 
 // ============================================
 // 类型定义
@@ -267,11 +268,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginHorizontal: 16,
     marginTop: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    ...Shadows.sm,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -332,18 +329,10 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderRadius: 12,
     padding: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
+    ...Shadows.xs,
   },
   phaseCardActive: {
-    shadowColor: '#FF9800',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    ...Shadows.md,
     borderWidth: 3,
   },
   phaseCardCompleted: {

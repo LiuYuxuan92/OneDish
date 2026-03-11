@@ -14,7 +14,7 @@ import { HomeNavigator } from './HomeNavigator';
 import { RecipeNavigator } from './RecipeNavigator';
 import { PlanNavigator } from './PlanNavigator';
 import { ProfileNavigator } from './ProfileNavigator';
-import { Typography, Spacing } from '../styles/theme';
+import { Typography, Spacing, Colors, Shadows, BorderRadius } from '../styles/theme';
 import { useTheme } from '../contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { OfflineIndicator } from '../components/common/OfflineIndicator';
@@ -253,10 +253,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
+        ...Shadows.lg,
         paddingBottom: 20, // safe area for iPhone notch
       },
       android: {
@@ -296,6 +293,6 @@ const styles = StyleSheet.create({
     bottom: 4,
     width: 4,
     height: 4,
-    borderRadius: 2,
+    borderRadius: BorderRadius.xs,
   },
 });

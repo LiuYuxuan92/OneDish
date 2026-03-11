@@ -8,7 +8,7 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
-import { Colors, Typography, Spacing, BorderRadius } from '../../styles/theme';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
 
 interface GenerateOptionsModalProps {
   visible: boolean;
@@ -194,11 +194,7 @@ const styles = StyleSheet.create({
   },
   modeOptionSelected: {
     backgroundColor: Colors.background.primary,
-    shadowColor: Colors.primary.main,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    ...Shadows.sm,
   },
   modeOptionText: {
     fontSize: Typography.fontSize.sm,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { TimelinePhase, TimelinePhaseType } from '../../types';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
 
 interface StepCardProps {
   phase: TimelinePhase;
@@ -17,14 +18,14 @@ interface PhaseStyle {
 
 const PHASE_STYLES: Record<TimelinePhaseType, PhaseStyle> = {
   shared: {
-    backgroundColor: '#E0F7FA',
-    borderColor: '#00BCD4',
+    backgroundColor: Colors.functional.infoLight,
+    borderColor: Colors.functional.info,
     emoji: '👨‍👩‍👧',
     label: '共用',
   },
   adult: {
-    backgroundColor: '#FFF3E0',
-    borderColor: '#FF9800',
+    backgroundColor: Colors.functional.warningLight,
+    borderColor: Colors.functional.warning,
     emoji: '🍽️',
     label: '大人',
   },
@@ -115,20 +116,12 @@ const styles = StyleSheet.create({
   },
   mainCard: {
     borderWidth: 2,
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    ...Shadows.sm,
   },
   mainCardCurrent: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
+    ...Shadows.md,
   },
   labelRow: {
     flexDirection: 'row',
@@ -142,44 +135,44 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   typeTag: {
-    borderRadius: 6,
-    paddingHorizontal: 8,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing[2],
     paddingVertical: 2,
   },
   typeTagText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+    color: Colors.text.inverse,
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.semibold,
   },
   timerTag: {
-    backgroundColor: '#FF5722',
-    borderRadius: 6,
-    paddingHorizontal: 8,
+    backgroundColor: Colors.functional.warning,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing[2],
     paddingVertical: 2,
   },
   timerTagText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+    color: Colors.text.inverse,
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.semibold,
   },
   actionText: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#212121',
-    marginBottom: 8,
+    fontSize: Typography.fontSize['2xl'],
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.text.primary,
+    marginBottom: Spacing.sm,
     lineHeight: 30,
   },
   noteText: {
-    fontSize: 14,
-    color: '#757575',
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
     fontStyle: 'italic',
-    marginTop: 4,
+    marginTop: Spacing.xs,
     lineHeight: 20,
   },
   toolsText: {
-    fontSize: 13,
-    color: '#9E9E9E',
-    marginTop: 6,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.tertiary,
+    marginTop: Spacing.xs,
     lineHeight: 18,
   },
   parallelContainer: {
@@ -187,27 +180,27 @@ const styles = StyleSheet.create({
     paddingLeft: 16,
   },
   parallelTitle: {
-    fontSize: 12,
-    color: '#757575',
-    fontWeight: '600',
-    marginBottom: 4,
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    fontWeight: Typography.fontWeight.semibold,
+    marginBottom: Spacing.xs,
     letterSpacing: 0.5,
   },
   parallelCard: {
     borderWidth: 1.5,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing.sm,
   },
   parallelEmoji: {
     fontSize: 16,
   },
   parallelActionText: {
-    fontSize: 15,
-    color: '#424242',
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.primary,
     flex: 1,
     lineHeight: 20,
   },

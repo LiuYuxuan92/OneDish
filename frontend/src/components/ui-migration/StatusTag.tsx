@@ -10,14 +10,14 @@ interface StatusTagProps {
 
 const CONFIG: Record<StatusTagType, { emoji: string; label: string; bg: string; text: string }> = {
   'in-plan': { emoji: '🗓️', label: '已加入计划', bg: Colors.secondary[50], text: Colors.secondary[700] },
-  'on-shopping-list': { emoji: '🛒', label: '已进购物清单', bg: '#FFF3E0', text: '#B26A00' },
-  'needs-adaptation': { emoji: '⚠️', label: '需要改造', bg: '#FFF8E1', text: '#C88900' },
-  'previously-rejected': { emoji: '⛔', label: '之前被拒绝', bg: Colors.functional.errorLight, text: '#C62828' },
-  'retry-suggested': { emoji: '🔁', label: '建议再试', bg: '#FFF3E0', text: '#8D5A00' },
+  'on-shopping-list': { emoji: '🛒', label: '已进购物清单', bg: Colors.functional.warningLight, text: Colors.functional.warning },
+  'needs-adaptation': { emoji: '⚠️', label: '需要改造', bg: Colors.functional.warningLight, text: Colors.functional.warning },
+  'previously-rejected': { emoji: '⛔', label: '之前被拒绝', bg: Colors.functional.errorLight, text: Colors.functional.error },
+  'retry-suggested': { emoji: '🔁', label: '建议再试', bg: Colors.functional.warningLight, text: Colors.functional.warning },
   'low-confidence': { emoji: '🕒', label: '数据还不够', bg: Colors.neutral.gray100, text: Colors.text.secondary },
   'pantry-covered': { emoji: '✅', label: '家里食材够用', bg: Colors.secondary[50], text: Colors.secondary[700] },
-  'few-missing': { emoji: '🧺', label: '还差少量食材', bg: '#FFF3E0', text: '#8D5A00' },
-  'updated-by-other': { emoji: '👨‍👩‍👧', label: '家人刚更新', bg: Colors.functional.infoLight, text: '#1565C0' },
+  'few-missing': { emoji: '🧺', label: '还差少量食材', bg: Colors.functional.warningLight, text: Colors.functional.warning },
+  'updated-by-other': { emoji: '👨‍👩‍👧', label: '家人刚更新', bg: Colors.functional.infoLight, text: Colors.functional.info },
 };
 
 export const StatusTag: React.FC<StatusTagProps> = ({ type, detail }) => {
