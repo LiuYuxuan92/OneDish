@@ -4,18 +4,91 @@ const { getBaseURL, getToken, setBaseURL, setToken } = require('../../utils/conf
 const LOCAL_KEY = 'plan_local_items';
 const HISTORY_KEY = 'plan_history';
 
+function getPreferenceSummary() {
+  const config = wx.getStorageSync('user_preferences') || null;
+  if (!config) return '';
+
+  return [
+    config.default_baby_age ? `${config.default_baby_age}个月` : '',
+    config.cooking_time_limit ? `${config.cooking_time_limit}分钟内` : '',
+    config.exclude_ingredients ? `避开 ${config.exclude_ingredients}` : '',
+  ]
+    .filter(Boolean)
+    .slice(0, 3)
+    .join(' · ');
+}
+
+function dedupeItems(items = []) {
+  const seen = new Set();
+
+  return items.filter((item) => {
+    const key = `${item.name || ''}::${item.quantity || item.amount || ''}::${item.unit || ''}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function normalizeImportedItems(items = []) {
+  return dedupeItems(
+    items.map((item) => ({
+      name: item.name || '',
+      quantity: item.quantity || item.amount || '',
+      unit: item.unit || '',
+      checked: Boolean(item.checked),
+      source: 'local',
+    }))
+  ).filter((item) => item.name);
+}
+
+function buildStats(items = []) {
+  const total = items.length;
+  const checked = items.filter((item) => item.checked).length;
+  return {
+    total,
+    checked,
+    unchecked: Math.max(total - checked, 0),
+  };
+}
+
+function formatListDate(value) {
+  if (!value) return '未生成云端清单';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  return `${month}月${day}日`;
+}
+
+function buildLocalShareCode() {
+  return `LOCAL-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+}
+
 Page({
   data: {
+    loading: false,
     baseURL: '',
     token: '',
     items: [],
     history: [],
     newItem: '',
-    activeTab: 'current', // current | history | generate
+    activeTab: 'current',
     showShareModal: false,
     showDebug: false,
     inviteCode: '',
-    // 智能生成相关
+    shareLink: '',
+    activeListId: '',
+    activeListDate: '',
+    listMode: 'local',
+    planPreferenceSummary: '',
+    shoppingSummary: null,
+    stats: {
+      total: 0,
+      checked: 0,
+      unchecked: 0,
+    },
     showGenerateModal: false,
     isSmartMode: false,
     smartPrompt: '',
@@ -23,50 +96,85 @@ Page({
     excludeIngredients: '',
     isGenerating: false,
     generatedMealPlan: null,
-    planPreferenceSummary: '',
-    shoppingSummary: null
+    actionFeedback: null,
+  },
+
+  setActionFeedback(message, tone = 'info') {
+    if (this.feedbackTimer) {
+      clearTimeout(this.feedbackTimer);
+    }
+
+    this.setData({
+      actionFeedback: { message, tone },
+    });
+
+    this.feedbackTimer = setTimeout(() => {
+      this.setData({ actionFeedback: null });
+    }, 3200);
   },
 
   onShow() {
-    // 检查是否有待导入的食材
-    const pending = wx.getStorageSync('pending_import');
-    if (pending && pending.length > 0) {
-      this.importItems(pending);
-      wx.removeStorageSync('pending_import');
-    }
+    this.consumePendingImport();
 
     const token = wx.getStorageSync('token') || getToken();
     const baseURL = wx.getStorageSync('baseURL') || getBaseURL();
-    const preferenceConfig = wx.getStorageSync('user_preferences') || null;
-    const planPreferenceSummary = preferenceConfig
-      ? [
-          preferenceConfig.default_baby_age ? `${preferenceConfig.default_baby_age}个月月龄` : '',
-          preferenceConfig.cooking_time_limit ? `${preferenceConfig.cooking_time_limit}分钟内优先` : '',
-          preferenceConfig.exclude_ingredients ? `避开${preferenceConfig.exclude_ingredients}` : ''
-        ].filter(Boolean).slice(0, 3).join('｜')
-      : '';
-    this.setData({ baseURL, token, planPreferenceSummary });
+
+    this.setData({
+      token,
+      baseURL,
+      planPreferenceSummary: getPreferenceSummary(),
+    });
+
+    this.loadHistory();
     this.loadData();
-    
-    // 加载历史
-    const history = wx.getStorageSync(HISTORY_KEY) || [];
-    this.setData({ history });
+  },
+
+  consumePendingImport() {
+    const pending = wx.getStorageSync('pending_import');
+    if (!Array.isArray(pending) || !pending.length) return;
+
+    this.importItems(pending);
+    wx.removeStorageSync('pending_import');
   },
 
   toggleDebug() {
     this.setData({ showDebug: !this.data.showDebug });
   },
 
+  persistHistory(items) {
+    if (!items.length) return;
+
+    const history = wx.getStorageSync(HISTORY_KEY) || [];
+    history.unshift({
+      date: new Date().toLocaleDateString('zh-CN'),
+      items,
+    });
+
+    wx.setStorageSync(HISTORY_KEY, history.slice(0, 10));
+    this.setData({ history: history.slice(0, 10) });
+  },
+
   importItems(items) {
-    const local = wx.getStorageSync(LOCAL_KEY) || [];
-    const merged = [...items, ...local];
+    const imported = normalizeImportedItems(items);
+    if (!imported.length) return;
+
+    const local = normalizeImportedItems(wx.getStorageSync(LOCAL_KEY) || []);
+    const merged = dedupeItems([...imported, ...local]);
     wx.setStorageSync(LOCAL_KEY, merged);
-    wx.showToast({ title: `已导入${items.length}项`, icon: 'success' });
+    this.setActionFeedback(`已导入 ${imported.length} 项到当前采购清单。`, 'success');
+    wx.showToast({ title: `已导入 ${imported.length} 项`, icon: 'success' });
+  },
+
+  setItemsState(items, extra = {}) {
+    this.setData({
+      items,
+      stats: buildStats(items),
+      ...extra,
+    });
   },
 
   onTabSwitch(e) {
-    const tab = e.currentTarget.dataset.tab;
-    this.setData({ activeTab: tab });
+    this.setData({ activeTab: e.currentTarget.dataset.tab });
   },
 
   onBaseURLInput(e) {
@@ -82,36 +190,66 @@ Page({
   },
 
   saveConfig() {
-    const baseURL = this.data.baseURL.trim();
-    const token = this.data.token.trim();
+    const baseURL = String(this.data.baseURL || '').trim();
+    const token = String(this.data.token || '').trim();
+
     setBaseURL(baseURL);
     setToken(token);
     wx.setStorageSync('baseURL', baseURL);
     wx.setStorageSync('token', token);
-    wx.showToast({ title: '配置已保存', icon: 'success' });
+    wx.showToast({ title: '调试配置已保存', icon: 'success' });
   },
 
-  loadData() {
+  async loadData() {
     const token = this.data.token || wx.getStorageSync('token');
-    if (token) {
-      api.getShoppingLists().then(lists => {
-        const latest = Array.isArray(lists) ? lists[0] : null;
-        const mergedItems = this.extractItemsFromList(latest);
-        this.setData({
-          items: mergedItems,
-          shoppingSummary: latest && latest.inventory_summary ? latest.inventory_summary : null
-        });
-      }).catch(() => {
-        this.loadLocalData();
-      });
+    if (!token) {
+      this.loadLocalData();
       return;
     }
-    this.loadLocalData();
+
+    this.setData({ loading: true });
+
+    try {
+      const lists = await api.getShoppingLists();
+      const serverLists = Array.isArray(lists?.items)
+        ? lists.items
+        : Array.isArray(lists)
+          ? lists
+          : [];
+      const latest = serverLists[0];
+
+      if (!latest) {
+        this.loadLocalData();
+        return;
+      }
+
+      const items = this.extractItemsFromList(latest);
+      this.setItemsState(items, {
+        loading: false,
+        activeListId: latest.id,
+        activeListDate: formatListDate(latest.list_date),
+        listMode: 'server',
+        shoppingSummary: latest.inventory_summary || null,
+      });
+    } catch (err) {
+      console.error('[plan] load server shopping list failed:', err);
+      this.loadLocalData();
+    }
   },
 
   loadLocalData() {
-    const local = wx.getStorageSync(LOCAL_KEY) || [];
-    this.setData({ items: local.map(i => ({ ...i, source: 'LOCAL' })) });
+    const local = normalizeImportedItems(wx.getStorageSync(LOCAL_KEY) || []).map((item) => ({
+      ...item,
+      source: 'local',
+    }));
+
+    this.setItemsState(local, {
+      loading: false,
+      activeListId: '',
+      activeListDate: '',
+      listMode: 'local',
+      shoppingSummary: null,
+    });
   },
 
   loadHistory() {
@@ -121,151 +259,225 @@ Page({
 
   extractItemsFromList(list) {
     if (!list) return [];
+
+    const buckets = list.items_v2 || list.items || {};
+    const areas = ['produce', 'protein', 'staple', 'seasoning', 'snack_dairy', 'household', 'other', 'meat'];
     const results = [];
-    const appendByKey = (obj, key) => {
-      if (!obj || !Array.isArray(obj[key])) return;
-      obj[key].forEach(it => {
-        const name = it?.item_name || it?.name;
-        if (!name) return;
-        results.push({
-          name,
-          checked: !!it?.checked,
-          source: it?.source || 'API',
-          amount: it?.amount || '',
-          sourceMealType: it?.source_meal_type || '',
-        });
-      });
-    };
-    const keys = ['produce', 'protein', 'staple', 'seasoning', 'snack_dairy', 'household', 'other', 'meat'];
-    if (list.items_v2) {
-      keys.forEach((key) => appendByKey(list.items_v2, key));
-    }
-    if (list.items) {
-      keys.forEach((key) => appendByKey(list.items, key));
-    }
-    const deduped = [];
     const seen = new Set();
-    results.forEach((item) => {
-      const dedupeKey = `${item.name}::${item.amount}::${item.source}::${item.sourceMealType}`;
-      if (seen.has(dedupeKey)) return;
-      seen.add(dedupeKey);
-      deduped.push(item);
+
+    areas.forEach((area) => {
+      const items = Array.isArray(buckets[area]) ? buckets[area] : [];
+
+      items.forEach((item) => {
+        const name = item?.item_name || item?.name;
+        if (!name) return;
+
+        const normalized = {
+          name,
+          checked: Boolean(item?.checked || item?.status === 'done'),
+          source: 'server',
+          quantity: item?.amount || '',
+          unit: item?.unit || '',
+          area,
+          ingredientId: item?.ingredient_id || name,
+          sourceMealType: item?.source_meal_type || '',
+        };
+
+        const key = `${normalized.area}::${normalized.name}::${normalized.quantity}::${normalized.unit}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        results.push(normalized);
+      });
     });
-    return deduped;
+
+    return results;
   },
 
-  addItem() {
-    const name = this.data.newItem.trim();
+  async addItem() {
+    const name = String(this.data.newItem || '').trim();
     if (!name) return;
 
-    const local = wx.getStorageSync(LOCAL_KEY) || [];
-    local.unshift({ name, checked: false });
-    wx.setStorageSync(LOCAL_KEY, local);
-    this.setData({ newItem: '' });
-    this.loadData();
-  },
-
-  toggleItem(e) {
-    const index = e.currentTarget.dataset.index;
-    const local = (wx.getStorageSync(LOCAL_KEY) || []).map(i => ({ ...i }));
-    if (local[index]) {
-      local[index].checked = !local[index].checked;
-      wx.setStorageSync(LOCAL_KEY, local);
-      this.loadData();
-    }
-  },
-
-  // For van-checkbox change event
-  onCheckboxChange(e) {
-    const { checked } = e.detail;
-    const index = e.currentTarget.dataset.index;
-    const local = (wx.getStorageSync(LOCAL_KEY) || []).map(i => ({ ...i }));
-    if (local[index]) {
-      local[index].checked = checked;
-      wx.setStorageSync(LOCAL_KEY, local);
-      this.loadData();
-    }
-  },
-
-  deleteItem(e) {
-    const index = e.currentTarget.dataset.index;
-    wx.showModal({
-      title: '确认删除',
-      content: '确定要删除这项吗？',
-      success: (res) => {
-        if (res.confirm) {
-          const local = (wx.getStorageSync(LOCAL_KEY) || []).map(i => ({ ...i }));
-          local.splice(index, 1);
-          wx.setStorageSync(LOCAL_KEY, local);
-          this.loadData();
-        }
+    if (this.data.listMode === 'server' && this.data.activeListId) {
+      try {
+        await api.addShoppingListItem(this.data.activeListId, {
+          item_name: name,
+          amount: '',
+          area: 'other',
+        });
+        this.setData({ newItem: '' });
+        await this.loadData();
+        this.setActionFeedback(`已加入云端清单：${name}`, 'success');
+        wx.showToast({ title: '已加入云端清单', icon: 'success' });
+        return;
+      } catch (err) {
+        console.error('[plan] add server item failed:', err);
+        wx.showToast({ title: '云端添加失败，已切回本地', icon: 'none' });
       }
-    });
-  },
-
-  clearChecked() {
-    const local = (wx.getStorageSync(LOCAL_KEY) || []).filter(i => !i.checked);
-    if (local.length === wx.getStorageSync(LOCAL_KEY).length) {
-      wx.showToast({ title: '没有已勾选项', icon: 'none' });
-      return;
     }
-    
-    // 保存到历史
-    const checked = (wx.getStorageSync(LOCAL_KEY) || []).filter(i => i.checked);
-    const history = wx.getStorageSync(HISTORY_KEY) || [];
-    history.unshift({
-      date: new Date().toLocaleDateString(),
-      items: checked
+
+    const local = normalizeImportedItems(wx.getStorageSync(LOCAL_KEY) || []);
+    local.unshift({
+      name,
+      quantity: '',
+      unit: '',
+      checked: false,
+      source: 'local',
     });
-    wx.setStorageSync(HISTORY_KEY, history.slice(0, 10));
-    
-    wx.setStorageSync(LOCAL_KEY, local);
-    this.loadData();
-    wx.showToast({ title: '已清除已购项', icon: 'success' });
+    wx.setStorageSync(LOCAL_KEY, dedupeItems(local));
+    this.setData({ newItem: '' });
+    this.loadLocalData();
+    this.setActionFeedback(`已加入本地清单：${name}`, 'success');
   },
 
-  onShare() {
-    const token = this.data.token || wx.getStorageSync('token');
-    if (!token) {
-      wx.showModal({
-        title: '提示',
-        content: '请先登录后再分享',
-        confirmText: '去登录',
-        success: (res) => {
-          if (res.confirm) {
-            wx.navigateTo({ url: '/pages/login/login' });
+  async toggleItem(e) {
+    const index = e.currentTarget.dataset.index;
+    const item = this.data.items[index];
+    if (!item) return;
+
+    if (this.data.listMode === 'server' && this.data.activeListId && item.area) {
+      try {
+        await api.updateShoppingListItem(this.data.activeListId, {
+          area: item.area,
+          ingredient_id: item.ingredientId || item.name,
+          checked: !item.checked,
+        });
+        await this.loadData();
+        return;
+      } catch (err) {
+        console.error('[plan] toggle server item failed:', err);
+        wx.showToast({ title: '勾选失败，请稍后重试', icon: 'none' });
+        return;
+      }
+    }
+
+    const local = normalizeImportedItems(wx.getStorageSync(LOCAL_KEY) || []);
+    if (!local[index]) return;
+    local[index].checked = !local[index].checked;
+    wx.setStorageSync(LOCAL_KEY, local);
+    this.loadLocalData();
+  },
+
+  async deleteItem(e) {
+    const index = e.currentTarget.dataset.index;
+    const item = this.data.items[index];
+    if (!item) return;
+
+    wx.showModal({
+      title: '删除项目',
+      content: `确定从清单中移除「${item.name}」吗？`,
+      success: async (res) => {
+        if (!res.confirm) return;
+
+        if (this.data.listMode === 'server' && this.data.activeListId && item.area) {
+          try {
+            await api.removeShoppingListItem(this.data.activeListId, {
+              area: item.area,
+              item_name: item.name,
+            });
+            await this.loadData();
+            return;
+          } catch (err) {
+            console.error('[plan] remove server item failed:', err);
+            wx.showToast({ title: '删除失败，请稍后重试', icon: 'none' });
+            return;
           }
         }
-      });
+
+        const local = normalizeImportedItems(wx.getStorageSync(LOCAL_KEY) || []);
+        local.splice(index, 1);
+        wx.setStorageSync(LOCAL_KEY, local);
+        this.loadLocalData();
+      },
+    });
+  },
+
+  async clearChecked() {
+    const checkedItems = this.data.items.filter((item) => item.checked);
+    if (!checkedItems.length) {
+      wx.showToast({ title: '当前没有已完成项', icon: 'none' });
       return;
     }
-    
-    const code = 'OD' + Math.random().toString(36).substring(2, 8).toUpperCase();
-    this.setData({ showShareModal: true, inviteCode: code });
+
+    this.persistHistory(checkedItems);
+
+    if (this.data.listMode === 'server' && this.data.activeListId) {
+      try {
+        await Promise.all(
+          checkedItems.map((item) =>
+            api.removeShoppingListItem(this.data.activeListId, {
+              area: item.area,
+              item_name: item.name,
+            })
+          )
+        );
+
+        await this.loadData();
+        this.setActionFeedback(`已清理 ${checkedItems.length} 项已购内容，并归档到历史记录。`, 'success');
+        wx.showToast({ title: '已清理已购项目', icon: 'success' });
+        return;
+      } catch (err) {
+        console.error('[plan] clear checked server items failed:', err);
+        wx.showToast({ title: '清理失败，请稍后重试', icon: 'none' });
+        return;
+      }
+    }
+
+    const local = normalizeImportedItems(wx.getStorageSync(LOCAL_KEY) || []).filter((item) => !item.checked);
+    wx.setStorageSync(LOCAL_KEY, local);
+    this.loadLocalData();
+    this.setActionFeedback(`已清理 ${checkedItems.length} 项已购内容，并归档到历史记录。`, 'success');
+    wx.showToast({ title: '已清理已购项目', icon: 'success' });
+  },
+
+  async onShare() {
+    if (this.data.listMode === 'server' && this.data.activeListId) {
+      try {
+        const share = await api.createShoppingListShareLink(this.data.activeListId);
+        this.setData({
+          showShareModal: true,
+          inviteCode: share?.invite_code || '',
+          shareLink: share?.share_link || '',
+        });
+        return;
+      } catch (err) {
+        console.error('[plan] create share link failed:', err);
+      }
+    }
+
+    this.setData({
+      showShareModal: true,
+      inviteCode: buildLocalShareCode(),
+      shareLink: '',
+    });
   },
 
   closeShareModal() {
-    this.setData({ showShareModal: false });
+    this.setData({
+      showShareModal: false,
+      inviteCode: '',
+      shareLink: '',
+    });
   },
 
   copyInviteCode() {
-    if (this.data.invoteCode) {
-      wx.setClipboardData({
-        data: this.data.inviteCode,
-        success: () => {
-          wx.showToast({ title: '已复制', icon: 'success' });
-        }
-      });
-    }
+    const text = this.data.shareLink || this.data.inviteCode;
+    if (!text) return;
+
+    wx.setClipboardData({
+      data: text,
+      success: () => {
+        this.setActionFeedback('邀请码已复制，可直接发给家人一起查看当前清单。', 'success');
+        wx.showToast({ title: '已复制', icon: 'success' });
+      },
+    });
   },
 
   onShareAppMessage() {
-    const { items } = this.data;
-    const unchecked = items.filter(i => !i.checked).map(i => i.name);
+    const { stats } = this.data;
     return {
-      title: `简家厨购物清单（${unchecked.length}项）`,
+      title: `简家厨采购清单（待买 ${stats.unchecked} 项）`,
       path: '/pages/plan/plan',
-      query: 'fromShare=1'
+      query: 'fromShare=1',
     };
   },
 
@@ -275,23 +487,22 @@ Page({
 
   onShareTimeline() {
     return {
-      title: '简家厨购物清单 - 一键分享'
+      title: '简家厨采购清单',
     };
   },
 
-  // ========== 智能周计划生成 ==========
   openGenerateModal() {
     this.setData({ showGenerateModal: true });
   },
 
   closeGenerateModal() {
-    this.setData({ 
+    this.setData({
       showGenerateModal: false,
       isSmartMode: false,
       smartPrompt: '',
       babyAge: null,
       excludeIngredients: '',
-      generatedMealPlan: null
+      generatedMealPlan: null,
     });
   },
 
@@ -308,15 +519,18 @@ Page({
   },
 
   onBabyAgeSelect(e) {
-    const age = e.currentTarget.dataset.age;
-    this.setData({ babyAge: age });
+    const rawAge = e.currentTarget.dataset.age;
+    const babyAge = rawAge === '' || rawAge === undefined || rawAge === null
+      ? null
+      : Number(rawAge);
+    this.setData({ babyAge });
   },
 
   async generateMealPlan() {
     const { isSmartMode, smartPrompt, babyAge, excludeIngredients } = this.data;
-    
-    if (isSmartMode && !smartPrompt.trim()) {
-      wx.showToast({ title: '请输入您的需求', icon: 'none' });
+
+    if (isSmartMode && !String(smartPrompt || '').trim()) {
+      wx.showToast({ title: '请输入想要的周计划描述', icon: 'none' });
       return;
     }
 
@@ -324,49 +538,60 @@ Page({
 
     try {
       let prompt = smartPrompt;
-      
-      // 标准模式：构建提示词
+
       if (!isSmartMode) {
         const parts = [];
-        if (babyAge) parts.push(`宝宝${babyAge}月龄`);
-        if (excludeIngredients) parts.push(`排除: ${excludeIngredients}`);
-        prompt = parts.length > 0 ? parts.join('，') + '的一周辅食计划' : '一周辅食计划';
+        if (babyAge) parts.push(`宝宝 ${babyAge} 个月`);
+        if (excludeIngredients) parts.push(`排除 ${excludeIngredients}`);
+        prompt = parts.length ? `${parts.join('，')} 的一周辅食计划` : '一周辅食计划';
       }
 
       const result = await api.generateMealPlanFromPrompt(prompt);
-      
-      this.setData({ 
+      this.setData({
         generatedMealPlan: result,
-        isGenerating: false 
+        isGenerating: false,
       });
 
-      wx.showToast({ title: '生成成功', icon: 'success' });
-      
-      // 将生成的食材添加到清单
-      if (result && result.ingredients) {
-        const items = result.ingredients.map(name => ({
-          name,
-          checked: false
-        }));
-        this.importItems(items);
+      wx.showToast({ title: '周计划已生成', icon: 'success' });
+
+      const importedCount = Array.isArray(result?.ingredients) ? result.ingredients.length : 0;
+
+      if (importedCount) {
+        this.importItems(
+          result.ingredients.map((item) => ({
+            name: item,
+            checked: false,
+          }))
+        );
+        this.loadLocalData();
+        this.setActionFeedback(`周计划已生成，并已追加 ${importedCount} 项食材到当前采购清单。`, 'success');
+        return;
       }
-      
+
+      this.setActionFeedback('周计划已生成，可直接点“查看概览”确认本周安排。', 'success');
     } catch (err) {
       console.error('[plan] generate meal plan failed:', err);
       this.setData({ isGenerating: false });
-      wx.showToast({ title: err.message || '生成失败', icon: 'none' });
+      wx.showToast({ title: err.message || '生成失败，请稍后重试', icon: 'none' });
     }
   },
 
   viewGeneratedPlan() {
-    const { generatedMealPlan } = this.data;
-    if (!generatedMealPlan) return;
-    
-    // TODO: 跳转到周计划详情页
+    const plan = this.data.generatedMealPlan;
+    if (!plan) return;
+
+    const title = plan.title || '周计划';
+    const description = [
+      plan.summary || '',
+      Array.isArray(plan.ingredients) && plan.ingredients.length ? `涉及食材：${plan.ingredients.slice(0, 10).join('、')}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+
     wx.showModal({
-      title: generatedMealPlan.title || '周计划',
-      content: JSON.stringify(generatedMealPlan, null, 2),
-      showCancel: false
+      title,
+      content: description || '周计划已生成，可继续完善需求后再次生成。',
+      showCancel: false,
     });
-  }
+  },
 });

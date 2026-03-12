@@ -4,8 +4,11 @@ import { logger } from '../utils/logger';
 import { createError } from '../middleware/errorHandler';
 import { ErrorCodes } from '../config/error-codes';
 import { idempotencyService } from '../services/idempotency.service';
+import { optionalAuth } from '../middleware/auth';
 
 const router = Router();
+
+router.use(optionalAuth);
 
 router.post('/resolve', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

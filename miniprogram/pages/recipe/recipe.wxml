@@ -1,19 +1,16 @@
 <view class="container">
-  <!-- 网络状态提示 -->
   <view class="offline-tip" wx:if="{{isOffline}}">
-    <text>网络不可用，显示缓存数据</text>
+    <text>网络不可用，正在显示缓存数据</text>
   </view>
 
-  <!-- 骨架屏 -->
   <skeleton type="list" wx:if="{{loading}}" />
 
-  <!-- 菜谱列表 -->
   <view class="recipe-list" wx:if="{{!loading}}">
     <block wx:for="{{recipes}}" wx:key="id">
       <view class="recipe-card" bindtap="selectRecipe" data-id="{{item.id}}">
-        <image 
-          class="recipe-cover" 
-          src="{{item.cover_url || ''}}" 
+        <image
+          class="recipe-cover"
+          src="{{item.cover_url || ''}}"
           mode="aspectFill"
           bindload="onImageLoad"
         />
@@ -21,7 +18,7 @@
           <view class="recipe-title">{{item.title || item.name}}</view>
           <view class="recipe-meta">
             <text wx:if="{{item.difficulty}}">{{item.difficulty}}</text>
-            <text wx:if="{{item.cook_time}}">{{item.cook_time}}分钟</text>
+            <text wx:if="{{item.cook_time}}">{{item.cook_time}} 分钟</text>
           </view>
           <view class="recipe-desc" wx:if="{{item.description}}">
             {{item.description}}
@@ -30,186 +27,299 @@
       </view>
     </block>
 
-    <!-- 加载更多 -->
     <view class="loading-more" wx:if="{{loadingMore}}">
       <view class="spinner"></view>
       <text>加载中...</text>
     </view>
 
-    <!-- 没有更多 -->
     <view class="no-more" wx:if="{{!hasMore && recipes.length}}">
       <text>没有更多了</text>
     </view>
   </view>
 
-  <!-- 空状态 -->
   <view class="empty" wx:if="{{!loading && !recipes.length && !detail}}">
-    <text class="empty-icon">📭</text>
     <text class="empty-text">暂无菜谱</text>
   </view>
 
-  <!-- 详情弹窗 -->
   <view class="detail-modal" wx:if="{{detail}}" bindtap="closeDetail">
-    <view class="detail-content" catchtap="preventClose">
-      <view class="detail-header">
-        <text class="detail-title">{{detail.title || detail.name}}</text>
-        <text class="close-btn" bindtap="closeDetail">×</text>
-      </view>
-      <scroll-view class="detail-body" scroll-y>
-        <image 
-          class="detail-cover" 
-          src="{{detail.cover_url || ''}}" 
-          mode="aspectFill"
-        />
-        <view class="detail-meta">
-          <text wx:if="{{detail.difficulty}}">{{detail.difficulty}}</text>
-          <text wx:if="{{detail.cook_time}}">{{detail.cook_time}}分钟</text>
-          <text wx:if="{{detail.calories}}">{{detail.calories}}千卡</text>
-        </view>
-        <view class="detail-desc" wx:if="{{detail.description}}">
-          {{detail.description}}
-        </view>
-        
-        <!-- 宝宝版 -->
-        <view class="baby-section" wx:if="{{detail.baby_version}}">
-          <view class="baby-title">宝宝版</view>
-          <view class="baby-desc">{{detail.baby_version.description}}</view>
-        </view>
-
-
-        <view class="baby-section">
-          <view class="baby-title">用餐反馈</view>
-          <view class="baby-desc">先做一个最小记录：喜欢 / 一般 / 拒绝，可顺手标记是否过敏。</view>
-          <view class="ai-age-selector">
-            <view class="ai-age-option {{feedingAcceptedLevel === 'like' ? 'active' : ''}}" bindtap="onFeedingAcceptedLevelSelect" data-level="like">喜欢</view>
-            <view class="ai-age-option {{feedingAcceptedLevel === 'ok' ? 'active' : ''}}" bindtap="onFeedingAcceptedLevelSelect" data-level="ok">一般</view>
-            <view class="ai-age-option {{feedingAcceptedLevel === 'reject' ? 'active' : ''}}" bindtap="onFeedingAcceptedLevelSelect" data-level="reject">拒绝</view>
+    <view class="detail-content detail-sheet" catchtap="preventClose">
+      <scroll-view class="detail-body detail-scroll" scroll-y scroll-with-animation scroll-into-view="{{detailScrollTarget}}">
+        <view class="detail-top-stack">
+          <view class="detail-header-card">
+            <view class="detail-header-main">
+              <text class="detail-kicker">FAMILY RECIPE</text>
+              <text class="detail-page-title">{{detail.title || detail.name}}</text>
+              <text class="detail-page-subtitle" wx:if="{{detail.description}}">
+                {{detail.description}}
+              </text>
+            </view>
+            <view class="close-btn close-btn-soft" bindtap="closeDetail">×</view>
           </view>
-          <checkbox-group bindchange="onFeedingAllergyChange">
-            <label style="display:flex;align-items:center;margin:12rpx 0;">
-              <checkbox value="1" checked="{{feedingAllergyFlag}}" />
-              <text style="margin-left:12rpx;font-size:26rpx;color:#666;">这次有过敏反应</text>
-            </label>
-          </checkbox-group>
-          <textarea placeholder="备注（可选）" value="{{feedingNote}}" bindinput="onFeedingNoteInput" style="width:100%;min-height:120rpx;background:#F7F8FA;border-radius:16rpx;padding:20rpx;box-sizing:border-box;font-size:26rpx;" />
-          <button class="ai-generate-btn" bindtap="submitFeedingFeedback" style="margin-top:20rpx;">提交用餐反馈</button>
-          <view wx:if="{{recentFeedingFeedbacks.length}}" style="margin-top:20rpx;">
-            <view class="baby-title" style="font-size:28rpx;">最近反馈</view>
-            <block wx:for="{{recentFeedingFeedbacks}}" wx:key="id">
-              <view style="padding:12rpx 0;border-bottom:1rpx solid #F0F0F0;">
-                <text style="font-size:24rpx;color:#333;">{{item.accepted_level === 'like' ? '喜欢' : item.accepted_level === 'ok' ? '一般' : '拒绝'}}{{item.allergy_flag ? ' · 过敏' : ''}}</text>
-                <text wx:if="{{item.note}}" style="display:block;font-size:22rpx;color:#999;margin-top:6rpx;">{{item.note}}</text>
+
+          <view class="detail-cover-card" wx:if="{{detail.cover_url}}">
+            <image
+              class="detail-inline-cover"
+              src="{{detail.cover_url}}"
+              mode="aspectFill"
+            />
+          </view>
+        </view>
+
+        <view class="detail-feedback detail-feedback-{{actionFeedback.tone}}" wx:if="{{actionFeedback}}">
+          <text class="detail-feedback-text">{{actionFeedback.message}}</text>
+        </view>
+
+        <view class="detail-overview-panel compact">
+          <view class="overview-stat">
+            <text class="overview-value">{{detail.ingredients ? detail.ingredients.length : 0}}</text>
+            <text class="overview-label">食材项</text>
+          </view>
+          <view class="overview-stat">
+            <text class="overview-value">{{detail.adult_version && detail.adult_version.steps ? detail.adult_version.steps.length : 0}}</text>
+            <text class="overview-label">成人步骤</text>
+          </view>
+          <view class="overview-stat">
+            <text class="overview-value">{{detail.baby_version ? (detail.baby_version.age_range || '可生成') : '待生成'}}</text>
+            <text class="overview-label">宝宝版本</text>
+          </view>
+        </view>
+
+        <view class="detail-card intro-card" wx:if="{{detail.description || (detail.baby_version && detail.baby_version.tips)}}">
+          <view class="section-title-row">
+            <text class="detail-section-title">这道菜怎么做更顺手</text>
+            <text class="section-badge subtle">今日建议</text>
+          </view>
+          <text class="detail-card-copy" wx:if="{{detail.description}}">{{detail.description}}</text>
+
+          <view class="intro-note" wx:if="{{detail.baby_version && detail.baby_version.tips}}">
+            <text class="intro-note-label">喂养提示</text>
+            <text class="intro-note-copy">{{detail.baby_version.tips}}</text>
+          </view>
+        </view>
+
+        <view class="detail-card" wx:if="{{detail.ingredients && detail.ingredients.length}}">
+          <view class="section-title-row">
+            <text class="detail-section-title">食材清单</text>
+            <text class="section-badge">{{detail.ingredients.length}} 项</text>
+          </view>
+          <view class="ingredients-list ingredient-grid">
+            <block wx:for="{{detail.ingredients}}" wx:key="index">
+              <view class="ingredient-item ingredient-pill">
+                <text class="ingredient-name">{{item.name || item}}</text>
+                <text class="quantity" wx:if="{{item.amount || item.quantity}}">
+                  {{item.amount || item.quantity}}{{item.unit || ''}}
+                </text>
               </view>
             </block>
           </view>
         </view>
 
-        <!-- AI 生成宝宝版本按钮 -->
-        <view class="ai-generate-section">
-          <button class="ai-generate-btn" bindtap="openAIGenerateModal">
-            ✨ AI 生成宝宝版本
-          </button>
+        <view class="detail-card" wx:if="{{detail.adult_version && detail.adult_version.steps && detail.adult_version.steps.length}}">
+          <view class="section-title-row">
+            <text class="detail-section-title">做菜步骤</text>
+            <text class="section-badge">{{detail.adult_version.steps.length}} 步</text>
+          </view>
+          <view class="steps-list steps-timeline">
+            <block wx:for="{{detail.adult_version.steps}}" wx:key="index">
+              <view class="step-item step-card">
+                <view class="step-line"></view>
+                <view class="step-num">{{item.step || index + 1}}</view>
+                <view class="step-main">
+                  <text class="step-content">{{item.action || item.content || item}}</text>
+                  <text class="step-meta" wx:if="{{item.time || (item.tools && item.tools.length)}}">
+                    {{item.time ? (item.time + ' 分钟') : ''}}{{item.time && item.tools && item.tools.length ? ' · ' : ''}}{{item.tools && item.tools.length ? item.tools.join('、') : ''}}
+                  </text>
+                </view>
+              </view>
+            </block>
+          </view>
+        </view>
+
+        <view id="baby-version-card" class="detail-card detail-card-warm {{babyVersionFlash ? 'detail-card-focus' : ''}}">
+          <view class="section-title-row">
+            <text class="detail-section-title">宝宝版处理</text>
+            <text class="section-badge warm" wx:if="{{detail.baby_version && detail.baby_version.age_range}}">
+              {{detail.baby_version.age_range}}
+            </text>
+            <text class="section-badge warm" wx:else>可按月龄生成</text>
+          </view>
+
+          <block wx:if="{{detail.baby_version}}">
+            <text class="detail-card-copy" wx:if="{{detail.baby_version.description}}">
+              {{detail.baby_version.description}}
+            </text>
+            <text class="detail-card-tip" wx:if="{{detail.baby_version.tips}}">
+              喂养提示：{{detail.baby_version.tips}}
+            </text>
+
+            <view class="detail-subcard" wx:if="{{detail.baby_version.ingredients && detail.baby_version.ingredients.length}}">
+              <text class="detail-subtitle-label">宝宝版食材</text>
+              <view class="ingredients-list ingredient-grid">
+                <block wx:for="{{detail.baby_version.ingredients}}" wx:key="index">
+                  <view class="ingredient-item ingredient-pill baby">
+                    <text class="ingredient-name">{{item.name || item}}</text>
+                    <text class="quantity" wx:if="{{item.amount || item.quantity}}">
+                      {{item.amount || item.quantity}}{{item.unit || ''}}
+                    </text>
+                  </view>
+                </block>
+              </view>
+            </view>
+
+            <view class="detail-subcard" wx:if="{{detail.baby_version.steps && detail.baby_version.steps.length}}">
+              <text class="detail-subtitle-label">宝宝版步骤</text>
+              <view class="steps-list steps-timeline">
+                <block wx:for="{{detail.baby_version.steps}}" wx:key="index">
+                  <view class="step-item step-card baby">
+                    <view class="step-line baby"></view>
+                    <view class="step-num baby">{{item.step || index + 1}}</view>
+                    <view class="step-main">
+                      <text class="step-content">{{item.action || item.content || item}}</text>
+                      <text class="step-meta" wx:if="{{item.time || (item.tools && item.tools.length)}}">
+                        {{item.time ? (item.time + ' 分钟') : ''}}{{item.time && item.tools && item.tools.length ? ' · ' : ''}}{{item.tools && item.tools.length ? item.tools.join('、') : ''}}
+                      </text>
+                    </view>
+                  </view>
+                </block>
+              </view>
+            </view>
+          </block>
+
+          <view wx:else class="baby-empty">
+            <text class="baby-empty-title">还没有现成宝宝版</text>
+            <text class="baby-empty-copy">
+              可以基于当前菜谱，一键生成更适合宝宝月龄的做法与处理方式。
+            </text>
+            <button class="baby-empty-btn" bindtap="openAIGenerateModal">立即生成宝宝版</button>
+          </view>
+        </view>
+
+        <view class="detail-card feedback-card">
+          <view class="section-title-row">
+            <text class="detail-section-title">用餐反馈</text>
+            <text class="section-badge subtle">帮助后续推荐更准</text>
+          </view>
+          <text class="detail-card-copy">
+            先记录最小反馈：喜欢、一般、拒绝，也可以补充过敏和备注。
+          </text>
+
+          <view class="feedback-options">
+            <view class="feedback-chip {{feedingAcceptedLevel === 'like' ? 'active like' : ''}}" bindtap="onFeedingAcceptedLevelSelect" data-level="like">喜欢</view>
+            <view class="feedback-chip {{feedingAcceptedLevel === 'ok' ? 'active ok' : ''}}" bindtap="onFeedingAcceptedLevelSelect" data-level="ok">一般</view>
+            <view class="feedback-chip {{feedingAcceptedLevel === 'reject' ? 'active reject' : ''}}" bindtap="onFeedingAcceptedLevelSelect" data-level="reject">拒绝</view>
+          </view>
+
+          <checkbox-group bindchange="onFeedingAllergyChange">
+            <label class="feedback-checkbox-row">
+              <checkbox value="1" checked="{{feedingAllergyFlag}}" />
+              <text class="feedback-checkbox-label">这次出现过敏反应</text>
+            </label>
+          </checkbox-group>
+
+          <textarea
+            class="feedback-textarea"
+            placeholder="备注（可选）"
+            value="{{feedingNote}}"
+            bindinput="onFeedingNoteInput"
+          ></textarea>
+          <button class="feedback-submit-btn" bindtap="submitFeedingFeedback">提交用餐反馈</button>
+
+          <view wx:if="{{recentFeedingFeedbacks.length}}" class="feedback-history">
+            <text class="detail-subtitle-label feedback-history-title">最近反馈</text>
+            <block wx:for="{{recentFeedingFeedbacks}}" wx:key="id">
+              <view class="feedback-history-item">
+                <text class="feedback-history-main">
+                  {{item.accepted_level === 'like' ? '喜欢' : item.accepted_level === 'ok' ? '一般' : '拒绝'}}{{item.allergy_flag ? ' · 过敏' : ''}}
+                </text>
+                <text wx:if="{{item.note}}" class="feedback-history-note">{{item.note}}</text>
+              </view>
+            </block>
+          </view>
+        </view>
+
+        <view class="detail-card ai-card">
+          <view class="section-title-row">
+            <text class="detail-section-title">宝宝版生成</text>
+            <text class="section-badge subtle">AI / 规则引擎</text>
+          </view>
+          <text class="detail-card-copy">
+            如果这道菜还不够贴合当前月龄，可以直接生成一版更适合宝宝的处理方式。
+          </text>
+          <button class="ai-entry-btn" bindtap="openAIGenerateModal">生成宝宝版方案</button>
         </view>
       </scroll-view>
-      <view class="detail-actions">
-        <button class="btn-add" bindtap="addToListFromDetail">加入购物清单</button>
+
+      <view class="detail-actions detail-actions-bar">
+        <view class="detail-action-copy">
+          <text class="detail-action-title">把食材直接加入清单</text>
+          <text class="detail-action-subtitle">做饭前一次性备齐，去采购页继续处理</text>
+        </view>
+        <button class="btn-add detail-primary-btn" bindtap="addToListFromDetail">加入购物清单</button>
       </view>
     </view>
   </view>
 
-  <!-- AI 生成宝宝版本弹窗 -->
   <view class="modal-mask" wx:if="{{showAIGenerateModal}}" bindtap="closeAIGenerateModal"></view>
   <view class="ai-modal" wx:if="{{showAIGenerateModal}}">
     <view class="ai-modal-header">
-      <text class="ai-modal-title">生成宝宝版本</text>
+      <text class="ai-modal-title">生成宝宝版</text>
       <text class="ai-modal-close" bindtap="closeAIGenerateModal">×</text>
     </view>
     <view class="ai-modal-body">
-      <!-- 宝宝月龄选择 -->
       <view class="ai-option-group">
-        <text class="ai-option-label">宝宝月龄:</text>
+        <text class="ai-option-label">宝宝月龄</text>
         <view class="ai-age-selector">
-          <view 
-            class="ai-age-option {{selectedBabyAge === 6 ? 'active' : ''}}" 
-            bindtap="onBabyAgeSelect" 
-            data-age="6">
-            6月
-          </view>
-          <view 
-            class="ai-age-option {{selectedBabyAge === 8 ? 'active' : ''}}" 
-            bindtap="onBabyAgeSelect" 
-            data-age="8">
-            8月
-          </view>
-          <view 
-            class="ai-age-option {{selectedBabyAge === 10 ? 'active' : ''}}" 
-            bindtap="onBabyAgeSelect" 
-            data-age="10">
-            10月
-          </view>
-          <view 
-            class="ai-age-option {{selectedBabyAge === 12 ? 'active' : ''}}" 
-            bindtap="onBabyAgeSelect" 
-            data-age="12">
-            12月
-          </view>
-          <view 
-            class="ai-age-option {{selectedBabyAge === 18 ? 'active' : ''}}" 
-            bindtap="onBabyAgeSelect" 
-            data-age="18">
-            18月
-          </view>
-          <view 
-            class="ai-age-option {{selectedBabyAge === 24 ? 'active' : ''}}" 
-            bindtap="onBabyAgeSelect" 
-            data-age="24">
-            24月
-          </view>
+          <view class="ai-age-option {{selectedBabyAge === 6 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="6">6月+</view>
+          <view class="ai-age-option {{selectedBabyAge === 8 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="8">8月+</view>
+          <view class="ai-age-option {{selectedBabyAge === 10 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="10">10月+</view>
+          <view class="ai-age-option {{selectedBabyAge === 12 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="12">12月+</view>
+          <view class="ai-age-option {{selectedBabyAge === 18 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="18">18月+</view>
+          <view class="ai-age-option {{selectedBabyAge === 24 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="24">24月+</view>
         </view>
       </view>
 
-      <!-- 生成方式选择 -->
       <view class="ai-option-group">
-        <text class="ai-option-label">生成方式:</text>
+        <text class="ai-option-label">生成方式</text>
+        <text class="ai-option-help">规则版更快更稳，AI 版会先智能细化，失败时自动回退规则版。</text>
         <view class="ai-mode-options">
-          <view 
-            class="ai-mode-option {{generateUseAI ? 'active' : ''}}" 
-            bindtap="toggleGenerateMode">
+          <view class="ai-mode-option {{generateUseAI ? 'active' : ''}}" bindtap="toggleGenerateMode">
             <view class="ai-radio {{generateUseAI ? 'checked' : ''}}"></view>
-            <text>✨ AI 智能生成</text>
+            <view class="ai-mode-copy">
+              <text class="ai-mode-title">智能细化</text>
+              <text class="ai-mode-desc">先尝试 AI 细化做法，适合想看更灵活处理建议时使用</text>
+            </view>
           </view>
-          <view 
-            class="ai-mode-option {{!generateUseAI ? 'active' : ''}}" 
-            bindtap="toggleGenerateMode">
+          <view class="ai-mode-option {{!generateUseAI ? 'active' : ''}}" bindtap="toggleGenerateMode">
             <view class="ai-radio {{!generateUseAI ? 'checked' : ''}}"></view>
-            <text>📋 规则引擎</text>
+            <view class="ai-mode-copy">
+              <view class="ai-mode-title-row">
+                <text class="ai-mode-title">稳妥快速</text>
+                <text class="ai-mode-badge">推荐</text>
+              </view>
+              <text class="ai-mode-desc">直接按月龄规则生成，结果稳定、速度更快、最适合日常使用</text>
+            </view>
           </view>
         </view>
       </view>
     </view>
     <view class="ai-modal-footer">
       <button class="ai-modal-cancel" bindtap="closeAIGenerateModal">取消</button>
-      <button 
-        class="ai-modal-confirm" 
-        bindtap="generateAIBabyVersion"
-        loading="{{isGenerating}}">
+      <button class="ai-modal-confirm" bindtap="generateAIBabyVersion" loading="{{isGenerating}}">
         {{isGenerating ? '生成中...' : '开始生成'}}
       </button>
     </view>
   </view>
 
-  <!-- AI 生成结果弹窗 -->
   <view class="modal-mask" wx:if="{{showAIResultModal}}" bindtap="closeAIResultModal"></view>
   <view class="ai-modal ai-result-modal" wx:if="{{showAIResultModal}}">
     <view class="ai-modal-header">
-      <text class="ai-modal-title">✅ AI 宝宝版本已生成</text>
+      <text class="ai-modal-title">AI 宝宝版已生成</text>
       <text class="ai-modal-close" bindtap="closeAIResultModal">×</text>
     </view>
     <scroll-view class="ai-result-body" scroll-y>
       <view wx:if="{{aiResult}}" class="ai-result-content">
-        <!-- 配料替换 -->
         <view class="ai-result-section" wx:if="{{aiResult.ingredient_replacements && aiResult.ingredient_replacements.length}}">
-          <text class="ai-result-section-title">🍚 配料替换</text>
+          <text class="ai-result-section-title">配料替换</text>
           <block wx:for="{{aiResult.ingredient_replacements}}" wx:key="index">
             <view class="ai-result-item">
               <text class="ai-result-item-text">{{item.original}} → {{item.replacement}}</text>
@@ -218,9 +328,8 @@
           </block>
         </view>
 
-        <!-- 质地调整 -->
         <view class="ai-result-section" wx:if="{{aiResult.texture_adjustments && aiResult.texture_adjustments.length}}">
-          <text class="ai-result-section-title">👶 质地调整</text>
+          <text class="ai-result-section-title">质地调整</text>
           <block wx:for="{{aiResult.texture_adjustments}}" wx:key="index">
             <view class="ai-result-item">
               <text class="ai-result-item-text">{{item.adjustment}}</text>
@@ -229,9 +338,8 @@
           </block>
         </view>
 
-        <!-- 过敏提醒 -->
         <view class="ai-result-section" wx:if="{{aiResult.allergy_alerts && aiResult.allergy_alerts.length}}">
-          <text class="ai-result-section-title">⚠️ 过敏提醒</text>
+          <text class="ai-result-section-title">过敏提醒</text>
           <block wx:for="{{aiResult.allergy_alerts}}" wx:key="index">
             <view class="ai-result-alert">
               <text>{{item}}</text>
@@ -239,9 +347,8 @@
           </block>
         </view>
 
-        <!-- 营养提示 -->
         <view class="ai-result-section" wx:if="{{aiResult.nutrition_tips}}">
-          <text class="ai-result-section-title">💡 营养提示</text>
+          <text class="ai-result-section-title">营养提示</text>
           <text class="ai-result-nutrition">{{aiResult.nutrition_tips}}</text>
         </view>
       </view>

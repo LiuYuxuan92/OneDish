@@ -14,10 +14,10 @@ router.post('/swap', optionalAuth, swapController.swapRecipe);
 router.get('/suggest-by-inventory', authenticate, recipeController.suggestByInventory);
 
 // 获取今日推荐（无需认证）
-router.get('/daily', recipeController.getDailyRecommendation);
+router.get('/daily', optionalAuth, recipeController.getDailyRecommendation);
 
 // 搜索菜谱（无需认证）
-router.get('/', recipeController.searchRecipes);
+router.get('/', optionalAuth, recipeController.searchRecipes);
 
 // 获取分类
 router.get('/categories', recipeController.getCategories);
@@ -35,6 +35,6 @@ router.post('/:id/timeline', recipeController.getTimeline);
 router.post('/:id/transform', recipeController.transformRecipe);
 
 // 获取详情（无需认证）
-router.get('/:id', recipeController.getRecipeDetail);
+router.get('/:id', optionalAuth, recipeController.getRecipeDetail);
 
 export default router;

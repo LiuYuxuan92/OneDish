@@ -1,39 +1,62 @@
 const api = require('../../utils/api');
+const request = require('../../utils/request');
+const { openRecipeDetail } = require('../../utils/navigation');
 
-function buildPreferenceHint(item, preferenceSummary) {
-  const reasons = Array.isArray(item?.ranking_reasons) ? item.ranking_reasons : [];
-  const explain = Array.isArray(item?.recommendation_explain) ? item.recommendation_explain.filter(Boolean) : [];
+const SCENARIOS = [
+  { key: 'quick', label: '赶时间', query: '快手 简单 少步骤' },
+  { key: 'light', label: '清淡点', query: '清淡 少油 好消化' },
+  { key: 'appetite', label: '宝宝胃口一般', query: '宝宝 没胃口 开胃' },
+  { key: 'fish', label: '想吃鱼但别太复杂', query: '鱼 家常 不复杂' },
+];
 
-  const firstReason = reasons.find((reason) => ['time', 'baby', 'preference', 'difficulty'].includes(String(reason?.code || '')));
-  if (firstReason?.detail) return `按你的偏好优先：${firstReason.detail}`;
-  if (firstReason?.label) return `按你的偏好优先：${firstReason.label}`;
-  if (explain[0]) return `按你的偏好优先：${explain[0]}`;
-  if (preferenceSummary) return `排序时参考了你的设置：${preferenceSummary}`;
-  return '结果已综合口味、做饭时长和月龄需求排序';
+function buildPreferenceSummary(config) {
+  if (!config) return '';
+
+  return [
+    config.default_baby_age ? `${config.default_baby_age}个月` : '',
+    config.cooking_time_limit ? `${config.cooking_time_limit}分钟内` : '',
+    config.prefer_ingredients ? `偏好 ${config.prefer_ingredients}` : '',
+  ]
+    .filter(Boolean)
+    .slice(0, 3)
+    .join(' · ');
 }
 
-// 后端数据适配器
+function pickImage(value) {
+  if (Array.isArray(value)) return value.find(Boolean) || '';
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function buildPreferenceHint(item, preferenceSummaryText) {
+  const reasons = Array.isArray(item?.ranking_reasons) ? item.ranking_reasons : [];
+  const explain = Array.isArray(item?.recommendation_explain) ? item.recommendation_explain.filter(Boolean) : [];
+  const firstReason = reasons.find((reason) =>
+    ['time', 'baby', 'preference', 'difficulty'].includes(String(reason?.code || ''))
+  );
+
+  if (firstReason?.detail) return `这道菜优先命中了你的偏好：${firstReason.detail}`;
+  if (firstReason?.label) return `这道菜优先命中了你的偏好：${firstReason.label}`;
+  if (explain[0]) return `推荐理由：${explain[0]}`;
+  if (preferenceSummaryText) return `排序时参考了：${preferenceSummaryText}`;
+  return '系统综合考虑了口味、下厨时长和宝宝阶段。';
+}
+
 function adaptRecipeData(recipe) {
   if (!recipe) return null;
+
+  const isExternal = Boolean(recipe.source && recipe.source !== 'local');
+
   return {
     ...recipe,
     title: recipe.name || recipe.title,
-    cover_url: recipe.image_url || recipe.cover_url,
-    cook_time: recipe.cook_time || recipe.total_time,
+    cover_url: pickImage(recipe.cover_url) || pickImage(recipe.image_url),
+    cook_time: recipe.cook_time || recipe.total_time || recipe.prep_time || 0,
+    source_label: isExternal ? '联网菜谱' : '本地菜谱',
+    source_hint: isExternal
+      ? '可查看详情和加入清单，暂不支持反馈与生成宝宝版。'
+      : '支持收藏、反馈和宝宝版生成。',
   };
 }
-
-function adaptListData(items) {
-  if (!items || !items.length) return [];
-  return items.map(item => adaptRecipeData(item));
-}
-
-const SCENARIOS = [
-  { key: 'quick', label: '赶时间', query: '赶时间 快手 简单点' },
-  { key: 'light', label: '清淡点', query: '清淡 少油' },
-  { key: 'appetite', label: '宝宝没胃口', query: '宝宝没胃口 开胃' },
-  { key: 'fish', label: '想吃鱼但别太复杂', query: '想吃鱼 但别太复杂' }
-];
 
 Page({
   data: {
@@ -42,125 +65,198 @@ Page({
     results: [],
     history: [],
     showHistory: true,
+    hasSearched: false,
     preferenceSummaryText: '',
     inventoryIngredients: [],
     inventoryFirst: true,
     scenarios: SCENARIOS,
-    selectedScenario: ''
+    selectedScenario: '',
+    actionFeedback: null,
+  },
+
+  setActionFeedback(message, tone = 'info') {
+    if (this.feedbackTimer) {
+      clearTimeout(this.feedbackTimer);
+    }
+
+    this.setData({
+      actionFeedback: { message, tone },
+    });
+
+    this.feedbackTimer = setTimeout(() => {
+      this.setData({ actionFeedback: null });
+    }, 3200);
   },
 
   async onLoad() {
-     const preferenceConfig = wx.getStorageSync('user_preferences') || null;
-     const preferenceSummaryText = preferenceConfig
-       ? [
-           preferenceConfig.default_baby_age ? `${preferenceConfig.default_baby_age}个月月龄` : '',
-           preferenceConfig.cooking_time_limit ? `${preferenceConfig.cooking_time_limit}分钟内优先` : '',
-           preferenceConfig.prefer_ingredients ? `偏爱${preferenceConfig.prefer_ingredients}` : ''
-         ].filter(Boolean).slice(0, 3).join('｜')
-       : '';
-     this.setData({ preferenceSummaryText });
-    // 加载搜索历史
+    const preferenceConfig = wx.getStorageSync('user_preferences') || null;
     const history = wx.getStorageSync('search_history') || [];
-    this.setData({ history });
+
+    this.setData({
+      history,
+      preferenceSummaryText: buildPreferenceSummary(preferenceConfig),
+    });
 
     try {
-      const inventoryRes = await require('../../utils/request')({
+      const inventoryRes = await request({
         url: '/ingredient-inventory',
-        withAuth: true
+        withAuth: true,
+        showLoading: false,
       });
+
       const inventoryIngredients = Array.isArray(inventoryRes?.inventory)
-        ? inventoryRes.inventory.map(item => String(item.ingredient_name || '').trim()).filter(Boolean).slice(0, 20)
+        ? inventoryRes.inventory
+            .map((item) => String(item.ingredient_name || '').trim())
+            .filter(Boolean)
+            .slice(0, 20)
         : [];
+
       this.setData({ inventoryIngredients });
-    } catch (_) {}
+    } catch (_err) {
+      this.setData({ inventoryIngredients: [] });
+    }
   },
 
   onInput(e) {
-    this.setData({ keyword: e.detail.value, showHistory: false });
+    this.setData({
+      keyword: e.detail.value,
+      showHistory: false,
+    });
   },
 
   onClear() {
-    this.setData({ keyword: '', results: [], showHistory: true });
+    this.setData({
+      keyword: '',
+      results: [],
+      hasSearched: false,
+      showHistory: true,
+      selectedScenario: '',
+    });
   },
 
   onSearch() {
-    const keyword = this.data.keyword.trim();
+    const keyword = String(this.data.keyword || '').trim();
     if (!keyword) return;
-    
+
     this.saveHistory(keyword);
     this.doSearch(keyword);
   },
 
-  doSearch(keyword) {
-    this.setData({ loading: true });
-    api.searchRecipes(keyword, {
-      inventoryIngredients: this.data.inventoryFirst ? this.data.inventoryIngredients : [],
-      scenario: this.data.selectedScenario || undefined
-    }).then(res => {
-      // 后端返回 results，前端适配器处理数据
-      const rawItems = res.results || res.items || [];
-      const adaptedResults = adaptListData(rawItems).map(item => ({
-        ...item,
-        preference_hint: buildPreferenceHint(item, this.data.preferenceSummaryText)
-      }));
-      this.setData({ 
-        results: adaptedResults,
-        loading: false 
-      });
-    }).catch(err => {
-      wx.showToast({ title: '搜索失败', icon: 'none' });
-      this.setData({ loading: false });
+  async doSearch(keyword) {
+    this.setData({
+      loading: true,
+      hasSearched: true,
+      showHistory: false,
     });
+
+    try {
+      const result = await api.searchRecipes(keyword, {
+        inventoryIngredients: this.data.inventoryFirst ? this.data.inventoryIngredients : [],
+        scenario: this.data.selectedScenario || undefined,
+      });
+
+      const rawItems = Array.isArray(result?.results)
+        ? result.results
+        : Array.isArray(result?.items)
+          ? result.items
+          : [];
+
+      const adaptedResults = rawItems
+        .map((item) => adaptRecipeData(item))
+        .filter(Boolean)
+        .map((item) => ({
+          ...item,
+          preference_hint: buildPreferenceHint(item, this.data.preferenceSummaryText),
+        }));
+
+      this.setData({
+        results: adaptedResults,
+        loading: false,
+      });
+    } catch (err) {
+      console.error('[search] search failed:', err);
+      this.setData({ loading: false });
+      wx.showToast({ title: '搜索失败，请稍后重试', icon: 'none' });
+    }
   },
 
   saveHistory(keyword) {
     let history = wx.getStorageSync('search_history') || [];
-    history = history.filter(k => k !== keyword);
+    history = history.filter((item) => item !== keyword);
     history.unshift(keyword);
     history = history.slice(0, 10);
+
     wx.setStorageSync('search_history', history);
     this.setData({ history });
   },
 
   clearHistory() {
     wx.showModal({
-      title: '确认',
-      content: '确定清空搜索历史？',
+      title: '确认清空',
+      content: '确定删除全部搜索历史吗？',
       success: (res) => {
-        if (res.confirm) {
-          wx.removeStorageSync('search_history');
-          this.setData({ history: [] });
-        }
-      }
+        if (!res.confirm) return;
+
+        wx.removeStorageSync('search_history');
+        this.setData({ history: [] });
+      },
     });
   },
 
   toggleInventoryFirst() {
-    const next = !this.data.inventoryFirst;
-    this.setData({ inventoryFirst: next });
-    if (this.data.keyword.trim()) this.doSearch(this.data.keyword.trim());
+    const nextInventoryFirst = !this.data.inventoryFirst;
+    this.setData({ inventoryFirst: nextInventoryFirst });
+    this.setActionFeedback(
+      nextInventoryFirst
+        ? '已开启库存优先：会优先把能消耗现有食材的菜谱排前面，但不会只显示库存内菜谱。'
+        : '已关闭库存优先：结果会更偏向关键词和偏好匹配，不再优先消耗库存。',
+      'info'
+    );
+
+    if (String(this.data.keyword || '').trim()) {
+      this.doSearch(String(this.data.keyword || '').trim());
+    }
   },
 
   onScenarioTap(e) {
     const query = e.currentTarget.dataset.query;
-    const next = this.data.selectedScenario === query ? '' : query;
+    const label = e.currentTarget.dataset.label;
+    const nextScenario = this.data.selectedScenario === query ? '' : query;
+    const nextKeyword = String(this.data.keyword || '').trim() || nextScenario;
+
     this.setData({
-      selectedScenario: next,
-      keyword: this.data.keyword || next
+      selectedScenario: nextScenario,
+      keyword: nextKeyword,
+      showHistory: false,
     });
-    if (this.data.keyword || next) {
-      this.doSearch((this.data.keyword || next).trim());
+
+    this.setActionFeedback(
+      nextScenario
+        ? `已套用「${label}」场景，会按这个做饭情境重新筛选结果。`
+        : '已取消场景限制，结果恢复按关键词和偏好排序。',
+      'info'
+    );
+
+    if (nextKeyword) {
+      this.saveHistory(nextKeyword);
+      this.doSearch(nextKeyword);
     }
   },
 
   onHistoryTap(e) {
     const keyword = e.currentTarget.dataset.keyword;
-    this.setData({ keyword, showHistory: false });
+    this.setData({
+      keyword,
+      showHistory: false,
+    });
     this.doSearch(keyword);
   },
 
   goToRecipe(e) {
-    const id = e.currentTarget.dataset.id;
-    wx.navigateTo({ url: `/pages/recipe/recipe?id=${id}` });
-  }
+    const index = Number(e.currentTarget.dataset.index);
+    const recipe = this.data.results[index];
+    if (!recipe) return;
+
+    openRecipeDetail(recipe);
+  },
 });

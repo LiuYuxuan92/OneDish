@@ -1,110 +1,133 @@
-<view class="container">
-  <!-- 顶部导航 -->
-  <view class="header-bar">
-    <view class="search-btn" bindtap="goToSearch">
-      <van-icon name="search" size="14" color="#969799"/>
-      <text>搜索菜谱</text>
+<view class="page">
+  <view class="hero-panel">
+    <view class="hero-topbar">
+      <view class="hero-pill" bindtap="goToSearch">
+        <van-icon name="search" size="14" color="#234033" />
+        <text>搜索菜谱</text>
+      </view>
+      <view class="hero-avatar" bindtap="goToProfile">
+        <van-icon name="user-o" size="18" color="#ffffff" />
+      </view>
     </view>
-    <view class="profile-btn" bindtap="goToProfile">
-      <van-icon name="user-o" size="20"/>
+
+    <view class="hero-copy">
+      <text class="hero-kicker">TODAY'S PICK</text>
+      <text class="hero-title">一鱼两吃，今天省掉选菜成本</text>
+      <text class="hero-desc">推荐会优先参考你的宝宝月龄、常用口味和下厨时间。</text>
+      <view class="hero-preference" wx:if="{{preferenceSummaryText}}">
+        <text>{{preferenceSummaryText}}</text>
+      </view>
     </view>
   </view>
 
-  <!-- 加载态 -->
-  <view class="loading" wx:if="{{loading}}">
+  <view class="feedback-banner feedback-banner-{{actionFeedback.tone}}" wx:if="{{actionFeedback}}">
+    <text>{{actionFeedback.message}}</text>
+  </view>
+
+  <view class="state-card" wx:if="{{loading}}">
     <view class="spinner"></view>
-    <text>正在获取今日推荐...</text>
+    <text class="state-title">正在生成今日推荐</text>
+    <text class="state-desc">会优先结合偏好配置和近期推荐结果。</text>
   </view>
 
-  <!-- 错误态 -->
-  <view class="error" wx:elif="{{error}}">
-    <text class="error-icon">⚠️</text>
-    <text class="error-text">{{error}}</text>
-    <button class="btn-retry" bindtap="loadTodayRecommendation">重新加载</button>
+  <view class="state-card error" wx:elif="{{error}}">
+    <text class="state-title">{{error}}</text>
+    <text class="state-desc">可以重新拉取推荐，或者直接去菜谱列表浏览。</text>
+    <view class="state-actions">
+      <view class="outline-btn" bindtap="loadTodayRecommendation">重新加载</view>
+      <view class="solid-btn" bindtap="goRecipe">浏览菜谱</view>
+    </view>
   </view>
 
-  <!-- 空态 -->
-  <view class="empty" wx:elif="{{!recommendation}}">
-    <text class="empty-icon">📭</text>
-    <text class="empty-text">暂无推荐菜谱</text>
-    <text class="empty-hint">去菜谱页看看有什么好吃的吧</text>
-    <button class="btn-go" bindtap="goRecipe">浏览菜谱</button>
+  <view class="state-card" wx:elif="{{!recommendation}}">
+    <text class="state-title">今天还没有推荐菜谱</text>
+    <text class="state-desc">先去菜谱库看看，或者稍后再刷新一次。</text>
+    <view class="solid-btn" bindtap="goRecipe">打开菜谱库</view>
   </view>
 
-  <!-- 正常内容 -->
-  <view class="content" wx:else>
-    <!-- 版本切换 Tab -->
-    <view class="version-tabs" wx:if="{{recommendation.baby_version}}">
-      <view 
-        class="tab {{currentVersion === 'adult' ? 'active' : ''}}" 
-        bindtap="switchVersion" 
-        data-version="adult">
+  <view wx:else>
+    <view class="version-switch" wx:if="{{recommendation.baby_version}}">
+      <view
+        class="version-tab {{currentVersion === 'adult' ? 'active' : ''}}"
+        bindtap="switchVersion"
+        data-version="adult"
+      >
         成人版
       </view>
-      <view 
-        class="tab {{currentVersion === 'baby' ? 'active' : ''}}" 
-        bindtap="switchVersion" 
-        data-version="baby">
+      <view
+        class="version-tab {{currentVersion === 'baby' ? 'active' : ''}}"
+        bindtap="switchVersion"
+        data-version="baby"
+      >
         宝宝版
       </view>
     </view>
 
-    <view class="card">
-      <image 
-        class="cover" 
-        src="{{currentVersion === 'baby' && recommendation.baby_version && recommendation.baby_version.cover_url ? recommendation.baby_version.cover_url : recommendation.cover_url || ''}}" 
+    <view class="recipe-card">
+      <image
+        class="recipe-cover"
+        src="{{currentVersion === 'baby' && recommendation.baby_version ? recommendation.baby_version.cover_url : recommendation.cover_url}}"
         mode="aspectFill"
         bindtap="goRecipe"
       />
-      <view class="info">
-        <view class="title">
-          {{currentVersion === 'baby' ? (recommendation.baby_version && recommendation.baby_version.title) || recommendation.title : recommendation.title}}
-          <text class="version-badge" wx:if="{{currentVersion === 'baby'}}">宝宝版</text>
-        </view>
-        <view class="tags">
-          <van-tag type="primary" wx:if="{{recommendation.difficulty}}">{{recommendation.difficulty}}</van-tag>
-          <van-tag type="primary" wx:if="{{recommendation.cook_time}}">{{recommendation.cook_time}}分钟</van-tag>
-          <van-tag type="warning" wx:if="{{recommendation.calories}}">{{recommendation.calories}}千卡</van-tag>
-        </view>
-        <view class="desc" wx:if="{{currentVersion === 'baby' ? (recommendation.baby_version && recommendation.baby_version.description) : recommendation.description}}">
-          {{currentVersion === 'baby' ? (recommendation.baby_version && recommendation.baby_version.description) : recommendation.description}}
+
+      <view class="recipe-body">
+        <view class="recipe-head">
+          <view class="recipe-title-wrap">
+            <text class="recipe-title">
+              {{currentVersion === 'baby' && recommendation.baby_version ? recommendation.baby_version.title : recommendation.title}}
+            </text>
+            <text class="recipe-subtitle" wx:if="{{currentVersion === 'baby' && recommendation.baby_version && recommendation.baby_version.age_range}}">
+              适合 {{recommendation.baby_version.age_range}}
+            </text>
+          </view>
+          <view class="favorite-chip {{isFavorited ? 'active' : ''}}" bindtap="onFavorite">
+            <van-icon name="{{isFavorited ? 'like' : 'like-o'}}" size="14" color="{{isFavorited ? '#ffffff' : '#b85b34'}}" />
+            <text>{{isFavorited ? '已收藏' : '收藏'}}</text>
+          </view>
         </view>
 
-        <view class="baby-info" wx:if="{{recommendationReasons.length || preferenceSummaryText}}">
-          <view class="baby-tips-title">为什么推荐给你</view>
-          <view class="baby-tips" wx:for="{{recommendationReasons}}" wx:key="*this">
-            · {{item}}
-          </view>
-          <view class="baby-age" wx:if="{{preferenceSummaryText}}">
-            当前偏好排序参考：{{preferenceSummaryText}}
-          </view>
+        <view class="meta-row">
+          <view class="meta-tag" wx:if="{{recommendation.difficulty}}">{{recommendation.difficulty}}</view>
+          <view class="meta-tag" wx:if="{{recommendation.cook_time}}">{{recommendation.cook_time}} 分钟</view>
+          <view class="meta-tag warm" wx:if="{{recommendation.calories}}">{{recommendation.calories}} 千卡</view>
         </view>
-        
-        <!-- 宝宝版额外信息 -->
-        <view class="baby-info" wx:if="{{currentVersion === 'baby' && recommendation.baby_version}}">
-          <view class="baby-age" wx:if="{{recommendation.baby_version.age_range}}">
-            适合月龄：{{recommendation.baby_version.age_range}}
-          </view>
-          <view class="baby-tips" wx:if="{{recommendation.baby_version.tips}}">
+
+        <text class="recipe-desc" wx:if="{{currentVersion === 'baby' && recommendation.baby_version ? recommendation.baby_version.description : recommendation.description}}">
+          {{currentVersion === 'baby' && recommendation.baby_version ? recommendation.baby_version.description : recommendation.description}}
+        </text>
+
+        <view class="reason-card" wx:if="{{recommendationReasons.length}}">
+          <text class="reason-title">为什么今天推荐这道菜</text>
+          <block wx:for="{{recommendationReasons}}" wx:key="*this">
+            <view class="reason-item">
+              <view class="reason-dot"></view>
+              <text>{{item}}</text>
+            </view>
+          </block>
+          <text class="reason-foot" wx:if="{{currentVersion === 'baby' && recommendation.baby_version && recommendation.baby_version.tips}}">
             喂养提示：{{recommendation.baby_version.tips}}
-          </view>
+          </text>
         </view>
       </view>
     </view>
 
-    <view class="actions">
-      <van-button type="primary" size="large" round bind:click="onSwap" loading="{{swapping}}">
-        {{swapping ? '换菜中...' : '🔄 换一道'}}
-      </van-button>
-      <van-button type="success" size="large" round bind:click="addToShoppingList">
-        🛒 加入清单
-      </van-button>
-    </view>
+    <view class="action-grid">
+      <view class="primary-action" bindtap="onSwap">
+        <text class="action-title">{{swapping ? '正在重算推荐' : '换一道更适合的'}}</text>
+        <text class="action-desc">保持今天的偏好条件，重新找一份更匹配的方案。</text>
+      </view>
 
-    <view class="share">
-      <van-button type="default" size="large" round open-type="share">
-        📤 分享给家人
-      </van-button>
+      <view class="secondary-actions">
+        <view class="action-card fresh" bindtap="addToShoppingList">
+          <text class="action-card-title">加入清单</text>
+          <text class="action-card-desc">登录后写入云端采购单，未登录先放本地。</text>
+        </view>
+        <button class="action-card share" open-type="share">
+          <text class="action-card-title">分享推荐</text>
+          <text class="action-card-desc">直接转给家人一起确认今晚吃什么。</text>
+        </button>
+      </view>
     </view>
   </view>
 </view>

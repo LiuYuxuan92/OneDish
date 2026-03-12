@@ -165,7 +165,21 @@ export class SwapService {
     let recipeQuery = db('recipes')
       .where('is_active', true)
       .whereNot('id', current_recipe_id)
-      .select('id', 'name', 'category', 'type', 'prep_time', 'total_time', 'stage', 'image_url', 'adult_version', 'difficulty', 'calibrated_difficulty', 'age_min', 'age_max', 'baby_age_min', 'baby_age_max', 'baby_age_range');
+      .select(
+        'id',
+        'name',
+        'category',
+        'type',
+        'prep_time',
+        'cook_time',
+        'total_time',
+        'stage',
+        'image_url',
+        'adult_version',
+        'baby_version',
+        'difficulty',
+        'calibrated_difficulty'
+      );
 
     if (effectiveTimeLimit) {
       recipeQuery = recipeQuery.where('prep_time', '<=', effectiveTimeLimit) as any;
@@ -337,8 +351,11 @@ export class SwapService {
         category: item.category,
         type: item.type,
         prep_time: item.prep_time,
+        cook_time: item.cook_time,
         total_time: item.total_time,
         image_url: item.image_url,
+        adult_version: item.adult_version,
+        baby_version: item.baby_version,
         stage: item.stage,
         recommendation_explain: explain || reasons.slice(0, 3),
         ranking_reasons: ranking_reasons || [],

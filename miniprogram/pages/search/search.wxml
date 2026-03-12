@@ -1,23 +1,40 @@
-<view class="container">
-  <!-- 搜索栏 -->
-  <view class="search-bar">
-    <icon type="search" size="16" color="#999"/>
-    <input 
-      class="search-input" 
-      placeholder="搜索菜谱、食材..." 
-      value="{{keyword}}"
-      bindinput="onInput"
-      bindconfirm="onSearch"
-      confirm-type="search"
-    />
-    <icon type="clear" size="16" color="#999" wx:if="{{keyword}}" bindtap="onClear"/>
+<view class="page">
+  <view class="hero">
+    <text class="hero-kicker">SMART SEARCH</text>
+    <text class="hero-title">按库存、偏好和场景筛出今晚更好做的菜</text>
+    <text class="hero-desc">搜索结果会优先参考库存、月龄和常用口味，尽量减少二次决策。</text>
+    <view class="preference-chip" wx:if="{{preferenceSummaryText}}">
+      <text>{{preferenceSummaryText}}</text>
+    </view>
   </view>
 
-  <view class="assist-bar">
-    <view class="inventory-toggle {{inventoryFirst ? 'active' : ''}}" bindtap="toggleInventoryFirst">
-      <text>{{inventoryFirst ? '✅ 库存优先' : '库存优先'}}</text>
-      <text class="assist-sub" wx:if="{{inventoryIngredients.length}}">已识别{{inventoryIngredients.length}}种现有食材</text>
+  <view class="search-panel">
+    <view class="search-bar">
+      <icon type="search" size="16" color="#6c7b74" />
+      <input
+        class="search-input"
+        placeholder="搜索菜谱、食材、做法..."
+        value="{{keyword}}"
+        bindinput="onInput"
+        bindconfirm="onSearch"
+        confirm-type="search"
+      />
+      <icon type="clear" size="16" color="#8f9b95" wx:if="{{keyword}}" bindtap="onClear" />
     </view>
+    <view class="search-submit" bindtap="onSearch">开始搜索</view>
+  </view>
+
+  <view class="assist-card">
+    <view class="inventory-toggle {{inventoryFirst ? 'active' : ''}}" bindtap="toggleInventoryFirst">
+      <view>
+        <text class="assist-title">{{inventoryFirst ? '库存优先已开启' : '库存优先已关闭'}}</text>
+        <text class="assist-desc">
+          {{inventoryIngredients.length ? '已识别 ' + inventoryIngredients.length + ' 种库存食材' : '登录后可自动识别库存食材'}}
+        </text>
+      </view>
+      <text class="assist-switch">{{inventoryFirst ? 'ON' : 'OFF'}}</text>
+    </view>
+
     <scroll-view scroll-x class="scenario-scroll">
       <view class="scenario-list">
         <view
@@ -26,6 +43,7 @@
           wx:key="key"
           bindtap="onScenarioTap"
           data-query="{{item.query}}"
+          data-label="{{item.label}}"
         >
           {{item.label}}
         </view>
@@ -33,62 +51,64 @@
     </scroll-view>
   </view>
 
-  <!-- 搜索历史 -->
-  <view class="history-section" wx:if="{{showHistory && history.length}}">
-    <view class="history-header">
-      <text class="title">搜索历史</text>
-      <text class="clear" bindtap="clearHistory">清空</text>
+  <view class="feedback-banner feedback-banner-{{actionFeedback.tone}}" wx:if="{{actionFeedback}}">
+    <text>{{actionFeedback.message}}</text>
+  </view>
+
+  <view class="history-card" wx:if="{{showHistory && history.length}}">
+    <view class="section-header">
+      <text class="section-title">最近搜过</text>
+      <text class="section-link" bindtap="clearHistory">清空</text>
     </view>
     <view class="history-list">
-      <view 
-        class="history-item" 
-        wx:for="{{history}}" 
+      <view
+        class="history-item"
+        wx:for="{{history}}"
         wx:key="*this"
         bindtap="onHistoryTap"
-        data-keyword="{{item}}">
+        data-keyword="{{item}}"
+      >
         {{item}}
       </view>
     </view>
   </view>
 
-  <!-- 搜索结果 -->
-  <view class="results" wx:if="{{!showHistory}}">
-    <view class="results-header" wx:if="{{results.length}}">
-      找到 {{results.length}} 个结果
-      <text class="results-subtitle">这些结果会优先参考你的口味、做饭时长和宝宝阶段</text>
+  <view class="loading-card" wx:if="{{loading}}">
+    <view class="spinner"></view>
+    <text class="loading-title">正在筛选更合适的菜谱</text>
+    <text class="loading-desc">会综合考虑库存、时长、场景和历史偏好。</text>
+  </view>
+
+  <view class="results-card" wx:if="{{!loading && !showHistory && results.length}}">
+    <view class="section-header">
+      <view>
+        <text class="section-title">共找到 {{results.length}} 道菜</text>
+        <text class="section-subtitle">结果已优先按你的偏好和库存约束排序。</text>
+      </view>
     </view>
-    
+
     <block wx:for="{{results}}" wx:key="id">
-      <view class="result-item" bindtap="goToRecipe" data-id="{{item.id}}">
-        <image 
-          class="result-cover" 
-          src="{{item.cover_url || ''}}" 
-          mode="aspectFill"
-        />
-        <view class="result-info">
-          <view class="result-title">{{item.title || item.name}}</view>
+      <view class="result-item" bindtap="goToRecipe" data-index="{{index}}">
+        <image class="result-cover" src="{{item.cover_url || ''}}" mode="aspectFill" />
+        <view class="result-main">
+          <text class="result-title">{{item.title || item.name}}</text>
           <view class="result-meta">
-            <text wx:if="{{item.difficulty}}">{{item.difficulty}}</text>
-            <text wx:if="{{item.cook_time}}">{{item.cook_time}}分钟</text>
+            <text class="result-tag source-tag {{item.source_label === '联网菜谱' ? 'external' : 'local'}}">{{item.source_label}}</text>
+            <text class="result-tag" wx:if="{{item.difficulty}}">{{item.difficulty}}</text>
+            <text class="result-tag" wx:if="{{item.cook_time}}">{{item.cook_time}} 分钟</text>
           </view>
-          <view class="result-desc" wx:if="{{item.description}}">
-            {{item.description}}
-          </view>
-          <view class="result-preference-hint" wx:if="{{item.preference_hint}}">
-            {{item.preference_hint}}
+          <text class="result-desc" wx:if="{{item.description}}">{{item.description}}</text>
+          <text class="result-source-hint">{{item.source_hint}}</text>
+          <view class="result-hint" wx:if="{{item.preference_hint}}">
+            <text>{{item.preference_hint}}</text>
           </view>
         </view>
       </view>
     </block>
-
-    <view class="no-result" wx:if="{{!loading && !results.length}}">
-      <text>未找到相关菜谱</text>
-    </view>
   </view>
 
-  <!-- Loading -->
-  <view class="loading" wx:if="{{loading}}">
-    <view class="spinner"></view>
-    <text>搜索中...</text>
+  <view class="empty-card" wx:if="{{!loading && hasSearched && !results.length}}">
+    <text class="empty-title">没有找到合适结果</text>
+    <text class="empty-desc">可以换个食材关键词，或者关闭库存优先再试一次。</text>
   </view>
 </view>

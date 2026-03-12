@@ -70,7 +70,8 @@ Page({
   },
 
   onAgeSelect(e) {
-    const age = e.currentTarget.dataset.age;
+    const rawAge = e.currentTarget.dataset.age;
+    const age = rawAge === '' || rawAge === null || rawAge === undefined ? null : Number(rawAge);
     this.setData({ 
       babyAge: age, 
       babyAgeText: this.getAgeText(age),
@@ -128,6 +129,7 @@ Page({
     try {
       const config = await api.getUserPreferences();
       if (config) {
+        wx.setStorageSync('user_preferences', config);
         this.setData({ aiConfig: { ...this.data.aiConfig, ...config } });
       }
     } catch (err) {
@@ -175,6 +177,7 @@ Page({
 
     try {
       const saved = await api.updateUserPreferences(this.data.aiConfig);
+      wx.setStorageSync('user_preferences', saved);
       this.setData({
         aiConfig: { ...this.data.aiConfig, ...saved },
         showAIConfigModal: false,

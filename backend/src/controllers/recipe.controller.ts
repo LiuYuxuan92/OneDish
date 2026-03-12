@@ -53,7 +53,12 @@ export class RecipeController {
         data: result,
       });
     } catch (error) {
-      logger.error('Failed to get recipe detail', { error });
+      logger.error('Failed to get recipe detail', {
+        recipeId: req.params.id,
+        userId: (req as any).user?.user_id,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+      });
       res.status(404).json({
         code: 404,
         message: '菜谱不存在',

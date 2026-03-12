@@ -1,249 +1,218 @@
-<view class="container">
-  <!-- Tab 切换 -->
+<view class="page">
+  <view class="hero-card">
+    <text class="hero-kicker">SHOPPING FLOW</text>
+    <text class="hero-title">把推荐、计划和采购单收拢到一处</text>
+    <text class="hero-desc">
+      {{listMode === 'server' ? '当前为云端清单，可直接同步到后端并生成分享邀请码。' : '当前为本地兜底模式，登录后会自动切换到云端清单。'}}
+    </text>
+
+    <view class="hero-stats">
+      <view class="stat-pill">
+        <text class="stat-value">{{stats.unchecked}}</text>
+        <text class="stat-label">待买</text>
+      </view>
+      <view class="stat-pill">
+        <text class="stat-value">{{stats.checked}}</text>
+        <text class="stat-label">已完成</text>
+      </view>
+      <view class="stat-pill">
+        <text class="stat-value">{{listMode === 'server' ? '云端' : '本地'}}</text>
+        <text class="stat-label">{{activeListDate || '未同步'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="feedback-banner feedback-banner-{{actionFeedback.tone}}" wx:if="{{actionFeedback}}">
+    <text>{{actionFeedback.message}}</text>
+  </view>
+
   <view class="tab-bar">
-    <view 
-      class="tab {{activeTab === 'current' ? 'active' : ''}}" 
-      bindtap="onTabSwitch" 
-      data-tab="current">
-      当前清单
-    </view>
-    <view 
-      class="tab {{activeTab === 'generate' ? 'active' : ''}}" 
-      bindtap="onTabSwitch" 
-      data-tab="generate">
-      ✨ 智能生成
-    </view>
-    <view 
-      class="tab {{activeTab === 'history' ? 'active' : ''}}" 
-      bindtap="onTabSwitch" 
-      data-tab="history">
-      历史清单
-    </view>
+    <view class="tab {{activeTab === 'current' ? 'active' : ''}}" bindtap="onTabSwitch" data-tab="current">当前清单</view>
+    <view class="tab {{activeTab === 'generate' ? 'active' : ''}}" bindtap="onTabSwitch" data-tab="generate">智能生成</view>
+    <view class="tab {{activeTab === 'history' ? 'active' : ''}}" bindtap="onTabSwitch" data-tab="history">历史记录</view>
   </view>
 
-  <!-- 当前清单 -->
   <view wx:if="{{activeTab === 'current'}}">
-    <!-- 添加区域 -->
-    <view class="add-section">
-      <van-field
-        value="{{ newItem }}"
-        placeholder="添加食材..."
-        bind:input="onNewItemInput"
-        border="{{ false }}"
-        clearable
-      />
-      <van-button type="primary" size="small" round bind:click="addItem">添加</van-button>
-    </view>
-
-    <!-- 清单列表 -->
-    <view class="list-header">
-      <text>清单 ({{items.length}})</text>
-      <text class="clear-btn" bindtap="clearChecked">清除已购</text>
-    </view>
-
-    <view wx:if="{{shoppingSummary}}" class="summary-card">
-      <view class="summary-row">
-        <text>库存覆盖 {{shoppingSummary.covered_count || 0}}</text>
-        <text>仍需购买 {{shoppingSummary.missing_count || 0}}</text>
-        <text>临期优先 {{shoppingSummary.expiring_items.length || 0}}</text>
+    <view class="summary-card" wx:if="{{shoppingSummary}}">
+      <view class="summary-top">
+        <view class="summary-badge">库存覆盖 {{shoppingSummary.covered_count || 0}}</view>
+        <view class="summary-badge accent">仍需采购 {{shoppingSummary.missing_count || 0}}</view>
       </view>
-      <view wx:if="{{shoppingSummary.missing_items.length}}" class="summary-block">
-        <text class="summary-title">缺口</text>
-        <text wx:for="{{shoppingSummary.missing_items}}" wx:key="index">• {{item.name}} {{item.missing_amount || item.required_amount}}</text>
+      <text class="summary-title">清单与库存联动结果</text>
+      <text class="summary-desc">
+        {{shoppingSummary.expiring_items.length ? '有 ' + shoppingSummary.expiring_items.length + ' 项临期食材可优先消耗。' : '当前没有临期食材提醒。'}}
+      </text>
+      <view class="summary-list" wx:if="{{shoppingSummary.missing_items.length}}">
+        <block wx:for="{{shoppingSummary.missing_items}}" wx:key="index">
+          <view class="summary-item">缺口：{{item.name}} {{item.missing_amount || item.required_amount}}</view>
+        </block>
       </view>
     </view>
 
-    <block wx:for="{{items}}" wx:key="index">
-      <view class="list-item">
-        <van-checkbox value="{{ item.checked }}" bind:change="toggleItem" data-index="{{index}}"/>
-        <view class="item-text {{item.checked ? 'done' : ''}}">
-          {{item.name}}
-          <text class="item-quantity" wx:if="{{item.quantity}}">{{item.quantity}}{{item.unit}}</text>
+    <view class="add-card">
+      <view class="section-head">
+        <view>
+          <text class="section-title">快速加一项</text>
+          <text class="section-subtitle">支持本地兜底，也支持云端清单直接编辑。</text>
         </view>
-        <van-icon name="delete-o" bindtap="deleteItem" data-index="{{index}}" color="#ff4d4f"/>
       </view>
-    </block>
-
-    <view wx:if="{{!items.length}}" class="empty-tip">
-      <text>清单为空，快去添加吧～</text>
+      <view class="add-row">
+        <input
+          class="add-input"
+          placeholder="例如：鸡蛋、南瓜、无糖酸奶"
+          value="{{newItem}}"
+          bindinput="onNewItemInput"
+        />
+        <view class="add-btn" bindtap="addItem">添加</view>
+      </view>
     </view>
 
-    <!-- 分享按钮 -->
-    <view class="share-section">
-      <van-button type="success" size="large" round open-type="share">📤 分享清单给家人</van-button>
+    <view class="list-card">
+      <view class="section-head">
+        <view>
+          <text class="section-title">采购清单</text>
+          <text class="section-subtitle">共 {{stats.total}} 项，待买 {{stats.unchecked}} 项。</text>
+        </view>
+        <text class="section-link" bindtap="clearChecked">清理已购</text>
+      </view>
+
+      <view class="loading-block" wx:if="{{loading}}">
+        <view class="spinner"></view>
+        <text>正在同步清单...</text>
+      </view>
+
+      <block wx:for="{{items}}" wx:key="index">
+        <view class="shopping-item {{item.checked ? 'checked' : ''}}">
+          <view class="check-indicator {{item.checked ? 'active' : ''}}" bindtap="toggleItem" data-index="{{index}}">
+            <text wx:if="{{item.checked}}">✓</text>
+          </view>
+          <view class="shopping-body" bindtap="toggleItem" data-index="{{index}}">
+            <text class="shopping-name">{{item.name}}</text>
+            <view class="shopping-meta">
+              <text wx:if="{{item.quantity}}">{{item.quantity}}{{item.unit}}</text>
+              <text wx:if="{{item.sourceMealType}}">{{item.sourceMealType}}</text>
+              <text class="mode-tag">{{item.source === 'server' ? '云端' : '本地'}}</text>
+            </view>
+          </view>
+          <view class="delete-btn" bindtap="deleteItem" data-index="{{index}}">
+            <van-icon name="delete-o" size="18" color="#c65a45" />
+          </view>
+        </view>
+      </block>
+
+      <view class="empty-card" wx:if="{{!loading && !items.length}}">
+        <text class="empty-title">当前还没有采购项</text>
+        <text class="empty-desc">从推荐页或菜谱详情页加入食材后，会自动出现在这里。</text>
+      </view>
+    </view>
+
+    <view class="share-bar">
+      <view class="share-btn" bindtap="onShare">生成分享邀请码</view>
     </view>
   </view>
 
-  <!-- 历史清单 -->
-  <view wx:if="{{activeTab === 'history'}}">
+  <view wx:if="{{activeTab === 'history'}}" class="history-card">
+    <view class="section-head">
+      <view>
+        <text class="section-title">最近完成过的采购</text>
+        <text class="section-subtitle">按每次清理已购项目自动归档。</text>
+      </view>
+    </view>
+
     <block wx:for="{{history}}" wx:key="index">
       <view class="history-item">
-        <view class="history-date">{{item.date}}</view>
-        <view class="history-items">
-          <text wx:for="{{item.items}}" wx:for-item="i" wx:key="*this">{{i.name}}{{index < item.items.length - 1 ? '、' : ''}}</text>
+        <text class="history-date">{{item.date}}</text>
+        <view class="history-tags">
+          <block wx:for="{{item.items}}" wx:for-item="historyItem" wx:key="index">
+            <text class="history-tag">{{historyItem.name}}</text>
+          </block>
         </view>
       </view>
     </block>
-    <view wx:if="{{!history.length}}" class="empty-tip">
-      <text>暂无历史记录</text>
+
+    <view class="empty-card" wx:if="{{!history.length}}">
+      <text class="empty-title">还没有历史记录</text>
+      <text class="empty-desc">清理已购项目后，这里会自动归档本次采购结果。</text>
     </view>
   </view>
 
-  <!-- 智能生成 -->
-  <view wx:if="{{activeTab === 'generate'}}" class="generate-section">
-    <view class="generate-header">
-      <text class="generate-title">✨ AI 智能生成周计划</text>
-      <text class="generate-desc">用自然语言描述您的需求，AI 将为您智能生成一周辅食计划</text>
-      <text class="generate-pref" wx:if="{{planPreferenceSummary}}">生成时会优先参考：{{planPreferenceSummary}}</text>
-      <text class="generate-pref" wx:else>生成时会优先参考你的月龄、做饭时长和需要避开的食材</text>
-    </view>
-
-    <!-- 模式选择 -->
-    <view class="mode-selector">
-      <view 
-        class="mode-option {{isSmartMode ? 'active' : ''}}" 
-        bindtap="toggleSmartMode">
-        <text>✨ 智能模式</text>
-      </view>
-      <view 
-        class="mode-option {{!isSmartMode ? 'active' : ''}}" 
-        bindtap="toggleSmartMode">
-        <text>📋 标准模式</text>
+  <view wx:if="{{activeTab === 'generate'}}" class="generate-card">
+    <view class="section-head">
+      <view>
+        <text class="section-title">让 AI 先出一版周计划</text>
+        <text class="section-subtitle">生成结果会自动把食材追加到当前本地清单。</text>
       </view>
     </view>
 
-    <!-- 智能模式输入 -->
-    <view wx:if="{{isSmartMode}}" class="smart-mode-input">
+    <view class="preference-box">
+      <text>{{planPreferenceSummary || '生成时会优先参考宝宝月龄、做饭时长和忌口。'}}</text>
+    </view>
+
+    <view class="mode-switch">
+      <view class="mode-chip {{isSmartMode ? 'active' : ''}}" bindtap="toggleSmartMode">智能描述</view>
+      <view class="mode-chip {{!isSmartMode ? 'active' : ''}}" bindtap="toggleSmartMode">标准选项</view>
+    </view>
+
+    <view wx:if="{{isSmartMode}}">
       <textarea
         class="prompt-input"
-        placeholder="例如: 这周多做鱼类的菜，宝宝挑食不喜欢胡萝卜，做饭时间控制在30分钟以内"
+        placeholder="例如：这周多做鱼类，宝宝挑食，不吃胡萝卜，30 分钟内完成。"
         value="{{smartPrompt}}"
         bindinput="onSmartPromptInput"
         maxlength="500"
       ></textarea>
-      <text class="input-hint">可以直接说口味、宝宝月龄、时间预算，系统会一起理解</text>
     </view>
 
-    <!-- 标准模式选项 -->
-    <view wx:if="{{!isSmartMode}}" class="standard-options">
+    <view wx:else>
       <view class="option-group">
-        <text class="option-label">宝宝月龄（可选）</text>
-        <view class="age-options">
-          <view 
-            class="age-option {{babyAge === null ? 'active' : ''}}" 
-            bindtap="onBabyAgeSelect" 
-            data-age="{{null}}">
-            不限
-          </view>
-          <view 
-            class="age-option {{babyAge === 6 ? 'active' : ''}}" 
-            bindtap="onBabyAgeSelect" 
-            data-age="{{6}}">
-            6月
-          </view>
-          <view 
-            class="age-option {{babyAge === 8 ? 'active' : ''}}" 
-            bindtap="onBabyAgeSelect" 
-            data-age="{{8}}">
-            8月
-          </view>
-          <view 
-            class="age-option {{babyAge === 10 ? 'active' : ''}}" 
-            bindtap="onBabyAgeSelect" 
-            data-age="{{10}}">
-            10月
-          </view>
-          <view 
-            class="age-option {{babyAge === 12 ? 'active' : ''}}" 
-            bindtap="onBabyAgeSelect" 
-            data-age="{{12}}">
-            12月
-          </view>
-          <view 
-            class="age-option {{babyAge === 18 ? 'active' : ''}}" 
-            bindtap="onBabyAgeSelect" 
-            data-age="{{18}}">
-            18月
-          </view>
-          <view 
-            class="age-option {{babyAge === 24 ? 'active' : ''}}" 
-            bindtap="onBabyAgeSelect" 
-            data-age="{{24}}">
-            24月
-          </view>
+        <text class="option-title">宝宝月龄</text>
+        <view class="option-list">
+          <view class="option-chip {{babyAge === null ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="">不限</view>
+          <view class="option-chip {{babyAge === 6 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="{{6}}">6个月</view>
+          <view class="option-chip {{babyAge === 8 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="{{8}}">8个月</view>
+          <view class="option-chip {{babyAge === 10 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="{{10}}">10个月</view>
+          <view class="option-chip {{babyAge === 12 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="{{12}}">12个月</view>
+          <view class="option-chip {{babyAge === 18 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="{{18}}">18个月</view>
+          <view class="option-chip {{babyAge === 24 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="{{24}}">24个月</view>
         </view>
       </view>
 
       <view class="option-group">
-        <text class="option-label">排除食材（用逗号分隔）</text>
-        <input 
-          class="exclude-input" 
-          placeholder="例如: 虾, 花生, 牛奶" 
-          value="{{excludeIngredients}}"
-          bindinput="onExcludeInput"
-        />
+        <text class="option-title">排除食材</text>
+        <input class="exclude-input" placeholder="例如：虾、花生、牛奶" value="{{excludeIngredients}}" bindinput="onExcludeInput" />
       </view>
     </view>
 
-    <!-- 生成按钮 -->
-    <view class="generate-action">
-      <van-button 
-        type="primary" 
-        size="large" 
-        round 
-        loading="{{isGenerating}}"
-        bind:click="generateMealPlan">
-        {{isGenerating ? '生成中...' : '生成周计划'}}
-      </van-button>
+    <view class="generate-btn" bindtap="generateMealPlan">
+      {{isGenerating ? '正在生成周计划...' : '生成一版周计划'}}
     </view>
 
-    <!-- 生成结果预览 -->
-    <view wx:if="{{generatedMealPlan}}" class="result-preview">
-      <view class="result-header">
-        <text class="result-title">✅ 生成成功</text>
-      </view>
-      <view class="result-content">
-        <text class="result-name">{{generatedMealPlan.title}}</text>
-      </view>
-      <view class="result-action">
-        <van-button type="success" size="small" round bindtap="viewGeneratedPlan">查看详情</van-button>
-      </view>
+    <view class="generated-card" wx:if="{{generatedMealPlan}}">
+      <text class="generated-title">{{generatedMealPlan.title || '周计划已生成'}}</text>
+      <text class="generated-desc">已将相关食材追加到本地清单，可继续修改后再次生成。</text>
+      <view class="generated-link" bindtap="viewGeneratedPlan">查看概览</view>
     </view>
   </view>
 
-  <!-- 调试配置（可折叠） -->
-  <view class="debug-section">
-    <view class="debug-toggle" bindtap="toggleDebug">⚙️ 调试配置</view>
-    <view class="debug-content" wx:if="{{showDebug}}">
-      <input 
-        class="input" 
-        placeholder="baseURL" 
-        value="{{baseURL}}" 
-        bindinput="onBaseURLInput" 
-      />
-      <input 
-        class="input" 
-        placeholder="Bearer Token" 
-        value="{{token}}" 
-        bindinput="onTokenInput" 
-      />
-      <button class="btn secondary" size="mini" bindtap="saveConfig">保存</button>
+  <view class="debug-card">
+    <view class="debug-toggle" bindtap="toggleDebug">调试配置</view>
+    <view wx:if="{{showDebug}}" class="debug-body">
+      <input class="debug-input" placeholder="baseURL" value="{{baseURL}}" bindinput="onBaseURLInput" />
+      <input class="debug-input" placeholder="Bearer Token" value="{{token}}" bindinput="onTokenInput" />
+      <view class="debug-btn" bindtap="saveConfig">保存配置</view>
     </view>
   </view>
 </view>
 
-<!-- 分享弹窗 -->
 <view class="modal-mask" wx:if="{{showShareModal}}" bindtap="closeShareModal"></view>
-<view class="modal" wx:if="{{showShareModal}}">
-  <view class="modal-title">分享购物清单</view>
-  <view class="modal-content">
-    <view class="invite-code-box">
-      <text class="label">邀请码</text>
-      <text class="code">{{inviteCode}}</text>
-      <button class="btn-copy" bindtap="copyInviteCode">复制</button>
-    </view>
-    <view class="divider-text">或</view>
-    <button class="btn-wechat-share" open-type="share">发送给微信好友</button>
+<view class="share-modal" wx:if="{{showShareModal}}">
+  <text class="share-modal-title">分享采购清单</text>
+  <view class="share-code-box">
+    <text class="share-code-label">邀请码</text>
+    <text class="share-code">{{inviteCode}}</text>
+    <text class="share-link" wx:if="{{shareLink}}">{{shareLink}}</text>
   </view>
-  <button class="modal-close" bindtap="closeShareModal">关闭</button>
+  <view class="share-modal-btn primary" bindtap="copyInviteCode">复制邀请码</view>
+  <button class="share-modal-btn secondary" open-type="share">直接转发给家人</button>
+  <view class="share-modal-close" bindtap="closeShareModal">关闭</view>
 </view>

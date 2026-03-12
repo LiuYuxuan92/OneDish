@@ -1,4 +1,5 @@
 const api = require('../../utils/api');
+const { openRecipeDetail } = require('../../utils/navigation');
 
 // 后端数据适配器
 function adaptRecipeData(recipe) {
@@ -61,7 +62,10 @@ Page({
 
   goToRecipe(e) {
     const id = e.currentTarget.dataset.id;
-    wx.setStorageSync('pending_recipe_detail_id', id);
+    openRecipeDetail(id);
+  },
+
+  goToRecipeList() {
     wx.switchTab({ url: '/pages/recipe/recipe' });
   },
 
