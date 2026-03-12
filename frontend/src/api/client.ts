@@ -12,11 +12,20 @@ const getWebOrigin = () => {
 };
 
 const getBaseUrl = () => {
+  const envBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+  if (envBaseUrl) {
+    return envBaseUrl.replace(/\/$/, '');
+  }
+
   if (!__DEV__) {
     return 'https://api.jianjiachu.com/v1';
   }
 
   if (Platform.OS === 'web') {
+    const origin = getWebOrigin();
+    if (/^https:\/\//.test(origin)) {
+      return `${origin}/api/v1`;
+    }
     return 'http://43.135.174.206:3000/api/v1';
   }
 
@@ -31,33 +40,11 @@ const BASE_URL = getBaseUrl();
 
 let webToken: string | null = null;
 
-async function guestLogin(): Promise<string> {
-  try {
-    const response = await axios.post(`${BASE_URL}/auth/guest`);
-    const token = response.data?.data?.token;
-    if (token) {
-      webToken = token;
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('access_token', token);
-      }
-      return token;
-    }
-    return '';
-  } catch (error) {
-    console.error('Guest login failed:', error);
-    return '';
-  }
-}
-
-async function initWebToken() {
+function initWebToken() {
   if (Platform.OS !== 'web') return;
 
   if (typeof localStorage !== 'undefined') {
     webToken = localStorage.getItem('access_token');
-  }
-
-  if (!webToken) {
-    await guestLogin();
   }
 }
 

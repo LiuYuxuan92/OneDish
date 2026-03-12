@@ -13,7 +13,7 @@ import {
   FlatList,
   Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RecipeStackParamList } from "../../types";
 import {
@@ -79,6 +79,7 @@ const navigateToFeedingFeedback = (navigation: any) => {
 
 export function RecipeDetailScreen({ route, navigation }: Props) {
   const { recipeId } = route.params;
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<"adult" | "baby" | "timeline">(
     "adult",
   );
@@ -135,12 +136,15 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
   // 获取宝宝适龄信息
   const babyAgeInfo = user?.baby_age ? getBabyAgeInfo(user.baby_age) : null;
 
+  const [shoppingListAdded, setShoppingListAdded] = useState(false);
+
   const handleAddToShoppingList = async () => {
     try {
       await addRecipeToShoppingList.mutateAsync({
         recipe_id: recipeId,
         servings: 2,
       });
+      setShoppingListAdded(true);
       Alert.alert("成功", "已添加到购物清单");
     } catch (error: any) {
       console.error("[Frontend] 添加菜谱到购物清单失败:", error);
@@ -155,6 +159,15 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
         `添加失败${errorCode ? ` (${errorCode})` : ""}: ${errorMessage}`,
       );
     }
+  };
+
+  const handleShoppingFabPress = async () => {
+    if (shoppingListAdded) {
+      navigation.getParent?.()?.navigate?.("Plan", { screen: "ShoppingList" });
+      return;
+    }
+
+    await handleAddToShoppingList();
   };
 
   const toggleFavorite = async () => {
@@ -247,6 +260,11 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
   const syncCooking = effectiveBaby?.sync_cooking;
   const parsedTips = pageVm?.tips || [];
   const currentVersionSection = pageVm?.currentVersion;
+  const shoppingFabLabel = addRecipeToShoppingList.isPending
+    ? "添加中..."
+    : shoppingListAdded
+      ? "已加入 / 去查看"
+      : "加入购物清单";
   const adultSummaryChips = [
     pageVm?.hero?.timeLabel || `${recipe.prep_time} 分钟`,
     pageVm?.hero?.difficultyLabel,
@@ -871,22 +889,30 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
           </View>
         )}
 
-        {/* 底部占位 */}
+        {/* 悬浮按钮占位 */}
         <View style={styles.footerSpacer} />
       </ScrollView>
 
-      {/* 底部操作栏 */}
-      <View style={styles.footer}>
-        <Button
-          title={
-            addRecipeToShoppingList.isPending ? "添加中..." : "🛒 加入购物清单"
-          }
-          onPress={handleAddToShoppingList}
-          disabled={addRecipeToShoppingList.isPending}
-          style={styles.footerButton}
-          textStyle={styles.footerButtonText}
-        />
-      </View>
+      <TouchableOpacity
+        style={[
+          styles.shoppingFab,
+          shoppingListAdded && styles.shoppingFabAdded,
+          { bottom: Math.max(insets.bottom + 88, 104) },
+        ]}
+        onPress={handleShoppingFabPress}
+        disabled={addRecipeToShoppingList.isPending}
+        activeOpacity={0.9}
+        accessibilityRole="button"
+        accessibilityLabel={shoppingFabLabel}
+      >
+        <Text style={styles.shoppingFabIcon}>{shoppingListAdded ? "✅" : "🛒"}</Text>
+        <View style={styles.shoppingFabContent}>
+          <Text style={styles.shoppingFabLabel}>{shoppingFabLabel}</Text>
+          <Text style={styles.shoppingFabHint}>
+            {shoppingListAdded ? "已加入当前清单" : "一键添加当前菜谱食材"}
+          </Text>
+        </View>
+      </TouchableOpacity>
 
       {/* 烹饪计时器弹窗 */}
       <CookingTimerModal
@@ -2454,53 +2480,42 @@ const styles = StyleSheet.create({
     color: Colors.secondary.dark,
   },
 
-  // 底部
+  // 悬浮购物按钮
   footerSpacer: {
-    height: 120,
+    height: 140,
   },
-  footer: {
+  shoppingFab: {
     position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: Colors.background.primary,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border.light,
-    padding: Spacing.lg,
-    paddingBottom: Spacing.xl,
-    ...Shadows.lg,
-  },
-  footerIndicator: {
+    right: Spacing.lg,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing.sm,
-    gap: Spacing.sm,
-  },
-  footerDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.neutral.gray300,
-  },
-  footerDotActive: {
+    maxWidth: width - Spacing.lg * 2,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
     backgroundColor: Colors.primary.main,
+    ...Shadows.lg,
   },
-  footerDotActiveBaby: {
+  shoppingFabAdded: {
     backgroundColor: Colors.secondary[500],
   },
-  footerIndicatorText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.text.secondary,
+  shoppingFabIcon: {
+    fontSize: 18,
+    marginRight: Spacing.sm,
   },
-  footerButton: {
-    backgroundColor: Colors.primary.main,
-    borderRadius: BorderRadius.lg,
-    flex: 1,
+  shoppingFabContent: {
+    flexShrink: 1,
   },
-  footerButtonText: {
+  shoppingFabLabel: {
+    color: Colors.text.inverse,
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
+  },
+  shoppingFabHint: {
+    marginTop: 2,
+    color: Colors.text.inverse,
+    fontSize: Typography.fontSize.xs,
+    opacity: 0.9,
   },
   startCookingButton: {
     backgroundColor: "#FF7043",

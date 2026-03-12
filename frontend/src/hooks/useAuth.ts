@@ -7,8 +7,6 @@ type WebStorageLike = {
   removeItem(key: string): void;
 };
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import { apiClient } from '../api/client';
 
 // 存储键名
 const TOKEN_KEY = 'access_token';
@@ -79,24 +77,6 @@ function emitAuthState(nextState: Partial<typeof authState>) {
   authListeners.forEach(listener => listener(authState));
 }
 
-// Web平台游客登录
-async function guestLoginForAuth(): Promise<string | null> {
-  try {
-    const response = await axios.post(`${(apiClient as any).client?.defaults?.baseURL || 'http://localhost:3000/api/v1'}/auth/guest`);
-    const payload = response.data?.data;
-    const token = payload?.token;
-    if (token) {
-      await tokenStorage.setToken(token);
-      await tokenStorage.setUserInfo(payload?.user || null);
-      emitAuthState({ user: payload?.user || null, isGuest: Boolean(payload?.user?.is_guest) });
-      return token;
-    }
-    return null;
-  } catch (error) {
-    console.error('Guest login failed:', error);
-    return null;
-  }
-}
 
 export function useAuth() {
   const [state, setState] = useState(authState);
@@ -116,10 +96,6 @@ export function useAuth() {
       const user = await tokenStorage.getUserInfo();
       if (token) {
         emitAuthState({ isAuthenticated: true, user, isGuest: Boolean(user?.is_guest) });
-      } else if (isWeb) {
-        // Web平台无token时，自动游客登录
-        const guestToken = await guestLoginForAuth();
-        emitAuthState({ isAuthenticated: !!guestToken });
       } else {
         emitAuthState({ isAuthenticated: false, user: null, isGuest: false });
       }

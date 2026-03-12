@@ -8,10 +8,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   removeItem: jest.fn(),
 }));
 
-const mockPost = jest.fn();
-
 jest.mock('axios', () => ({
-  post: (...args: any[]) => mockPost(...args),
   create: jest.fn(() => ({
     defaults: { baseURL: 'http://localhost:3000/api/v1' },
     interceptors: {
@@ -74,13 +71,8 @@ describe('useAuth web auth state sync', () => {
     };
   }
 
-  it('auto guest login on web without token and sync login state across hook instances', async () => {
+  it('keeps web unauthenticated without token and syncs logout state across hook instances', async () => {
     localStorageMock.getItem.mockReturnValue(null);
-    mockPost.mockResolvedValue({
-      data: {
-        data: { token: 'guest-token' },
-      },
-    });
 
     const first = renderHook();
     const second = renderHook();
@@ -90,7 +82,13 @@ describe('useAuth web auth state sync', () => {
       await Promise.resolve();
     });
 
-    expect(mockPost).toHaveBeenCalledWith('http://localhost:3000/api/v1/auth/guest');
+    expect(first.latest.current.isAuthenticated).toBe(false);
+    expect(second.latest.current.isAuthenticated).toBe(false);
+
+    await TestRenderer.act(async () => {
+      await second.latest.current.login('real-token', 'refresh-token', { id: 'u1', username: 'tester', is_guest: false });
+    });
+
     expect(first.latest.current.isAuthenticated).toBe(true);
     expect(second.latest.current.isAuthenticated).toBe(true);
 
