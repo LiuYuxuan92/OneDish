@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../styles/theme';
-import { useWeeklyPlan, useGenerateWeeklyPlan, useMarkMealComplete, useSmartRecommendations, useSubmitRecommendationFeedback, useCreateWeeklyShare, useJoinWeeklyShare, useSharedWeeklyPlan, useMarkSharedMealComplete, useRegenerateWeeklyShareInvite, useRemoveWeeklyShareMember } from '../../hooks/useMealPlans';
+import { useWeeklyPlan, useGenerateWeeklyPlan, useGenerateFromPrompt, useMarkMealComplete, useSmartRecommendations, useSubmitRecommendationFeedback, useCreateWeeklyShare, useJoinWeeklyShare, useSharedWeeklyPlan, useMarkSharedMealComplete, useRegenerateWeeklyShareInvite, useRemoveWeeklyShareMember } from '../../hooks/useMealPlans';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { PlanStackParamList } from '../../types';
 import { ShoppingBagIcon, RefreshCwIcon } from '../../components/common/Icons';
@@ -31,6 +31,8 @@ export function WeeklyPlanScreen({ navigation }: Props) {
     showGenOptions, setShowGenOptions,
     genBabyAge, setGenBabyAge,
     genExclude, setGenExclude,
+    isSmartMode, setIsSmartMode,
+    smartPrompt, setSmartPrompt,
     showSmartRec, setShowSmartRec,
     smartMealType, setSmartMealType,
     rejectReason, setRejectReason,
@@ -58,6 +60,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
   const { data: pageVm, isLoading: isPageVmLoading } = useWeeklyPlanPageViewModel(preferredBabyAge);
   const { data: weeklyData, isLoading, error, refetch } = useWeeklyPlan();
   const generateMutation = useGenerateWeeklyPlan();
+  const generateFromPromptMutation = useGenerateFromPrompt();
   const markCompleteMutation = useMarkMealComplete();
   const smartRecMutation = useSmartRecommendations();
   const feedbackMutation = useSubmitRecommendationFeedback();
@@ -109,7 +112,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
   const completionPct = weekSummary.completionPercent;
 
   const handleGenerate = async () => {
-    if (isGenerating || generateMutation.isPending) return;
+    if (isGenerating || generateMutation.isPending || generateFromPromptMutation.isPending) return;
     setIsGenerating(true);
     try {
       const allMealKeys: string[] = [];
@@ -121,16 +124,31 @@ export function WeeklyPlanScreen({ navigation }: Props) {
         ...preferredExcludeIngredients,
         ...genExclude.split(/[,，、]/).map(s => s.trim()).filter(Boolean),
       ].filter((value, index, arr) => value && arr.indexOf(value) === index);
-      if (effectiveBabyAge) params.baby_age_months = effectiveBabyAge;
-      if (effectiveExcludeIngredients.length > 0) params.exclude_ingredients = effectiveExcludeIngredients;
-      await generateMutation.mutateAsync(params);
-      if (isWebLocalGuestMode()) {
-        Alert.alert('预览模式', '当前为未登录预览，已为你生成一份示例周计划，方便先看整体效果。');
+
+      if (isSmartMode) {
+        const result = await generateFromPromptMutation.mutateAsync({
+          prompt: smartPrompt.trim(),
+          baby_age_months: effectiveBabyAge || undefined,
+        });
+        const payload = (result as any)?.data || result;
+        const remainingQuota = payload?.quota_status?.remaining_quota;
+        setSmartPrompt('');
+        setIsSmartMode(false);
+        Alert.alert('AI 周计划已生成', typeof remainingQuota === 'number' ? '本次已消耗 1 次自然语言周计划，剩余 ' + remainingQuota + ' 次。' : '本周计划已按你的描述生成。');
+      } else {
+        if (effectiveBabyAge) params.baby_age_months = effectiveBabyAge;
+        if (effectiveExcludeIngredients.length > 0) params.exclude_ingredients = effectiveExcludeIngredients;
+        await generateMutation.mutateAsync(params);
+        if (isWebLocalGuestMode()) {
+          Alert.alert('预览模式', '当前为未登录预览，已为你生成一份示例周计划，方便先看整体效果。');
+        }
       }
     } catch (genErr: unknown) {
-      const err = genErr as { response?: { status: number }; statusCode?: number };
+      const err = genErr as { response?: { status: number }; statusCode?: number; code?: number; http_status?: number; message?: string };
       if (err?.response?.status === 429 || err?.statusCode === 429) console.warn('请求过于频繁，请稍后再试');
-      else {
+      else if (err?.http_status === 403 || err?.code === 403) {
+        Alert.alert('会员次数不足', err?.message || '当前账号暂无可用的自然语言周计划次数，请开通或续费成长会员后继续使用。');
+      } else {
         console.error('生成计划失败:', genErr);
         Alert.alert('生成失败', isWebLocalGuestMode() ? '当前为未登录预览，可稍后重试，或先查看示例计划。' : '请稍后重试');
       }
@@ -149,7 +167,15 @@ export function WeeklyPlanScreen({ navigation }: Props) {
       const mealGroupCount = Object.keys(data?.recommendations || {}).length;
       await trackEvent('smart_recommendation_viewed', { page_id: 'weekly_plan', meal_type: smartMealType, meal_group_count: mealGroupCount });
       setShowSmartRec(true);
-    } catch (e) { console.error('智能推荐失败', e); }
+    } catch (e) {
+      const err = e as { code?: number; http_status?: number; message?: string; response?: { status?: number } };
+      if (err?.http_status === 403 || err?.code === 403 || err?.response?.status === 403) {
+        Alert.alert('会员次数不足', err?.message || '当前账号暂无可用的智能推荐次数，请开通或续费成长会员后继续使用。');
+        return;
+      }
+      console.error('智能推荐失败', e);
+      Alert.alert('推荐失败', '请稍后重试');
+    }
   };
 
   const handleSubmitFeedback = async (selectedOption: 'A' | 'B' | 'NONE') => {
@@ -374,7 +400,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
         ) : (<TodayDetailTab day={pageVm.today} onMealPress={handleMealPress} onMarkComplete={handleMarkComplete} onAddMeal={handleAddMeal} />)}
       </ScrollView>
       <SmartRecommendationModal visible={showSmartRec} onClose={() => setShowSmartRec(false)} data={smartRecMutation.data as Parameters<typeof SmartRecommendationModal>[0]['data']} mealType={smartMealType} onMealTypeChange={setSmartMealType} isPending={smartRecMutation.isPending} rejectReason={rejectReason} onRejectReasonChange={setRejectReason} onSubmitFeedback={handleSubmitFeedback} />
-      <GenerateOptionsModal visible={showGenOptions} onClose={() => setShowGenOptions(false)} babyAge={genBabyAge} onBabyAgeChange={setGenBabyAge} exclude={genExclude} onExcludeChange={setGenExclude} onGenerate={handleGenerate} />
+      <GenerateOptionsModal visible={showGenOptions} onClose={() => setShowGenOptions(false)} babyAge={genBabyAge} onBabyAgeChange={setGenBabyAge} exclude={genExclude} onExcludeChange={setGenExclude} onGenerate={handleGenerate} isSmartMode={isSmartMode} onSmartModeChange={setIsSmartMode} smartPrompt={smartPrompt} onSmartPromptChange={setSmartPrompt} />
       <ShareTemplateModal visible={showShareTemplate} onClose={() => setShowShareTemplate(false)} weeklyData={weeklyData} />
     </SafeAreaView>
   );

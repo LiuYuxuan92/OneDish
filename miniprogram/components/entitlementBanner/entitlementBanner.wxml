@@ -1,0 +1,22 @@
+<view class="entitlement-banner theme-{{theme}}">
+  <view class="banner-head">
+    <view class="banner-main">
+      <text class="banner-badge" wx:if="{{badgeText}}">{{badgeText}}</text>
+      <text class="banner-title">{{title}}</text>
+      <text class="banner-subtitle" wx:if="{{subtitle}}">{{subtitle}}</text>
+    </view>
+    <view class="banner-action" wx:if="{{actionText}}" bindtap="onActionTap">{{actionText}}</view>
+  </view>
+
+  <view class="quota-row" wx:if="{{quotaCards.length}}">
+    <block wx:for="{{quotaCards}}" wx:key="featureCode">
+      <view class="quota-pill">
+        <text class="quota-value">{{item.value || item.remainingText}}</text>
+        <text class="quota-title">{{item.title}}</text>
+        <text class="quota-desc" wx:if="{{item.desc || item.detailText}}">{{item.desc || item.detailText}}</text>
+      </view>
+    </block>
+  </view>
+
+  <text class="banner-footer" wx:if="{{footerText}}">{{footerText}}</text>
+</view>

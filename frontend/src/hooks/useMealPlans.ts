@@ -114,7 +114,7 @@ export function useSmartRecommendations() {
   return useMutation({
     mutationFn: async (params?: SmartRecommendationParams) => {
       const result = await mealPlansApi.getSmartRecommendations(params);
-      return result;
+      return result.data || result;
     },
   });
 }
@@ -256,7 +256,7 @@ export function useGenerateFromPrompt() {
   return useMutation({
     mutationFn: async ({ prompt, baby_age_months }: { prompt: string; baby_age_months?: number }) => {
       const result = await mealPlansApi.generateFromPrompt(prompt, baby_age_months);
-      return result;
+      return result.data || result;
     },
 
     onSuccess: (newData) => {

@@ -4,7 +4,13 @@
   padding: 24rpx;
 }
 
-/* Member Card */
+.loading-state {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .member-card {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 24rpx;
@@ -50,8 +56,19 @@
   color: #fda085;
 }
 
-/* Benefits Section */
-.benefits-section {
+.btn-login {
+  margin-top: 20rpx;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border-radius: 44rpx;
+  padding: 18rpx 44rpx;
+  font-size: 26rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.3);
+}
+
+.quota-section,
+.benefits-section,
+.faq-section {
   background: #fff;
   border-radius: 16rpx;
   padding: 24rpx;
@@ -64,9 +81,56 @@
   margin-bottom: 24rpx;
 }
 
-.benefits-grid {
+.quota-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16rpx;
+}
+
+.quota-card {
+  background: linear-gradient(180deg, #f6f8ff 0%, #eef2ff 100%);
+  border-radius: 16rpx;
+  padding: 20rpx 16rpx;
+}
+
+.quota-value {
+  font-size: 34rpx;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #3d5afe;
+}
+
+.quota-title {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #333;
+  margin-top: 10rpx;
+}
+
+.quota-desc {
+  font-size: 20rpx;
+  color: #7a7f8c;
+  margin-top: 6rpx;
+}
+
+.feature-group {
+  margin-bottom: 24rpx;
+}
+
+.feature-group:last-child {
+  margin-bottom: 0;
+}
+
+.feature-group-title {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #667085;
+  margin-bottom: 16rpx;
+}
+
+.feature-list {
+  display: flex;
+  flex-direction: column;
   gap: 16rpx;
 }
 
@@ -74,16 +138,26 @@
   background: #f5f7fb;
   border-radius: 12rpx;
   padding: 20rpx;
-  position: relative;
-  overflow: hidden;
 }
 
 .benefit-item.vip {
   background: linear-gradient(135deg, #fef3e2 0%, #fde8d0 100%);
 }
 
-.benefit-icon {
-  font-size: 40rpx;
+.benefit-item.upsell {
+  background: linear-gradient(180deg, #fff8f0 0%, #fff2df 100%);
+}
+
+.benefit-main {
+  display: flex;
+  flex-direction: column;
+}
+
+.benefit-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
   margin-bottom: 8rpx;
 }
 
@@ -91,31 +165,53 @@
   font-size: 26rpx;
   font-weight: 600;
   color: #333;
-  margin-bottom: 4rpx;
 }
 
 .benefit-desc {
   font-size: 22rpx;
-  color: #999;
+  color: #667085;
+  line-height: 1.6;
 }
 
 .benefit-tag {
-  position: absolute;
-  top: 12rpx;
-  right: 12rpx;
   background: #f5a623;
   color: #fff;
   font-size: 20rpx;
   padding: 4rpx 8rpx;
   border-radius: 8rpx;
+  flex-shrink: 0;
 }
 
-/* FAQ Section */
-.faq-section {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  margin-bottom: 24rpx;
+.benefit-tag.upsell {
+  background: #ff8f1f;
+}
+
+.benefit-extra {
+  margin-top: 10rpx;
+  font-size: 20rpx;
+  color: #667085;
+}
+
+.order-item {
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid #f1f3f5;
+}
+
+.order-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.order-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.order-desc {
+  font-size: 22rpx;
+  color: #8a8f99;
+  margin-top: 8rpx;
 }
 
 .faq-item {
@@ -139,15 +235,179 @@
   line-height: 1.5;
 }
 
-/* Share Section */
 .share-section {
   padding: 24rpx 0;
 }
 
-.btn-share {
-  background: #07c160;
-  color: #fff;
-  border-radius: 44rpx;
+.dev-section {
+  margin-top: 24rpx;
+  padding: 28rpx;
+  border-radius: 24rpx;
+  background: #eef6ff;
+  border: 1rpx dashed #90bfff;
+}
+
+.dev-desc {
+  font-size: 22rpx;
+  color: #5c6f82;
+  line-height: 1.6;
+  margin-bottom: 20rpx;
+}
+
+.dev-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.dev-btn {
+  flex: 1;
+  min-width: 260rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  color: #2f4f7f;
+  background: #ffffff;
+  border: 1rpx solid #bfd7ff;
+}
+
+.dev-btn.primary {
+  background: #4f8cff;
+  color: #ffffff;
+  border-color: #4f8cff;
+}
+
+.dev-btn.danger {
+  margin-top: 16rpx;
+  background: #fff1f0;
+  color: #c0392b;
+  border-color: #f5b7b1;
+}
+
+.dev-btn.full {
+  width: 100%;
+}
+
+
+.experience-section {
+  background: #fff;
+  border-radius: 16rpx;
   padding: 24rpx;
-  font-size: 30rpx;
+  margin-bottom: 24rpx;
+}
+
+.experience-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16rpx;
+}
+
+.experience-card {
+  padding: 22rpx 18rpx;
+  border-radius: 18rpx;
+  background: linear-gradient(135deg, #f3f7ff, #eef3ff);
+}
+
+.experience-card.warm {
+  background: linear-gradient(135deg, #fff8ef, #fff0de);
+}
+
+.experience-card.light {
+  background: linear-gradient(135deg, #f3faf5, #eef8f1);
+}
+
+.experience-title {
+  font-size: 25rpx;
+  font-weight: 700;
+  color: #333;
+}
+
+.experience-desc {
+  margin-top: 10rpx;
+  font-size: 21rpx;
+  line-height: 1.6;
+  color: #667085;
+}
+
+
+.product-section {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 24rpx;
+}
+
+.product-card {
+  padding: 22rpx;
+  border-radius: 18rpx;
+  background: #f7f9fc;
+  border: 1rpx solid #edf1f5;
+  margin-bottom: 16rpx;
+}
+
+.product-card:last-child {
+  margin-bottom: 0;
+}
+
+.product-card.active {
+  background: linear-gradient(135deg, #fff8ef, #fff0de);
+  border-color: #ffc982;
+}
+
+.product-top,
+.product-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.product-top {
+  gap: 20rpx;
+}
+
+.product-title-row {
+  justify-content: flex-start;
+  gap: 10rpx;
+}
+
+.product-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #333;
+}
+
+.product-badge {
+  padding: 4rpx 10rpx;
+  border-radius: 999rpx;
+  background: #ff8f1f;
+  color: #fff;
+  font-size: 20rpx;
+}
+
+.product-subtitle,
+.product-desc {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #667085;
+  line-height: 1.6;
+}
+
+.product-price {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #111827;
+}
+
+.product-highlight-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 16rpx;
+}
+
+.product-highlight {
+  padding: 8rpx 12rpx;
+  border-radius: 999rpx;
+  background: #ffffff;
+  color: #49566a;
+  font-size: 20rpx;
 }

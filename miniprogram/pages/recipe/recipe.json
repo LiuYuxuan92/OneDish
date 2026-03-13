@@ -2,6 +2,7 @@
   "navigationBarTitleText": "菜谱",
   "enablePullDownRefresh": true,
   "usingComponents": {
-    "skeleton": "/components/skeleton/skeleton"
+    "skeleton": "/components/skeleton/skeleton",
+    "entitlement-banner": "/components/entitlementBanner/entitlementBanner"
   }
 }

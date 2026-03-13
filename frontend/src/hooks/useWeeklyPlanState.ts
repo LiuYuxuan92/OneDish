@@ -13,46 +13,37 @@ export const MEAL_LABELS: Record<string, { label: string; icon: string; color: s
 };
 
 export interface WeeklyPlanState {
-  // Week navigation
   selectedWeek: Date;
   setSelectedWeek: (date: Date) => void;
   start: Date;
   end: Date;
   dates: string[];
-  
-  // Tab state
   activeTab: 'week' | 'today';
   setActiveTab: (tab: 'week' | 'today') => void;
-  
-  // Refresh state
   refreshingMeals: Set<string>;
   setRefreshingMeals: (meals: Set<string>) => void;
   isGenerating: boolean;
   setIsGenerating: (generating: boolean) => void;
-  
-  // Generation options
   showGenOptions: boolean;
   setShowGenOptions: (show: boolean) => void;
   genBabyAge: number | null;
   setGenBabyAge: (age: number | null) => void;
   genExclude: string;
   setGenExclude: (exclude: string) => void;
-  
-  // Smart recommendation
+  isSmartMode: boolean;
+  setIsSmartMode: (enabled: boolean) => void;
+  smartPrompt: string;
+  setSmartPrompt: (prompt: string) => void;
   showSmartRec: boolean;
   setShowSmartRec: (show: boolean) => void;
   smartMealType: 'all-day' | 'breakfast' | 'lunch' | 'dinner';
   setSmartMealType: (type: 'all-day' | 'breakfast' | 'lunch' | 'dinner') => void;
   rejectReason: string;
   setRejectReason: (reason: string) => void;
-  
-  // Share
   weeklyInviteCode: string;
   setWeeklyInviteCode: (code: string) => void;
   activeShareId: string | null;
   setActiveShareId: (id: string | null) => void;
-  
-  // Helpers
   formatDate: (date: Date) => string;
   getWeekRange: (date: Date) => { start: Date; end: Date };
 }
@@ -66,6 +57,8 @@ export function useWeeklyPlanState(): WeeklyPlanState {
   const [showGenOptions, setShowGenOptions] = useState(false);
   const [genBabyAge, setGenBabyAge] = useState<number | null>(null);
   const [genExclude, setGenExclude] = useState('');
+  const [isSmartMode, setIsSmartMode] = useState(false);
+  const [smartPrompt, setSmartPrompt] = useState('');
   const [showSmartRec, setShowSmartRec] = useState(false);
   const [smartMealType, setSmartMealType] = useState<'all-day' | 'breakfast' | 'lunch' | 'dinner'>('all-day');
   const [rejectReason, setRejectReason] = useState('');
@@ -119,6 +112,10 @@ export function useWeeklyPlanState(): WeeklyPlanState {
     setGenBabyAge,
     genExclude,
     setGenExclude,
+    isSmartMode,
+    setIsSmartMode,
+    smartPrompt,
+    setSmartPrompt,
     showSmartRec,
     setShowSmartRec,
     smartMealType,

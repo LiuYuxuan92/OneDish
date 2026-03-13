@@ -275,6 +275,7 @@ export type PlanStackParamList = {
 
 export type ProfileStackParamList = {
   Profile: undefined;
+  Membership: undefined;
   Settings: undefined;
   PreferenceSettings: undefined;
   AISettings: undefined;

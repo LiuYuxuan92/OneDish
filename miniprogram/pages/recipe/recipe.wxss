@@ -1005,3 +1005,73 @@
   font-size: 24rpx;
   line-height: 1.72;
 }
+
+
+.ai-quota-card {
+  margin-top: 18rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 22rpx;
+  background: linear-gradient(135deg, #fff7ea, #fff1dd);
+}
+
+.ai-quota-title,
+.ai-quota-desc,
+.ai-upsell-copy,
+.ai-modal-quota-desc {
+  display: block;
+}
+
+.ai-quota-title {
+  color: #8a6332;
+  font-size: 22rpx;
+}
+
+.ai-quota-value,
+.ai-modal-quota-value {
+  display: block;
+  margin-top: 10rpx;
+  color: #8f5717;
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.ai-quota-desc,
+.ai-modal-quota-desc {
+  margin-top: 8rpx;
+  color: #9a7750;
+  font-size: 21rpx;
+  line-height: 1.6;
+}
+
+.ai-upsell-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14rpx;
+  margin-top: 18rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 22rpx;
+  background: #fff7ef;
+}
+
+.ai-upsell-copy {
+  flex: 1;
+  min-width: 0;
+  color: #8b6d47;
+  font-size: 22rpx;
+  line-height: 1.6;
+}
+
+.ai-upsell-link {
+  flex-shrink: 0;
+  color: #b16a1f;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.ai-modal-quota {
+  margin-bottom: 18rpx;
+  padding: 18rpx;
+  border-radius: 20rpx;
+  background: #fff7ef;
+}

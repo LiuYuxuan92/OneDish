@@ -1,12 +1,15 @@
 import { Request, Response } from 'express';
 import { MealPlanService } from '../services/mealPlan.service';
+import { BillingService } from '../services/billing.service';
 import { logger } from '../utils/logger';
 
 export class MealPlanController {
   private mealPlanService: MealPlanService;
+  private billingService: BillingService;
 
-  constructor() {
-    this.mealPlanService = new MealPlanService();
+  constructor(mealPlanService = new MealPlanService(), billingService = new BillingService()) {
+    this.mealPlanService = mealPlanService;
+    this.billingService = billingService;
   }
 
   // 获取一周计划
@@ -201,7 +204,6 @@ export class MealPlanController {
       const userId = (req as any).user.user_id;
       const { start_date, preferences, baby_age_months, exclude_ingredients } = req.body;
 
-      // 合并新参数到 preferences
       const mergedPrefs = {
         ...preferences,
         baby_age_months: baby_age_months || preferences?.baby_age_months,
@@ -243,16 +245,51 @@ export class MealPlanController {
         });
       }
 
+      const quotaStatus = await this.billingService.getFeatureQuotaStatus(userId, 'weekly_plan_from_prompt');
+      if (!quotaStatus.available) {
+        logger.warn('Weekly plan prompt quota unavailable', {
+          userId,
+          featureCode: 'weekly_plan_from_prompt',
+        });
+
+        return res.status(403).json({
+          code: 403,
+          message: '当前账号暂无可用的自然语言周计划次数，请开通或续费成长会员后继续使用',
+          data: {
+            feature_code: 'weekly_plan_from_prompt',
+            upgrade_required: true,
+            remaining_quota: 0,
+          },
+        });
+      }
+
       const result = await this.mealPlanService.generateFromPrompt(
         userId,
         prompt,
         baby_age_months
       );
 
+      const consumeResult = await this.billingService.consumeFeatureQuota({
+        userId,
+        featureCode: 'weekly_plan_from_prompt',
+        modelCode: 'meal_plan_prompt:auto',
+        metadata: {
+          prompt_length: String(prompt).trim().length,
+          baby_age_months: baby_age_months || null,
+          entry: 'meal_plans.generate-from-prompt',
+        },
+      });
+
       res.json({
         code: 200,
         message: '生成成功',
-        data: result,
+        data: {
+          ...result,
+          quota_status: {
+            feature_code: 'weekly_plan_from_prompt',
+            remaining_quota: consumeResult.remaining_quota,
+          },
+        },
       });
     } catch (error) {
       logger.error('Failed to generate weekly plan from prompt', { error });
@@ -276,6 +313,25 @@ export class MealPlanController {
         exclude_ingredients = [],
       } = req.body || {};
 
+      const quotaStatus = await this.billingService.getFeatureQuotaStatus(userId, 'smart_recommendation');
+      if (!quotaStatus.available) {
+        logger.warn('Smart recommendation quota unavailable', {
+          userId,
+          featureCode: 'smart_recommendation',
+          meal_type,
+        });
+
+        return res.status(403).json({
+          code: 403,
+          message: '当前账号暂无可用的智能推荐次数，请开通或续费成长会员后继续使用',
+          data: {
+            feature_code: 'smart_recommendation',
+            upgrade_required: true,
+            remaining_quota: 0,
+          },
+        });
+      }
+
       const result = await this.mealPlanService.getSmartRecommendations(userId, {
         meal_type,
         baby_age_months,
@@ -284,10 +340,30 @@ export class MealPlanController {
         exclude_ingredients,
       });
 
+      const consumeResult = await this.billingService.consumeFeatureQuota({
+        userId,
+        featureCode: 'smart_recommendation',
+        modelCode: 'smart_recommendation:auto',
+        metadata: {
+          meal_type,
+          baby_age_months: baby_age_months || null,
+          max_prep_time: max_prep_time || null,
+          exclude_ingredient_count: Array.isArray(exclude_ingredients) ? exclude_ingredients.length : 0,
+          inventory_count: Array.isArray(inventory) ? inventory.length : 0,
+          entry: 'meal_plans.recommendations',
+        },
+      });
+
       res.json({
         code: 200,
         message: '生成成功',
-        data: result,
+        data: {
+          ...result,
+          quota_status: {
+            feature_code: 'smart_recommendation',
+            remaining_quota: consumeResult.remaining_quota,
+          },
+        },
       });
     } catch (error) {
       logger.error('Failed to generate smart recommendations', { error });
@@ -358,7 +434,7 @@ export class MealPlanController {
       return res.json({ code: 200, message: '重算完成', data: result });
     } catch (error) {
       logger.error('Failed to recompute recommendation learning', { error });
-      return res.status(500).json({ code: 500, message: '推荐学习重算失败', data: null });
+      return res.status(500).json({ code: 500, message: '重算失败', data: null });
     }
   };
 }

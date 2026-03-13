@@ -144,6 +144,17 @@
             <text class="section-badge warm" wx:else>可按月龄生成</text>
           </view>
 
+          <entitlement-banner wx:if="{{recipeBanner.title}}"
+            title="{{recipeBanner.title}}"
+            subtitle="{{recipeBanner.subtitle}}"
+            badge-text="{{recipeBanner.badgeText}}"
+            action-text="{{recipeBanner.actionText}}"
+            footer-text="{{recipeBanner.footerText}}"
+            quota-cards="{{recipeBanner.quotaCards}}"
+            theme="{{recipeBanner.theme}}"
+            bindactiontap="goToMembership"
+          />
+
           <block wx:if="{{detail.baby_version}}">
             <text class="detail-card-copy" wx:if="{{detail.baby_version.description}}">
               {{detail.baby_version.description}}
@@ -266,6 +277,10 @@
       <text class="ai-modal-close" bindtap="closeAIGenerateModal">×</text>
     </view>
     <view class="ai-modal-body">
+      <view class="ai-modal-quota" wx:if="{{aiQuotaCard}}">
+        <text class="ai-modal-quota-value">剩余 {{aiQuotaCard.value}}</text>
+        <text class="ai-modal-quota-desc">{{aiQuotaCard.desc}}</text>
+      </view>
       <view class="ai-option-group">
         <text class="ai-option-label">宝宝月龄</text>
         <view class="ai-age-selector">

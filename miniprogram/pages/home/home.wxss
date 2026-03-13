@@ -394,3 +394,118 @@
   line-height: 1.6;
   color: #6a756e;
 }
+
+
+.member-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-top: 18rpx;
+  padding: 24rpx;
+  border-radius: 28rpx;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 16rpx 34rpx rgba(34, 48, 41, 0.08);
+}
+
+.member-strip.active {
+  background: linear-gradient(135deg, #fff7e8, #fff2dc);
+}
+
+.member-strip-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.member-strip-title {
+  display: block;
+  color: #24342d;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.member-strip-subtitle {
+  display: block;
+  margin-top: 10rpx;
+  color: #6f7f77;
+  font-size: 22rpx;
+  line-height: 1.6;
+}
+
+.member-strip-action {
+  flex-shrink: 0;
+  padding: 14rpx 22rpx;
+  border-radius: 999rpx;
+  background: #234033;
+  color: #ffffff;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.quota-strip {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 18rpx;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.quota-pill {
+  min-width: 180rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 24rpx;
+  background: linear-gradient(135deg, #f5f8ff, #eef3ff);
+  box-shadow: 0 12rpx 24rpx rgba(48, 83, 144, 0.08);
+  box-sizing: border-box;
+}
+
+.quota-pill-value {
+  display: block;
+  color: #365e9d;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.quota-pill-title {
+  display: block;
+  margin-top: 8rpx;
+  color: #6a7792;
+  font-size: 21rpx;
+}
+
+.shortcut-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14rpx;
+  margin-top: 18rpx;
+}
+
+.shortcut-card {
+  padding: 22rpx 18rpx;
+  border-radius: 26rpx;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 14rpx 30rpx rgba(34, 48, 41, 0.08);
+}
+
+.shortcut-card.warm {
+  background: linear-gradient(135deg, #fff8ef, #fff1df);
+}
+
+.shortcut-card.light {
+  background: linear-gradient(135deg, #f3f9f6, #eef8f1);
+}
+
+.shortcut-title {
+  display: block;
+  color: #24342d;
+  font-size: 25rpx;
+  font-weight: 700;
+}
+
+.shortcut-desc {
+  display: block;
+  margin-top: 10rpx;
+  color: #74827b;
+  font-size: 21rpx;
+  line-height: 1.6;
+}

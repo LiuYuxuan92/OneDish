@@ -42,7 +42,11 @@ function request({ url, method = 'GET', data = {}, withAuth = false, showLoading
               }
             }
           });
-          reject(new Error('未授权'));
+          const error = new Error('未授权');
+          error.statusCode = res.statusCode;
+          error.code = payload.code || 401;
+          error.data = payload.data || null;
+          reject(error);
           return;
         }
 
@@ -52,7 +56,11 @@ function request({ url, method = 'GET', data = {}, withAuth = false, showLoading
             title: '服务器繁忙，请稍后重试',
             icon: 'none'
           });
-          reject(new Error('服务器错误'));
+          const error = new Error(payload.message || '服务器错误');
+          error.statusCode = res.statusCode;
+          error.code = payload.code || res.statusCode;
+          error.data = payload.data || null;
+          reject(error);
           return;
         }
 
@@ -61,7 +69,11 @@ function request({ url, method = 'GET', data = {}, withAuth = false, showLoading
           return;
         }
 
-        reject(new Error(payload.message || `请求失败(${res.statusCode})`));
+        const error = new Error(payload.message || `请求失败(${res.statusCode})`);
+        error.statusCode = res.statusCode;
+        error.code = payload.code || res.statusCode;
+        error.data = payload.data || null;
+        reject(error);
       },
       fail(err) {
         if (showLoading) {

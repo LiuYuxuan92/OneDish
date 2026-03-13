@@ -1,57 +1,140 @@
 <view class="container">
-  <!-- 会员状态卡 -->
-  <view class="member-card {{isMember ? 'active' : ''}}">
-    <view class="member-icon">{{isMember ? '👑' : '🥚'}}</view>
-    <view class="member-title">{{isMember ? '简家厨会员' : '开通会员'}}</view>
-    <view class="member-subtitle" wx:if="{{isMember}}">
-      有效期至 {{expireDate}}
-    </view>
-    <view class="member-subtitle" wx:else>
-      享受 AI 推荐 + 专属菜谱 + 无广告
-    </view>
-    
-    <button class="btn-member" bindtap="openMember" wx:if="{{!isMember}}">
-      ¥9.9/月
-    </button>
-    <button class="btn-member" bindtap="renewMember" wx:else>
-      续费会员
-    </button>
+  <view class="loading-state" wx:if="{{loading}}">
+    <van-loading size="24px" vertical>加载会员信息中</van-loading>
   </view>
 
-  <!-- 会员权益 -->
-  <view class="benefits-section">
-    <view class="section-title">会员权益</view>
-    <view class="benefits-grid">
-      <block wx:for="{{benefits}}" wx:key="index">
-        <view class="benefit-item {{item.isVip ? 'vip' : 'free'}}">
-          <view class="benefit-icon">{{item.icon}}</view>
-          <view class="benefit-title">{{item.title}}</view>
-          <view class="benefit-desc">{{item.desc}}</view>
-          <view class="benefit-tag" wx:if="{{item.isVip}}">VIP</view>
+  <block wx:else>
+    <view class="member-card {{isMember ? 'active' : ''}}">
+      <view class="member-icon">{{isMember ? '👑' : '🥚'}}</view>
+      <view class="member-title">{{isMember ? '成长会员已开通' : '开通成长会员'}}</view>
+      <view class="member-subtitle" wx:if="{{isMember}}">有效期至 {{expireDate}}</view>
+      <view class="member-subtitle" wx:else>同一会员，小程序先享核心 AI，App 解锁完整家庭体验</view>
+
+      <button class="btn-member" bindtap="openMember" wx:if="{{!isMember}}">
+        {{selectedProduct ? '¥' + selectedProduct.price_yuan + '/' + (selectedProduct.code === 'growth_quarterly_4900' ? '季' : '月') : '查看方案'}}
+      </button>
+      <button class="btn-member" bindtap="renewMember" wx:else>续费会员</button>
+      <button class="btn-login" bindtap="goToLogin" wx:if="{{!isLoggedIn}}">登录后同步权益</button>
+    </view>
+
+    <view class="quota-section" wx:if="{{isMember && quotaCards.length}}">
+      <view class="section-title">本期剩余次数</view>
+      <view class="quota-grid">
+        <block wx:for="{{quotaCards}}" wx:key="featureCode">
+          <view class="quota-card">
+            <view class="quota-value">{{item.remainingText}}</view>
+            <view class="quota-title">{{item.title}}</view>
+            <view class="quota-desc">{{item.detailText}}</view>
+          </view>
+        </block>
+      </view>
+    </view>
+
+    <view class="product-section" wx:if="{{products.length}}">
+      <view class="section-title">套餐对比</view>
+      <block wx:for="{{products}}" wx:key="code">
+        <view class="product-card {{selectedProduct && selectedProduct.code === item.code ? 'active' : ''}}" bindtap="selectProduct" data-code="{{item.code}}">
+          <view class="product-top">
+            <view>
+              <view class="product-title-row">
+                <text class="product-title">{{item.name}}</text>
+                <text class="product-badge" wx:if="{{item.isRecommended}}">推荐</text>
+              </view>
+              <view class="product-subtitle">{{item.billingLabel}}</view>
+            </view>
+            <view class="product-price">¥{{item.price_yuan}}</view>
+          </view>
+          <view class="product-desc">{{item.description}}</view>
+          <view class="product-highlight-list">
+            <block wx:for="{{item.quotaHighlights}}" wx:key="*this">
+              <text class="product-highlight">{{item}}</text>
+            </block>
+          </view>
         </view>
       </block>
     </view>
-  </view>
 
-  <!-- 常见问题 -->
-  <view class="faq-section">
-    <view class="section-title">常见问题</view>
-    <view class="faq-item">
-      <view class="faq-q">Q: 会员可以退款吗？</view>
-      <view class="faq-a">A: 未使用的会员时长可申请退款</view>
+    <view class="experience-section">
+      <view class="section-title">开通后先体验</view>
+      <view class="experience-grid">
+        <view class="experience-card" bindtap="goToHome">
+          <view class="experience-title">首页推荐</view>
+          <view class="experience-desc">先看智能推荐，再决定今晚吃什么。</view>
+        </view>
+        <view class="experience-card warm" bindtap="goToPlan">
+          <view class="experience-title">周计划</view>
+          <view class="experience-desc">输入一句描述，快速排出一周主线。</view>
+        </view>
+        <view class="experience-card light" bindtap="goToRecipe">
+          <view class="experience-title">宝宝改写</view>
+          <view class="experience-desc">进菜谱详情即可试 AI 宝宝版改写。</view>
+        </view>
+      </view>
     </view>
-    <view class="faq-item">
-      <view class="faq-q">Q: 会员到期后收藏的菜谱还在吗？</view>
-      <view class="faq-a">A: 在的，收藏内容不会丢失</view>
-    </view>
-    <view class="faq-item">
-      <view class="faq-q">Q: 怎么取消自动续费？</view>
-      <view class="faq-a">A: 在微信支付管理中取消</view>
-    </view>
-  </view>
 
-  <!-- 分享 -->
-  <view class="share-section">
-    <van-button type="success" size="large" round open-type="share">📤 分享给朋友</van-button>
-  </view>
+    <view class="benefits-section">
+      <view class="section-title">成长会员权益</view>
+      <block wx:for="{{featureGroups}}" wx:key="key">
+        <view class="feature-group">
+          <view class="feature-group-title">{{item.title}}</view>
+          <view class="feature-list">
+            <block wx:for="{{item.items}}" wx:key="feature_code">
+              <view class="benefit-item {{item.isUpsell ? 'upsell' : 'vip'}}">
+                <view class="benefit-main">
+                  <view class="benefit-title-row">
+                    <view class="benefit-title">{{item.display_name}}</view>
+                    <view class="benefit-tag {{item.isUpsell ? 'upsell' : ''}}">{{item.tagLabel}}</view>
+                  </view>
+                  <view class="benefit-desc">{{item.description}}</view>
+                  <view class="benefit-extra">{{item.isUpsell ? item.upsell_copy : item.experienceLabel}}</view>
+                </view>
+              </view>
+            </block>
+          </view>
+        </view>
+      </block>
+    </view>
+
+    <view class="benefits-section" wx:if="{{recentOrders.length}}">
+      <view class="section-title">最近订单</view>
+      <block wx:for="{{recentOrders}}" wx:key="id">
+        <view class="order-item">
+          <view class="order-title">{{item.metadata.product_name || item.product_code}}</view>
+          <view class="order-desc">{{item.status === 'paid' ? '已支付' : '待支付'}} · ¥{{item.amount_yuan}}</view>
+        </view>
+      </block>
+    </view>
+
+    <view class="dev-section" wx:if="{{isLoggedIn && isDevToolsVisible}}">
+      <view class="section-title">开发测试工具</view>
+      <view class="dev-desc">仅测试环境显示，方便你反复验证开会员、续费、重置额度等链路。</view>
+      <view class="dev-grid">
+        <button class="dev-btn primary" loading="{{devActionLoading}}" bindtap="grantDevMonthly">一键开月卡</button>
+        <button class="dev-btn" loading="{{devActionLoading}}" bindtap="grantDevQuarterly">一键开季卡</button>
+        <button class="dev-btn" loading="{{devActionLoading}}" bindtap="grantDevAIPack">发宝宝 AI 包</button>
+        <button class="dev-btn" loading="{{devActionLoading}}" bindtap="resetDevQuotas">重置全部额度</button>
+      </view>
+      <button class="dev-btn danger full" loading="{{devActionLoading}}" bindtap="clearDevBenefits">清空测试权益</button>
+    </view>
+
+    <view class="faq-section">
+      <view class="section-title">说明</view>
+      <view class="faq-item">
+        <view class="faq-q">会员是否跨端通用？</view>
+        <view class="faq-a">是的。成长会员绑定账号，同一账号登录小程序和 App 都可享受对应权益。</view>
+      </view>
+      <view class="faq-item">
+        <view class="faq-q">为什么有些功能提示去 App？</view>
+        <view class="faq-a">小程序适合快速决策，App 更适合库存管理、周复盘、家庭协作等深度功能。</view>
+      </view>
+      <view class="faq-item">
+        <view class="faq-q">现在可以直接支付吗？</view>
+        <view class="faq-a">后端权益中心已完成，微信支付链路正在接入，当前页面先展示真实会员结构与权益范围。</view>
+      </view>
+    </view>
+
+    <view class="share-section">
+      <van-button type="success" size="large" round open-type="share">📤 分享给朋友</van-button>
+    </view>
+  </block>
 </view>

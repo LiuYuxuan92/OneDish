@@ -20,6 +20,17 @@
         <text class="stat-label">{{activeListDate || '未同步'}}</text>
       </view>
     </view>
+
+    <entitlement-banner wx:if="{{planBanner.title}}"
+      title="{{planBanner.title}}"
+      subtitle="{{planBanner.subtitle}}"
+      badge-text="{{planBanner.badgeText}}"
+      action-text="{{planBanner.actionText}}"
+      footer-text="{{planBanner.footerText}}"
+      quota-cards="{{planBanner.quotaCards}}"
+      theme="{{planBanner.theme}}"
+      bindactiontap="goToMembership"
+    />
   </view>
 
   <view class="feedback-banner feedback-banner-{{actionFeedback.tone}}" wx:if="{{actionFeedback}}">
@@ -148,6 +159,23 @@
       <text>{{planPreferenceSummary || '生成时会优先参考宝宝月龄、做饭时长和忌口。'}}</text>
     </view>
 
+    <view class="quota-inline-card" wx:if="{{weeklyPlanQuotaCard}}">
+      <text class="quota-inline-title">本期自然语言周计划</text>
+      <text class="quota-inline-value">{{weeklyPlanQuotaCard.value}}</text>
+      <text class="quota-inline-desc">{{weeklyPlanQuotaCard.desc}}</text>
+    </view>
+
+    <view class="generate-guide-row">
+      <view class="guide-card" bindtap="goToMembership">
+        <text class="guide-card-title">会员说明</text>
+        <text class="guide-card-desc">看剩余次数和跨端权益</text>
+      </view>
+      <view class="guide-card light" bindtap="goToRecipe">
+        <text class="guide-card-title">去找菜谱</text>
+        <text class="guide-card-desc">先看菜，再回来生成周计划</text>
+      </view>
+    </view>
+
     <view class="mode-switch">
       <view class="mode-chip {{isSmartMode ? 'active' : ''}}" bindtap="toggleSmartMode">智能描述</view>
       <view class="mode-chip {{!isSmartMode ? 'active' : ''}}" bindtap="toggleSmartMode">标准选项</view>
@@ -188,9 +216,27 @@
     </view>
 
     <view class="generated-card" wx:if="{{generatedMealPlan}}">
-      <text class="generated-title">{{generatedMealPlan.title || '周计划已生成'}}</text>
-      <text class="generated-desc">已将相关食材追加到本地清单，可继续修改后再次生成。</text>
-      <view class="generated-link" bindtap="viewGeneratedPlan">查看概览</view>
+      <text class="generated-title">{{generatedMealPlan.title || '本周计划已生成'}}</text>
+      <text class="generated-desc">先浏览每天安排，再决定是否继续微调需求。</text>
+      <view class="generated-tags" wx:if="{{generatedPlanSummaryTags.length}}">
+        <block wx:for="{{generatedPlanSummaryTags}}" wx:key="*this">
+          <text class="generated-tag">{{item}}</text>
+        </block>
+      </view>
+      <view class="generated-day-list" wx:if="{{generatedPlanPreviewDays.length}}">
+        <block wx:for="{{generatedPlanPreviewDays}}" wx:key="date" wx:for-item="dayItem">
+          <view class="generated-day-card">
+            <text class="generated-day-title">{{dayItem.label}}</text>
+            <block wx:for="{{dayItem.meals}}" wx:key="mealType" wx:for-item="mealItem">
+              <view class="generated-meal-row">
+                <text class="generated-meal-type">{{mealItem.mealLabel}}</text>
+                <text class="generated-meal-name">{{mealItem.name}}</text>
+              </view>
+            </block>
+          </view>
+        </block>
+      </view>
+      <view class="generated-link" bindtap="viewGeneratedPlan">查看完整概览</view>
     </view>
   </view>
 

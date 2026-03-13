@@ -1,5 +1,7 @@
 const api = require('../../utils/api');
 const cache = require('../../utils/cache');
+const { trackEvent } = require('../../utils/analytics');
+const { buildQuotaCard, buildBannerModel, handleQuotaUpgradeError } = require('../../utils/entitlements');
 
 const CACHE_KEY_RECIPES = 'recipes_list';
 const RECIPE_DETAIL_PENDING_KEY = 'pending_recipe_detail_id';
@@ -156,6 +158,8 @@ Page({
     actionFeedback: null,
     babyVersionFlash: false,
     detailScrollTarget: '',
+    aiQuotaCard: null,
+    recipeBanner: { title: '', subtitle: '', badgeText: '', actionText: '', footerText: '', quotaCards: [], theme: 'neutral' },
   },
 
   setActionFeedback(message, tone = 'info') {
@@ -190,6 +194,7 @@ Page({
 
   onShow() {
     this.checkNetworkStatus();
+    this.loadBillingSnapshot();
     this.loadRecipes();
     this.consumePendingRecipeDetail();
 
@@ -202,6 +207,46 @@ Page({
   async checkNetworkStatus() {
     const isOnline = await cache.checkNetworkStatus();
     this.setData({ isOffline: !isOnline });
+  },
+
+  updateRecipeBanner() {
+    const { aiQuotaCard } = this.data;
+    this.setData({
+      recipeBanner: buildBannerModel({
+        title: aiQuotaCard ? '宝宝版 AI 改写可直接用' : '开通成长会员，宝宝改写更顺手',
+        subtitle: aiQuotaCard
+          ? `本期宝宝版 AI 剩余 ${aiQuotaCard.value}`
+          : '宝宝版 AI 改写、跨端同步和次数查看，已经统一收进成长会员。',
+        badgeText: '当前菜谱可直接生成宝宝版',
+        actionText: aiQuotaCard ? '查看权益' : '去开通',
+        footerText: '小程序先快速生成，App 里还可继续做更完整的家庭管理。',
+        quotaCards: aiQuotaCard ? [aiQuotaCard] : [],
+        theme: aiQuotaCard ? 'warm' : 'neutral',
+      }),
+    });
+  },
+
+  async loadBillingSnapshot() {
+    const token = wx.getStorageSync('token');
+    if (!token) {
+      this.setData({ aiQuotaCard: null });
+      this.updateRecipeBanner();
+      return;
+    }
+
+    try {
+      const summary = await api.getBillingSummary('miniprogram');
+      this.setData({ aiQuotaCard: buildQuotaCard(summary, 'ai_baby_recipe') });
+      this.updateRecipeBanner();
+    } catch (_err) {
+      this.setData({ aiQuotaCard: null });
+      this.updateRecipeBanner();
+    }
+  },
+
+  goToMembership() {
+    trackEvent('mp_membership_tap', { source: 'recipe_banner' });
+    wx.navigateTo({ url: '/pages/membership/membership' });
   },
 
   consumePendingRecipeDetail() {
@@ -451,6 +496,7 @@ Page({
       wx.showToast({ title: '联网菜谱暂不支持生成宝宝版', icon: 'none' });
       return;
     }
+    trackEvent('mp_baby_rewrite_entry_tap', { source: 'recipe_detail' });
     this.setData({ showAIGenerateModal: true });
   },
 
@@ -481,6 +527,11 @@ Page({
     this.setData({ isGenerating: true });
 
     try {
+      trackEvent('mp_baby_rewrite_generate_click', {
+        source: 'recipe_detail',
+        baby_age_months: selectedBabyAge,
+        mode: generateUseAI ? 'ai' : 'rule',
+      });
       const result = await api.generateAIBabyVersion(detail.id, selectedBabyAge, generateUseAI);
       const nextDetail = adaptRecipeData({
         ...detail,
@@ -499,6 +550,7 @@ Page({
       });
 
       wx.showToast({ title: '生成成功', icon: 'success' });
+      this.loadBillingSnapshot();
       if (detail.id) {
         cache.setCache(`recipe_${detail.id}`, nextDetail);
       }
@@ -515,6 +567,13 @@ Page({
     } catch (err) {
       console.error('[recipe] generate AI baby version failed:', err);
       this.setData({ isGenerating: false });
+      if (handleQuotaUpgradeError(err, {
+        featureCode: 'ai_baby_recipe',
+        source: 'recipe_ai_generate',
+        onConfirm: () => this.goToMembership(),
+      })) {
+        return;
+      }
       wx.showToast({ title: err.message || '生成失败', icon: 'none' });
     }
   },

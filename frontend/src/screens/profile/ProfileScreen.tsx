@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
 import { useUserInfo } from '../../hooks/useUsers';
-import { ChevronRightIcon, UserIcon, HeartIcon, SettingsIcon, HelpCircleIcon, InfoIcon, ListIcon, UtensilsIcon } from '../../components/common/Icons';
+import { ChevronRightIcon, UserIcon, HeartIcon, SettingsIcon, HelpCircleIcon, InfoIcon, ListIcon, UtensilsIcon, StarIcon } from '../../components/common/Icons';
 import { BabyAgeCard } from '../../components/common/BabyAgeCard';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ProfileStackParamList } from '../../types';
@@ -49,6 +49,13 @@ export function ProfileScreen({ navigation }: Props) {
   ];
 
   const mainMenuItems: MenuItem[] = [
+    {
+      icon: <StarIcon size={20} color={Colors.primary.main} filled />,
+      title: '成长会员',
+      subtitle: '同一会员账号，小程序轻用，App 解锁完整体验',
+      onPress: () => navigation.navigate('Membership'),
+      showArrow: true,
+    },
     {
       icon: <UserIcon size={20} color={Colors.primary.main} />,
       title: '个人信息',

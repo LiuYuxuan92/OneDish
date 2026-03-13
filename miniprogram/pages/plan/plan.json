@@ -1,3 +1,6 @@
 {
-  "navigationBarTitleText": "购物清单"
+  "navigationBarTitleText": "购物清单",
+  "usingComponents": {
+    "entitlement-banner": "/components/entitlementBanner/entitlementBanner"
+  }
 }

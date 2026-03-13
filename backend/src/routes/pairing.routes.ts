@@ -12,6 +12,8 @@ import { quotaService } from '../services/quota.service';
 import { metricsService } from '../services/metrics.service';
 import { db } from '../config/database';
 import { logger } from '../utils/logger';
+import { optionalAuth } from '../middleware/auth';
+import { billingService } from '../services/billing.service';
 
 const router = Router();
 
@@ -219,10 +221,11 @@ function parseAgeRange(ageRange: string): number {
  * 使用 AI 生成宝宝版食谱（专用接口）
  * @body { recipe_id: string, baby_age_months: number, use_ai?: boolean }
  */
-router.post('/generate-ai', async (req, res, next) => {
+router.post('/generate-ai', optionalAuth, async (req, res, next) => {
   try {
     const { recipe_id, baby_age_months, use_ai = true } = req.body;
-    const userId = req.body.userId || req.body.user_id || 'anonymous';
+    const authedUserId = (req as any).user?.user_id || null;
+    const userId = authedUserId || req.body.userId || req.body.user_id || 'anonymous';
 
     if (!recipe_id) {
       return res.status(400).json({
@@ -290,27 +293,34 @@ router.post('/generate-ai', async (req, res, next) => {
       updated_at: recipe.updated_at,
     };
 
-    // 2. 检查 AI 配额
-    const tier = req.body.tier || 'free';
-    const quotaCheck = await quotaService.consume(userId, tier, 'ai');
-    
-    if (!quotaCheck.allowed) {
-      logger.warn('AI quota exceeded', { userId, reason: quotaCheck.reason });
-      
-      // AI 配额不足，回退到规则引擎
-      const fallbackResult = await fallbackToRuleEngine(adultRecipe, baby_age_months);
-      return res.json({
-        code: 200,
-        message: 'AI配额已用完，使用规则引擎生成',
-        data: {
-          adult_version: adultRecipe,
-          baby_version: fallbackResult.baby_version,
-          sync_cooking: fallbackResult.sync_cooking,
-          nutrition_info: fallbackResult.nutrition_info,
-          ai_generated: false,
-          fallback_reason: 'ai_quota_exceeded',
-        },
-      });
+    // 2. 优先检查会员专属额度；若无可用额度，则回退到原有通用 AI 配额
+    let billingQuotaAvailable = false;
+    if (authedUserId) {
+      const billingQuotaStatus = await billingService.getFeatureQuotaStatus(authedUserId, 'ai_baby_recipe');
+      billingQuotaAvailable = billingQuotaStatus.available;
+    }
+
+    if (!billingQuotaAvailable) {
+      const tier = req.body.tier || 'free';
+      const quotaCheck = await quotaService.consume(userId, tier, 'ai');
+
+      if (!quotaCheck.allowed) {
+        logger.warn('AI quota exceeded', { userId, reason: quotaCheck.reason });
+
+        const fallbackResult = await fallbackToRuleEngine(adultRecipe, baby_age_months);
+        return res.json({
+          code: 200,
+          message: 'AI配额已用完，使用规则引擎生成',
+          data: {
+            adult_version: adultRecipe,
+            baby_version: fallbackResult.baby_version,
+            sync_cooking: fallbackResult.sync_cooking,
+            nutrition_info: fallbackResult.nutrition_info,
+            ai_generated: false,
+            fallback_reason: 'ai_quota_exceeded',
+          },
+        });
+      }
     }
 
     // 3. 创建 AI 转换服务（优先使用用户自定义配置）
@@ -325,6 +335,19 @@ router.post('/generate-ai', async (req, res, next) => {
     });
 
     if (aiResult.success && aiResult.baby_version) {
+      if (billingQuotaAvailable && authedUserId) {
+        await billingService.consumeFeatureQuota({
+          userId: authedUserId,
+          featureCode: 'ai_baby_recipe',
+          modelCode: 'ai_transform:auto',
+          estimatedCostUsd: aiResult.costUsd,
+          metadata: {
+            recipe_id,
+            baby_age_months,
+          },
+        });
+      }
+
       // 记录指标
       metricsService.inc('onedish_ai_cost_usd_total', { provider: 'user_custom' }, aiResult.costUsd || 0.002);
 

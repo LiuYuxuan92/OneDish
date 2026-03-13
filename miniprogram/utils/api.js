@@ -291,6 +291,59 @@ function getRecentFeedingFeedback(params = {}) {
   });
 }
 
+function getBillingProducts() {
+  return request({
+    url: '/billing/products',
+    showLoading: false,
+  });
+}
+
+function getBillingFeatureMatrix(platform = 'miniprogram') {
+  return request({
+    url: '/billing/feature-matrix',
+    data: { platform },
+    showLoading: false,
+  });
+}
+
+function getBillingSummary(platform = 'miniprogram') {
+  return request({
+    url: '/billing/me/summary',
+    data: { platform },
+    withAuth: true,
+    showLoading: false,
+  });
+}
+
+function devGrantBillingProduct(productCode) {
+  return request({
+    url: '/billing/dev/grant-product',
+    method: 'POST',
+    data: { product_code: productCode },
+    withAuth: true,
+    showLoading: false,
+  });
+}
+
+function devResetBillingQuotas(featureCodes) {
+  return request({
+    url: '/billing/dev/reset-quotas',
+    method: 'POST',
+    data: { feature_codes: featureCodes },
+    withAuth: true,
+    showLoading: false,
+  });
+}
+
+function devClearBillingBenefits() {
+  return request({
+    url: '/billing/dev/clear-benefits',
+    method: 'POST',
+    withAuth: true,
+    showLoading: false,
+  });
+}
+
 module.exports = {
   addFavorite,
   addRecipeToShoppingList,
@@ -300,6 +353,12 @@ module.exports = {
   createFeedingFeedback,
   createShoppingListShareLink,
   generateAIBabyVersion,
+  getBillingFeatureMatrix,
+  getBillingProducts,
+  getBillingSummary,
+  devGrantBillingProduct,
+  devResetBillingQuotas,
+  devClearBillingBenefits,
   generateMealPlanFromPrompt,
   getFavorites,
   getMealPlans,

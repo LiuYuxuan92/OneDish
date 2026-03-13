@@ -1,5 +1,7 @@
 const api = require('../../utils/api');
 const { getBaseURL, getToken, setBaseURL, setToken } = require('../../utils/config');
+const { trackEvent } = require('../../utils/analytics');
+const { buildQuotaCard, buildBannerModel, handleQuotaUpgradeError } = require('../../utils/entitlements');
 
 const LOCAL_KEY = 'plan_local_items';
 const HISTORY_KEY = 'plan_history';
@@ -66,6 +68,55 @@ function buildLocalShareCode() {
   return `LOCAL-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
+const MEAL_LABELS = {
+  breakfast: '早餐',
+  lunch: '午餐',
+  dinner: '晚餐',
+};
+
+const WEEKDAY_LABELS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+
+function formatWeekday(dateStr) {
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return dateStr;
+  return `${WEEKDAY_LABELS[date.getDay()]} · ${date.getMonth() + 1}/${date.getDate()}`;
+}
+
+function buildGeneratedPlanPreview(result) {
+  const plans = result?.plans || {};
+  return Object.keys(plans)
+    .sort()
+    .map((date) => ({
+      date,
+      label: formatWeekday(date),
+      meals: Object.keys(plans[date] || {}).map((mealType) => ({
+        mealType,
+        mealLabel: MEAL_LABELS[mealType] || mealType,
+        name: plans[date]?.[mealType]?.name || '待补充',
+        prepTime: plans[date]?.[mealType]?.prep_time || null,
+      })),
+    }))
+    .filter((item) => item.meals.length);
+}
+
+function buildGeneratedPlanTags(result) {
+  const constraints = result?.parsed_constraints || {};
+  const tags = [];
+  if (Array.isArray(constraints.prefer_ingredients) && constraints.prefer_ingredients.length) {
+    tags.push(`偏好 ${constraints.prefer_ingredients.slice(0, 3).join('、')}`);
+  }
+  if (Array.isArray(constraints.exclude_ingredients) && constraints.exclude_ingredients.length) {
+    tags.push(`避开 ${constraints.exclude_ingredients.slice(0, 3).join('、')}`);
+  }
+  if (constraints.max_prep_time) {
+    tags.push(`${constraints.max_prep_time} 分钟内`);
+  }
+  if (constraints.mood) {
+    tags.push(`风格 ${constraints.mood}`);
+  }
+  return tags;
+}
+
 Page({
   data: {
     loading: false,
@@ -96,7 +147,12 @@ Page({
     excludeIngredients: '',
     isGenerating: false,
     generatedMealPlan: null,
+    generatedPlanPreviewDays: [],
+    generatedPlanSummaryTags: [],
     actionFeedback: null,
+    weeklyPlanQuotaCard: null,
+    smartRecommendationQuotaCard: null,
+    planBanner: { title: '', subtitle: '', badgeText: '', actionText: '', footerText: '', quotaCards: [], theme: 'neutral' },
   },
 
   setActionFeedback(message, tone = 'info') {
@@ -127,6 +183,7 @@ Page({
 
     this.loadHistory();
     this.loadData();
+    this.loadBillingSnapshot();
   },
 
   consumePendingImport() {
@@ -139,6 +196,61 @@ Page({
 
   toggleDebug() {
     this.setData({ showDebug: !this.data.showDebug });
+  },
+
+  updatePlanBanner() {
+    const { weeklyPlanQuotaCard, smartRecommendationQuotaCard, planPreferenceSummary } = this.data;
+    const quotaCards = [weeklyPlanQuotaCard, smartRecommendationQuotaCard].filter(Boolean);
+    this.setData({
+      planBanner: buildBannerModel({
+        title: weeklyPlanQuotaCard ? '成长会员已接入计划生成' : '开通成长会员，周计划生成更稳定',
+        subtitle: weeklyPlanQuotaCard
+          ? `自然语言周计划剩余 ${weeklyPlanQuotaCard.value}`
+          : '会员支持自然语言周计划、智能推荐和跨端同步。',
+        badgeText: planPreferenceSummary || '会优先参考你的月龄、时长和忌口',
+        actionText: weeklyPlanQuotaCard ? '看权益' : '去开通',
+        footerText: '小程序先生成主线，App 内可继续编辑、复用模板和做更完整管理。',
+        quotaCards,
+        theme: weeklyPlanQuotaCard ? 'warm' : 'neutral',
+      }),
+    });
+  },
+
+  async loadBillingSnapshot() {
+    const token = this.data.token || wx.getStorageSync('token');
+    if (!token) {
+      this.setData({
+        weeklyPlanQuotaCard: null,
+        smartRecommendationQuotaCard: null,
+      });
+      this.updatePlanBanner();
+      return;
+    }
+
+    try {
+      const summary = await api.getBillingSummary('miniprogram');
+      this.setData({
+        weeklyPlanQuotaCard: buildQuotaCard(summary, 'weekly_plan_from_prompt'),
+        smartRecommendationQuotaCard: buildQuotaCard(summary, 'smart_recommendation'),
+      });
+      this.updatePlanBanner();
+    } catch (_err) {
+      this.setData({
+        weeklyPlanQuotaCard: null,
+        smartRecommendationQuotaCard: null,
+      });
+      this.updatePlanBanner();
+    }
+  },
+
+  goToMembership() {
+    trackEvent('mp_membership_tap', { source: 'plan_banner' });
+    wx.navigateTo({ url: '/pages/membership/membership' });
+  },
+
+  goToRecipe() {
+    trackEvent('mp_weekly_plan_recipe_tap', { source: 'plan_generate' });
+    wx.switchTab({ url: '/pages/recipe/recipe' });
   },
 
   persistHistory(items) {
@@ -503,6 +615,8 @@ Page({
       babyAge: null,
       excludeIngredients: '',
       generatedMealPlan: null,
+      generatedPlanPreviewDays: [],
+      generatedPlanSummaryTags: [],
     });
   },
 
@@ -534,6 +648,11 @@ Page({
       return;
     }
 
+    trackEvent('mp_weekly_plan_generate_click', {
+      mode: isSmartMode ? 'smart' : 'standard',
+      has_prompt: Boolean(String(smartPrompt || '').trim()),
+    });
+
     this.setData({ isGenerating: true });
 
     try {
@@ -547,10 +666,15 @@ Page({
       }
 
       const result = await api.generateMealPlanFromPrompt(prompt);
+      const previewDays = buildGeneratedPlanPreview(result);
+      const summaryTags = buildGeneratedPlanTags(result);
       this.setData({
         generatedMealPlan: result,
+        generatedPlanPreviewDays: previewDays,
+        generatedPlanSummaryTags: summaryTags,
         isGenerating: false,
       });
+      this.loadBillingSnapshot();
 
       wx.showToast({ title: '周计划已生成', icon: 'success' });
 
@@ -572,6 +696,13 @@ Page({
     } catch (err) {
       console.error('[plan] generate meal plan failed:', err);
       this.setData({ isGenerating: false });
+      if (handleQuotaUpgradeError(err, {
+        featureCode: 'weekly_plan_from_prompt',
+        source: 'plan_generate',
+        onConfirm: () => this.goToMembership(),
+      })) {
+        return;
+      }
       wx.showToast({ title: err.message || '生成失败，请稍后重试', icon: 'none' });
     }
   },
@@ -579,6 +710,8 @@ Page({
   viewGeneratedPlan() {
     const plan = this.data.generatedMealPlan;
     if (!plan) return;
+
+    trackEvent('mp_weekly_plan_preview_tap', { source: 'plan_result_card' });
 
     const title = plan.title || '周计划';
     const description = [

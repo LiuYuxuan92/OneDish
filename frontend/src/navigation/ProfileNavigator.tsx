@@ -2,6 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../types';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
+import { MembershipScreen } from '../screens/profile/MembershipScreen';
 import { SettingsScreen } from '../screens/profile/SettingsScreen';
 import { PreferenceSettingsScreen } from '../screens/profile/PreferenceSettingsScreen';
 import { AISettingsScreen } from '../screens/settings/AISettingsScreen';
@@ -34,6 +35,11 @@ export function ProfileNavigator() {
         name="Profile"
         component={ProfileScreen}
         options={{ title: '我的', headerShown: false }}
+      />
+      <Stack.Screen
+        name="Membership"
+        component={MembershipScreen}
+        options={{ title: '成长会员' }}
       />
       <Stack.Screen
         name="Settings"

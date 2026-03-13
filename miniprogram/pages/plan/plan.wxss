@@ -599,3 +599,157 @@
 .share-modal-close {
   color: #738395;
 }
+
+
+.member-hint-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  margin-top: 22rpx;
+  padding: 22rpx;
+  border-radius: 24rpx;
+  background: linear-gradient(135deg, #f4f7fb, #eef3f8);
+}
+
+.member-hint-card.active {
+  background: linear-gradient(135deg, #fdf6ea, #fff0dc);
+}
+
+.member-hint-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.member-hint-title {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #24374a;
+}
+
+.member-hint-desc {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  line-height: 1.6;
+  color: #718293;
+}
+
+.member-hint-btn {
+  flex-shrink: 0;
+  padding: 16rpx 22rpx;
+  border-radius: 999rpx;
+  background: #2f5b82;
+  color: #ffffff;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.member-quota-row,
+.generate-guide-row {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 16rpx;
+}
+
+.member-quota-pill,
+.guide-card,
+.quota-inline-card {
+  flex: 1;
+  padding: 20rpx;
+  border-radius: 22rpx;
+  background: #f4f8fc;
+}
+
+.member-quota-value,
+.quota-inline-value {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #294968;
+}
+
+.member-quota-title,
+.quota-inline-title,
+.guide-card-title {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  color: #5f7285;
+}
+
+.quota-inline-card {
+  margin-top: 18rpx;
+  background: linear-gradient(135deg, #fff8ef, #fff1df);
+}
+
+.quota-inline-desc,
+.guide-card-desc {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 21rpx;
+  line-height: 1.6;
+  color: #7d6b57;
+}
+
+.guide-card.light {
+  background: #eef4ff;
+}
+
+
+.generated-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 16rpx;
+}
+
+.generated-tag {
+  padding: 8rpx 12rpx;
+  border-radius: 999rpx;
+  background: #ffffff;
+  color: #516376;
+  font-size: 20rpx;
+}
+
+.generated-day-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  margin-top: 18rpx;
+}
+
+.generated-day-card {
+  padding: 18rpx;
+  border-radius: 20rpx;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.generated-day-title {
+  display: block;
+  color: #244437;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.generated-meal-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14rpx;
+  margin-top: 12rpx;
+}
+
+.generated-meal-type {
+  flex-shrink: 0;
+  color: #4d705d;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.generated-meal-name {
+  flex: 1;
+  color: #3e5548;
+  font-size: 22rpx;
+  line-height: 1.6;
+}

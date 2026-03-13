@@ -1,5 +1,7 @@
 const api = require('../../utils/api');
 const { openRecipeDetail } = require('../../utils/navigation');
+const { trackEvent } = require('../../utils/analytics');
+const { buildBannerModel, buildQuotaCards } = require('../../utils/entitlements');
 
 const LOCAL_FAVORITES_KEY = 'local_favorites';
 
@@ -64,6 +66,25 @@ function buildProductizedReasons(recipe, preferenceSummaryText) {
   if (unique.length) return unique.slice(0, 3);
   if (preferenceSummaryText) return [`已结合你的偏好设置：${preferenceSummaryText}`];
   return ['优先综合了月龄、下厨时长和口味偏好'];
+}
+
+function buildMemberSummary(summary) {
+  const entitlements = Array.isArray(summary?.active_entitlements) ? summary.active_entitlements : [];
+  const active = entitlements[0] || null;
+
+  if (!active) {
+    return {
+      isMember: false,
+      title: '登录后同步成长会员权益',
+      subtitle: '小程序先做轻决策，App 解锁完整家庭管理体验',
+    };
+  }
+
+  return {
+    isMember: true,
+    title: '成长会员已开通',
+    subtitle: active.ends_at ? `有效期至 ${new Date(active.ends_at).toLocaleDateString('zh-CN')}` : '本月 AI 能力可继续使用',
+  };
 }
 
 function adaptRecipeData(recipe) {
@@ -140,6 +161,13 @@ Page({
     recommendationReasons: [],
     isFavorited: false,
     actionFeedback: null,
+    quotaCards: [],
+    memberSummary: {
+      isMember: false,
+      title: '登录后同步成长会员权益',
+      subtitle: '小程序先做轻决策，App 解锁完整家庭管理体验',
+    },
+    membershipBanner: { title: '', subtitle: '', badgeText: '', actionText: '', footerText: '', quotaCards: [], theme: 'neutral' },
   },
 
   setActionFeedback(message, tone = 'info') {
@@ -158,7 +186,23 @@ Page({
 
   async onShow() {
     await this.ensureUserPreferences();
+    await this.loadBillingSnapshot();
     await this.loadTodayRecommendation();
+  },
+
+  updateMembershipBanner() {
+    const { memberSummary, quotaCards, preferenceSummaryText } = this.data;
+    this.setData({
+      membershipBanner: buildBannerModel({
+        title: memberSummary.title,
+        subtitle: memberSummary.subtitle,
+        badgeText: preferenceSummaryText || '今日偏好已生效',
+        actionText: memberSummary.isMember ? '查看权益' : '去开通',
+        quotaCards,
+        footerText: '同一成长会员账号，小程序轻量用，App 可继续体验完整家庭管理。',
+        theme: memberSummary.isMember ? 'member' : 'neutral',
+      }),
+    });
   },
 
   async ensureUserPreferences() {
@@ -170,6 +214,7 @@ Page({
         userPreferences: cached || null,
         preferenceSummaryText: buildPreferenceSummary(cached || null),
       });
+      this.updateMembershipBanner();
       return cached || null;
     }
 
@@ -183,13 +228,42 @@ Page({
         userPreferences: config,
         preferenceSummaryText: buildPreferenceSummary(config),
       });
+      this.updateMembershipBanner();
       return config;
     } catch (_err) {
       this.setData({
         userPreferences: cached || null,
         preferenceSummaryText: buildPreferenceSummary(cached || null),
       });
+      this.updateMembershipBanner();
       return cached || null;
+    }
+  },
+
+  async loadBillingSnapshot() {
+    const token = wx.getStorageSync('token');
+    if (!token) {
+      this.setData({
+        quotaCards: [],
+        memberSummary: buildMemberSummary(null),
+      });
+      this.updateMembershipBanner();
+      return;
+    }
+
+    try {
+      const summary = await api.getBillingSummary('miniprogram');
+      this.setData({
+        quotaCards: buildQuotaCards(summary, ['ai_baby_recipe', 'weekly_plan_from_prompt', 'smart_recommendation']),
+        memberSummary: buildMemberSummary(summary),
+      });
+      this.updateMembershipBanner();
+    } catch (_err) {
+      this.setData({
+        quotaCards: [],
+        memberSummary: buildMemberSummary(null),
+      });
+      this.updateMembershipBanner();
     }
   },
 
@@ -333,6 +407,27 @@ Page({
 
   goToProfile() {
     wx.navigateTo({ url: '/pages/profile/profile' });
+  },
+
+  goToPlan() {
+    trackEvent('mp_weekly_plan_entry_tap', { source: 'home_shortcut' });
+    wx.switchTab({ url: '/pages/plan/plan' });
+  },
+
+  goToMembership() {
+    trackEvent('mp_membership_tap', { source: 'home_banner' });
+    wx.navigateTo({ url: '/pages/membership/membership' });
+  },
+
+  goToBabyRewrite() {
+    trackEvent('mp_baby_rewrite_entry_tap', { source: 'home_shortcut' });
+    if (this.data.recommendation?.id) {
+      this.setActionFeedback('已帮你打开当前推荐菜谱，进入后可直接点“宝宝改写”。', 'info');
+      openRecipeDetail(this.data.recommendation.id);
+      return;
+    }
+
+    wx.switchTab({ url: '/pages/recipe/recipe' });
   },
 
   addToShoppingListFallback() {

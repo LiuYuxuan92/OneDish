@@ -14,14 +14,37 @@
       <text class="hero-kicker">TODAY'S PICK</text>
       <text class="hero-title">一鱼两吃，今天省掉选菜成本</text>
       <text class="hero-desc">推荐会优先参考你的宝宝月龄、常用口味和下厨时间。</text>
-      <view class="hero-preference" wx:if="{{preferenceSummaryText}}">
-        <text>{{preferenceSummaryText}}</text>
-      </view>
     </view>
   </view>
 
   <view class="feedback-banner feedback-banner-{{actionFeedback.tone}}" wx:if="{{actionFeedback}}">
     <text>{{actionFeedback.message}}</text>
+  </view>
+
+  <entitlement-banner wx:if="{{membershipBanner.title}}"
+    title="{{membershipBanner.title}}"
+    subtitle="{{membershipBanner.subtitle}}"
+    badge-text="{{membershipBanner.badgeText}}"
+    action-text="{{membershipBanner.actionText}}"
+    footer-text="{{membershipBanner.footerText}}"
+    quota-cards="{{membershipBanner.quotaCards}}"
+    theme="{{membershipBanner.theme}}"
+    bindactiontap="goToMembership"
+  />
+
+  <view class="shortcut-grid">
+    <view class="shortcut-card" bindtap="goToPlan">
+      <text class="shortcut-title">AI 周计划</text>
+      <text class="shortcut-desc">先排一周，再去采购。</text>
+    </view>
+    <view class="shortcut-card warm" bindtap="goToBabyRewrite">
+      <text class="shortcut-title">宝宝改写</text>
+      <text class="shortcut-desc">从当前推荐直接进入。</text>
+    </view>
+    <view class="shortcut-card light" bindtap="goRecipe">
+      <text class="shortcut-title">逛菜谱库</text>
+      <text class="shortcut-desc">不想等推荐就直接挑。</text>
+    </view>
   </view>
 
   <view class="state-card" wx:if="{{loading}}">

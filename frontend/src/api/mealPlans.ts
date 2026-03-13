@@ -56,6 +56,10 @@ export interface SmartRecommendationResponse {
   meal_type: string;
   constraints: Record<string, any>;
   recommendations: Record<string, { A: SmartRecommendationItem | null; B: SmartRecommendationItem | null }>;
+  quota_status?: {
+    feature_code: 'smart_recommendation';
+    remaining_quota: number;
+  };
 }
 
 export interface RecommendationFeedbackParams {

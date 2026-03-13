@@ -1,3 +1,6 @@
 {
-  "navigationBarTitleText": "今日推荐"
+  "navigationBarTitleText": "今日推荐",
+  "usingComponents": {
+    "entitlement-banner": "/components/entitlementBanner/entitlementBanner"
+  }
 }
