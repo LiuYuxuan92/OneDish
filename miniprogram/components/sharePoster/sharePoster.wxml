@@ -2,28 +2,31 @@
   <view class="poster-content" catchtap="preventClose">
     <view class="poster-title">分享海报</view>
     
-    <!-- 海报画布 -->
     <view class="canvas-wrapper">
       <canvas type="2d" id="poster-canvas" class="poster-canvas" style="width: 300px; height: 450px;"></canvas>
     </view>
     
-    <!-- 海报预览（生成后显示） -->
     <image class="poster-preview" src="{{posterUrl}}" wx:if="{{posterGenerated}}" mode="aspectFit" />
     
     <view class="poster-actions">
       <button class="btn btn-generate" bindtap="generatePoster" wx:if="{{!posterGenerated}}">
-        🔄 生成海报
+        <van-icon name="photo-o" size="18" color="#ffffff" />
+        <text>生成海报</text>
       </button>
       <view class="btn-group" wx:else>
         <button class="btn btn-save" bindtap="savePoster">
-          💾 保存到相册
+          <van-icon name="down" size="18" color="#ffffff" />
+          <text>保存到相册</text>
         </button>
         <button class="btn btn-share" open-type="share">
-          📤 发送给朋友
+          <van-icon name="share-o" size="18" color="#ffffff" />
+          <text>发送给朋友</text>
         </button>
       </view>
     </view>
     
-    <view class="close-btn" bindtap="hide">×</view>
+    <view class="close-btn" bindtap="hide">
+      <van-icon name="cross" size="20" color="#7b857f" />
+    </view>
   </view>
 </view>

@@ -1,10 +1,12 @@
-.container {
+.page-shell {
   min-height: 100vh;
-  background: #f7f8fa;
   padding: 24rpx;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at top right, rgba(224, 215, 199, 0.42), transparent 34%),
+    linear-gradient(180deg, #f8f5ef 0%, #f1f4ef 42%, #eef2ee 100%);
 }
 
-/* 联系客服按钮 */
 .contact-btn {
   background: transparent;
   padding: 0;
@@ -17,88 +19,109 @@
   border: none;
 }
 
-.contact-btn .van-cell {
-  background: #fff;
-}
-
-.member-cell {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  margin-bottom: 24rpx;
-  border-radius: 16rpx;
-}
-
-.member-slot {
+.hero-card {
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  gap: 18rpx;
+  padding: 26rpx 24rpx;
+  margin-bottom: 18rpx;
+  border-radius: 30rpx;
+  background: linear-gradient(135deg, #274539, #3b5c4d);
+  box-shadow: 0 22rpx 44rpx rgba(34, 52, 43, 0.14);
 }
 
-.member-icon {
-  font-size: 48rpx;
-}
-
-.member-info {
+.hero-icon {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 24rpx;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.16);
 }
 
-.member-title {
+.hero-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.hero-title {
+  color: #ffffff;
   font-size: 30rpx;
-  font-weight: bold;
-  color: #fff;
+  font-weight: 700;
 }
 
-.member-desc {
+.hero-desc {
+  margin-top: 8rpx;
+  color: rgba(255, 255, 255, 0.78);
   font-size: 22rpx;
-  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
 }
 
-.tips {
-  font-size: 24rpx;
-  color: #969799;
-  padding: 16rpx 32rpx 24rpx;
-  line-height: 1.5;
+.hero-action {
+  flex-shrink: 0;
+  padding: 14rpx 22rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  font-size: 22rpx;
+  font-weight: 600;
 }
 
-/* Picker */
-.picker-mask {
+.profile-group {
+  overflow: hidden;
+  border-radius: 28rpx;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 18rpx 38rpx rgba(34, 52, 43, 0.08);
+}
+
+.cell-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 14rpx;
+  color: #24342b;
+  font-size: 28rpx;
+}
+
+.picker-mask,
+.modal-mask {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(22, 31, 26, 0.42);
   z-index: 100;
 }
 
 .picker-panel {
   position: fixed;
-  bottom: 0;
   left: 0;
   right: 0;
-  background: #fff;
-  border-radius: 24rpx 24rpx 0 0;
-  z-index: 101;
+  bottom: 0;
   max-height: 60vh;
+  border-radius: 32rpx 32rpx 0 0;
+  background: #ffffff;
+  z-index: 101;
 }
 
-.picker-header {
+.picker-header,
+.ai-config-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 24rpx;
-  border-bottom: 1rpx solid #f0f0f0;
+  border-bottom: 1rpx solid rgba(36, 52, 43, 0.06);
 }
 
-.picker-cancel {
-  color: #969799;
+.picker-cancel,
+.ai-config-close {
+  color: #7e8983;
   font-size: 30rpx;
 }
 
-.picker-title {
+.picker-title,
+.ai-config-title {
   font-size: 32rpx;
-  font-weight: 600;
-  color: #323233;
+  font-weight: 700;
+  color: #22342b;
 }
 
 .picker-done {
@@ -113,23 +136,12 @@
   padding: 24rpx;
   text-align: center;
   font-size: 30rpx;
-  color: #323233;
+  color: #24342b;
 }
 
 .picker-item.active {
-  color: #1677ff;
-  font-weight: 600;
-}
-
-/* ========== AI 配置弹窗 ========== */
-.modal-mask {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 200;
+  color: #274539;
+  font-weight: 700;
 }
 
 .ai-config-modal {
@@ -137,37 +149,19 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: #fff;
-  border-radius: 24rpx;
   width: 650rpx;
   max-height: 75vh;
-  z-index: 201;
   overflow: hidden;
-}
-
-.ai-config-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24rpx;
-  border-bottom: 1rpx solid #f0f0f0;
-}
-
-.ai-config-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #323233;
-}
-
-.ai-config-close {
-  font-size: 48rpx;
-  color: #969799;
-  line-height: 1;
+  border-radius: 30rpx;
+  background: #ffffff;
+  z-index: 201;
+  box-shadow: 0 24rpx 54rpx rgba(26, 37, 31, 0.18);
 }
 
 .ai-config-body {
   max-height: 55vh;
   padding: 24rpx;
+  box-sizing: border-box;
 }
 
 .config-group {
@@ -175,21 +169,22 @@
 }
 
 .config-label {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #323233;
   display: block;
-  margin-bottom: 12rpx;
+  margin-bottom: 14rpx;
+  color: #24342b;
+  font-size: 28rpx;
+  font-weight: 700;
 }
 
 .config-input {
   width: 100%;
-  border: 1rpx solid #e5e7eb;
-  border-radius: 12rpx;
-  padding: 16rpx;
-  font-size: 28rpx;
-  background: #f7f8fa;
+  padding: 18rpx 20rpx;
   box-sizing: border-box;
+  border-radius: 20rpx;
+  background: #f3f5f1;
+  border: 1rpx solid rgba(39, 69, 57, 0.08);
+  font-size: 27rpx;
+  color: #24342b;
 }
 
 .config-age-options,
@@ -203,38 +198,34 @@
 .config-age-option,
 .config-time-option,
 .config-difficulty-option {
-  padding: 12rpx 20rpx;
-  border-radius: 32rpx;
-  background: #f7f8fa;
-  border: 1rpx solid #e5e7eb;
-  font-size: 26rpx;
-  color: #646566;
+  padding: 14rpx 20rpx;
+  border-radius: 999rpx;
+  background: #f3f5f1;
+  border: 1rpx solid rgba(39, 69, 57, 0.08);
+  font-size: 24rpx;
+  color: #66736c;
 }
 
 .config-age-option.active,
 .config-time-option.active,
 .config-difficulty-option.active {
-  background: #e6f0ff;
-  border-color: #1677ff;
-  color: #1677ff;
+  background: #e7efe9;
+  border-color: rgba(39, 69, 57, 0.18);
+  color: #274539;
 }
 
 .ai-config-footer {
   padding: 24rpx;
-  border-top: 1rpx solid #f0f0f0;
+  border-top: 1rpx solid rgba(36, 52, 43, 0.06);
 }
 
 .config-save-btn {
   width: 100%;
-  background: #1677ff;
-  color: #fff;
+  padding: 24rpx 0;
   border: none;
-  border-radius: 44rpx;
-  padding: 24rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #274539, #325849);
+  color: #ffffff;
   font-size: 30rpx;
-  font-weight: 600;
-}
-
-.config-save-btn[loading] {
-  opacity: 0.6;
+  font-weight: 700;
 }

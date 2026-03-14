@@ -80,7 +80,7 @@
 
 .quota-value {
   display: block;
-  color: #365e9d;
+  color: #274539;
   font-size: 28rpx;
   font-weight: 700;
 }
@@ -88,14 +88,14 @@
 .quota-title {
   display: block;
   margin-top: 8rpx;
-  color: #4d5d75;
+  color: #5c6c64;
   font-size: 21rpx;
 }
 
 .quota-desc {
   display: block;
   margin-top: 6rpx;
-  color: #7c8799;
+  color: #7a847d;
   font-size: 19rpx;
 }
 

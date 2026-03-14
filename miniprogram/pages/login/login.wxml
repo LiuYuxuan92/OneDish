@@ -1,11 +1,19 @@
-<view class="container">
+<view class="page-shell">
   <view class="logo-area">
-    <text class="logo-emoji">🍳</text>
+    <view class="logo-badge">
+      <van-icon name="shop-o" size="38" color="#274539" />
+    </view>
     <view class="app-name">简家厨</view>
-    <view class="slogan">一道菜，大人宝宝都能吃</view>
+    <view class="slogan">一道菜，让大人和宝宝都吃得更安心</view>
   </view>
 
-  <view class="login-area" wx:if="{{!loggedIn}}">
+  <view class="login-panel" wx:if="{{!loggedIn}}">
+    <view class="panel-copy">
+      <text class="panel-kicker">ACCOUNT ACCESS</text>
+      <text class="panel-title">登录后同步会员、收藏与采购清单</text>
+      <text class="panel-desc">保留偏好设置，在小程序与 App 间获得一致体验。</text>
+    </view>
+
     <button 
       class="btn-wechat" 
       bindtap="wechatLogin" 
@@ -29,14 +37,17 @@
     </button>
     
     <view class="tips">
-      登录后可享受：收藏菜谱、生成购物清单、家庭共享
+      登录后可使用收藏菜谱、生成购物清单、家庭共享等完整能力。
     </view>
   </view>
 
-  <view class="user-area" wx:else>
-    <view class="avatar-emoji">👤</view>
+  <view class="user-panel" wx:else>
+    <view class="avatar-shell">
+      <van-icon name="user-o" size="34" color="#274539" />
+    </view>
     <view class="username">{{userInfo.username || '用户'}}</view>
     <view class="role">已登录</view>
+    <view class="status-note">你的偏好与权益已准备就绪，可继续浏览推荐或同步到其他设备。</view>
     
     <button class="btn-logout" bindtap="logout">退出登录</button>
   </view>

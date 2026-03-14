@@ -1,40 +1,65 @@
-<view class="container">
-  <van-cell-group>
-  <!-- 会员入口 -->
-  <van-cell is-link bindtap="goToMembership" custom-class="member-cell">
-    <view slot="title" class="member-slot">
-      <text class="member-icon">👑</text>
-      <view class="member-info">
-        <view class="member-title">开通会员</view>
-        <view class="member-desc">AI推荐 + 专属菜谱 + 无广告</view>
-      </view>
+<view class="page-shell">
+  <view class="hero-card" bindtap="goToMembership">
+    <view class="hero-icon">
+      <van-icon name="award-o" size="24" color="#ffffff" />
     </view>
-  </van-cell>
+    <view class="hero-copy">
+      <view class="hero-title">开通会员</view>
+      <view class="hero-desc">AI 推荐、专属菜谱与跨端权益同步</view>
+    </view>
+    <view class="hero-action">查看</view>
+  </view>
 
-  <!-- 宝宝月龄 -->
-  <van-cell title="宝宝月龄" value="{{babyAgeText}}" is-link bindtap="showAgePicker"/>
+  <van-cell-group custom-class="profile-group">
+    <van-cell is-link bindtap="showAgePicker">
+      <view slot="title" class="cell-title">
+        <van-icon name="calendar-o" size="18" color="#486154" />
+        <text>宝宝月龄</text>
+      </view>
+      <text>{{babyAgeText}}</text>
+    </van-cell>
 
-  <!-- AI 配置 -->
-  <van-cell title="✨ AI 配置" value="自定义" is-link bindtap="openAIConfigModal"/>
+    <van-cell is-link bindtap="openAIConfigModal">
+      <view slot="title" class="cell-title">
+        <van-icon name="setting-o" size="18" color="#486154" />
+        <text>AI 配置</text>
+      </view>
+      <text>自定义</text>
+    </van-cell>
 
-  <!-- 本周计划 -->
-  <van-cell title="📅 本周计划" value="查看计划与清单" is-link bindtap="goToPlan"/>
-  
-  <!-- 联系客服 -->
-  <button class="contact-btn" open-type="contact">
-    <van-cell title="联系客服" is-link/>
-  </button>
-  
-  <!-- 账号 -->
-  <van-cell title="账号" is-link bindtap="goToLogin"/>
-  
-  <!-- 版本 -->
-  <van-cell title="版本">
-    <van-tag type="success">1.0.0</van-tag>
-  </van-cell>
-</van-cell-group>
+    <van-cell is-link bindtap="goToPlan">
+      <view slot="title" class="cell-title">
+        <van-icon name="orders-o" size="18" color="#486154" />
+        <text>本周计划</text>
+      </view>
+      <text>查看计划与清单</text>
+    </van-cell>
 
-  <!-- 月龄选择器 -->
+    <button class="contact-btn" open-type="contact">
+      <van-cell is-link>
+        <view slot="title" class="cell-title">
+          <van-icon name="service-o" size="18" color="#486154" />
+          <text>联系客服</text>
+        </view>
+      </van-cell>
+    </button>
+
+    <van-cell is-link bindtap="goToLogin">
+      <view slot="title" class="cell-title">
+        <van-icon name="contact-o" size="18" color="#486154" />
+        <text>账号</text>
+      </view>
+    </van-cell>
+
+    <van-cell>
+      <view slot="title" class="cell-title">
+        <van-icon name="label-o" size="18" color="#486154" />
+        <text>版本</text>
+      </view>
+      <van-tag color="#eef3ef" text-color="#486154">1.0.0</van-tag>
+    </van-cell>
+  </van-cell-group>
+
   <view class="picker-mask" wx:if="{{showPicker}}" bindtap="hidePicker"></view>
   <view class="picker-panel" wx:if="{{showPicker}}">
     <view class="picker-header">
@@ -54,64 +79,25 @@
     </scroll-view>
   </view>
 
-  <!-- AI 配置弹窗 -->
   <view class="modal-mask" wx:if="{{showAIConfigModal}}" bindtap="closeAIConfigModal"></view>
   <view class="ai-config-modal" wx:if="{{showAIConfigModal}}">
     <view class="ai-config-header">
-      <text class="ai-config-title">✨ AI 配置</text>
+      <text class="ai-config-title">AI 配置</text>
       <text class="ai-config-close" bindtap="closeAIConfigModal">×</text>
     </view>
     <scroll-view class="ai-config-body" scroll-y>
-      <!-- 默认宝宝月龄 -->
       <view class="config-group">
         <text class="config-label">默认宝宝月龄</text>
         <view class="config-age-options">
-          <view 
-            class="config-age-option {{aiConfig.default_baby_age === 6 ? 'active' : ''}}" 
-            data-field="default_baby_age"
-            data-value="6"
-            bindtap="onAIConfigInput">
-            6月
-          </view>
-          <view 
-            class="config-age-option {{aiConfig.default_baby_age === 8 ? 'active' : ''}}" 
-            data-field="default_baby_age"
-            data-value="8"
-            bindtap="onAIConfigInput">
-            8月
-          </view>
-          <view 
-            class="config-age-option {{aiConfig.default_baby_age === 10 ? 'active' : ''}}" 
-            data-field="default_baby_age"
-            data-value="10"
-            bindtap="onAIConfigInput">
-            10月
-          </view>
-          <view 
-            class="config-age-option {{aiConfig.default_baby_age === 12 ? 'active' : ''}}" 
-            data-field="default_baby_age"
-            data-value="12"
-            bindtap="onAIConfigInput">
-            12月
-          </view>
-          <view 
-            class="config-age-option {{aiConfig.default_baby_age === 18 ? 'active' : ''}}" 
-            data-field="default_baby_age"
-            data-value="18"
-            bindtap="onAIConfigInput">
-            18月
-          </view>
-          <view 
-            class="config-age-option {{aiConfig.default_baby_age === 24 ? 'active' : ''}}" 
-            data-field="default_baby_age"
-            data-value="24"
-            bindtap="onAIConfigInput">
-            24月
-          </view>
+          <view class="config-age-option {{aiConfig.default_baby_age === 6 ? 'active' : ''}}" data-field="default_baby_age" data-value="6" bindtap="onAIConfigInput">6月</view>
+          <view class="config-age-option {{aiConfig.default_baby_age === 8 ? 'active' : ''}}" data-field="default_baby_age" data-value="8" bindtap="onAIConfigInput">8月</view>
+          <view class="config-age-option {{aiConfig.default_baby_age === 10 ? 'active' : ''}}" data-field="default_baby_age" data-value="10" bindtap="onAIConfigInput">10月</view>
+          <view class="config-age-option {{aiConfig.default_baby_age === 12 ? 'active' : ''}}" data-field="default_baby_age" data-value="12" bindtap="onAIConfigInput">12月</view>
+          <view class="config-age-option {{aiConfig.default_baby_age === 18 ? 'active' : ''}}" data-field="default_baby_age" data-value="18" bindtap="onAIConfigInput">18月</view>
+          <view class="config-age-option {{aiConfig.default_baby_age === 24 ? 'active' : ''}}" data-field="default_baby_age" data-value="24" bindtap="onAIConfigInput">24月</view>
         </view>
       </view>
 
-      <!-- 偏好食材 -->
       <view class="config-group">
         <text class="config-label">偏好食材（用逗号分隔）</text>
         <input 
@@ -123,7 +109,6 @@
         />
       </view>
 
-      <!-- 排除食材 -->
       <view class="config-group">
         <text class="config-label">排除食材（用逗号分隔）</text>
         <input 
@@ -135,71 +120,27 @@
         />
       </view>
 
-      <!-- 烹饪时间限制 -->
       <view class="config-group">
         <text class="config-label">烹饪时间限制（分钟）</text>
         <view class="config-time-options">
-          <view 
-            class="config-time-option {{aiConfig.cooking_time_limit === 15 ? 'active' : ''}}"
-            data-field="cooking_time_limit"
-            data-value="15"
-            bindtap="onAIConfigInput">
-            15分钟
-          </view>
-          <view 
-            class="config-time-option {{aiConfig.cooking_time_limit === 30 ? 'active' : ''}}"
-            data-field="cooking_time_limit"
-            data-value="30"
-            bindtap="onAIConfigInput">
-            30分钟
-          </view>
-          <view 
-            class="config-time-option {{aiConfig.cooking_time_limit === 45 ? 'active' : ''}}"
-            data-field="cooking_time_limit"
-            data-value="45"
-            bindtap="onAIConfigInput">
-            45分钟
-          </view>
-          <view 
-            class="config-time-option {{aiConfig.cooking_time_limit === 60 ? 'active' : ''}}"
-            data-field="cooking_time_limit"
-            data-value="60"
-            bindtap="onAIConfigInput">
-            60分钟
-          </view>
+          <view class="config-time-option {{aiConfig.cooking_time_limit === 15 ? 'active' : ''}}" data-field="cooking_time_limit" data-value="15" bindtap="onAIConfigInput">15分钟</view>
+          <view class="config-time-option {{aiConfig.cooking_time_limit === 30 ? 'active' : ''}}" data-field="cooking_time_limit" data-value="30" bindtap="onAIConfigInput">30分钟</view>
+          <view class="config-time-option {{aiConfig.cooking_time_limit === 45 ? 'active' : ''}}" data-field="cooking_time_limit" data-value="45" bindtap="onAIConfigInput">45分钟</view>
+          <view class="config-time-option {{aiConfig.cooking_time_limit === 60 ? 'active' : ''}}" data-field="cooking_time_limit" data-value="60" bindtap="onAIConfigInput">60分钟</view>
         </view>
       </view>
 
-      <!-- 难度偏好 -->
       <view class="config-group">
         <text class="config-label">难度偏好</text>
         <view class="config-difficulty-options">
-          <view 
-            class="config-difficulty-option {{aiConfig.difficulty_preference === 'easy' ? 'active' : ''}}"
-            data-difficulty="easy"
-            bindtap="onDifficultySelect">
-            简单
-          </view>
-          <view 
-            class="config-difficulty-option {{aiConfig.difficulty_preference === 'medium' ? 'active' : ''}}"
-            data-difficulty="medium"
-            bindtap="onDifficultySelect">
-            中等
-          </view>
-          <view 
-            class="config-difficulty-option {{aiConfig.difficulty_preference === 'hard' ? 'active' : ''}}"
-            data-difficulty="hard"
-            bindtap="onDifficultySelect">
-            困难
-          </view>
+          <view class="config-difficulty-option {{aiConfig.difficulty_preference === 'easy' ? 'active' : ''}}" data-difficulty="easy" bindtap="onDifficultySelect">简单</view>
+          <view class="config-difficulty-option {{aiConfig.difficulty_preference === 'medium' ? 'active' : ''}}" data-difficulty="medium" bindtap="onDifficultySelect">中等</view>
+          <view class="config-difficulty-option {{aiConfig.difficulty_preference === 'hard' ? 'active' : ''}}" data-difficulty="hard" bindtap="onDifficultySelect">困难</view>
         </view>
       </view>
     </scroll-view>
     <view class="ai-config-footer">
-      <button 
-        class="config-save-btn" 
-        bindtap="saveAIConfig"
-        loading="{{isSavingAI}}">
+      <button class="config-save-btn" bindtap="saveAIConfig" loading="{{isSavingAI}}">
         {{isSavingAI ? '保存中...' : '保存配置'}}
       </button>
     </view>

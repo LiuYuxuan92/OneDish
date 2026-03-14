@@ -1,7 +1,10 @@
-.container {
+.page-shell {
   min-height: 100vh;
-  background: #f5f7fb;
   padding: 24rpx;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at top right, rgba(224, 212, 195, 0.46), transparent 34%),
+    linear-gradient(180deg, #f8f5ef 0%, #f2f4ef 42%, #eef2ee 100%);
 }
 
 .loading-state {
@@ -11,106 +14,136 @@
   justify-content: center;
 }
 
+.member-card,
+.quota-section,
+.benefits-section,
+.faq-section,
+.experience-section,
+.product-section {
+  border-radius: 30rpx;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 18rpx 40rpx rgba(34, 52, 43, 0.08);
+}
+
 .member-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 24rpx;
-  padding: 48rpx 32rpx;
+  padding: 44rpx 30rpx;
   text-align: center;
-  color: #fff;
-  margin-bottom: 32rpx;
+  margin-bottom: 20rpx;
+  background: linear-gradient(135deg, #274539, #3d5f4e);
+  color: #ffffff;
 }
 
 .member-card.active {
-  background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+  background: linear-gradient(135deg, #8d6a40, #b58b5c);
 }
 
 .member-icon {
-  font-size: 80rpx;
-  margin-bottom: 16rpx;
+  width: 88rpx;
+  height: 88rpx;
+  margin: 0 auto 18rpx;
+  border-radius: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .member-title {
   font-size: 40rpx;
-  font-weight: bold;
-  margin-bottom: 12rpx;
+  font-weight: 700;
 }
 
 .member-subtitle {
-  font-size: 26rpx;
-  opacity: 0.9;
-  margin-bottom: 32rpx;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.72;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.btn-member,
+.btn-login,
+.share-btn {
+  border-radius: 999rpx;
+  border: none;
 }
 
 .btn-member {
-  background: #fff;
-  color: #667eea;
-  border-radius: 44rpx;
-  padding: 20rpx 60rpx;
-  font-size: 32rpx;
-  font-weight: bold;
+  margin-top: 30rpx;
+  padding: 20rpx 54rpx;
+  background: #ffffff;
+  color: #274539;
+  font-size: 30rpx;
+  font-weight: 700;
   display: inline-block;
 }
 
 .member-card.active .btn-member {
-  background: #fff;
-  color: #fda085;
+  color: #8d6a40;
 }
 
 .btn-login {
-  margin-top: 20rpx;
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
-  border-radius: 44rpx;
+  margin-top: 16rpx;
   padding: 18rpx 44rpx;
-  font-size: 26rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  font-size: 24rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.24);
 }
 
 .quota-section,
 .benefits-section,
-.faq-section {
-  background: #fff;
-  border-radius: 16rpx;
+.faq-section,
+.experience-section,
+.product-section {
   padding: 24rpx;
-  margin-bottom: 24rpx;
+  margin-bottom: 18rpx;
 }
 
 .section-title {
-  font-size: 32rpx;
-  font-weight: bold;
-  margin-bottom: 24rpx;
+  margin-bottom: 22rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #22342b;
 }
 
-.quota-grid {
+.quota-grid,
+.experience-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16rpx;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14rpx;
+}
+
+.quota-card,
+.experience-card,
+.product-card,
+.benefit-item {
+  border-radius: 24rpx;
 }
 
 .quota-card {
-  background: linear-gradient(180deg, #f6f8ff 0%, #eef2ff 100%);
-  border-radius: 16rpx;
-  padding: 20rpx 16rpx;
+  padding: 18rpx 16rpx;
+  background: linear-gradient(180deg, #f3f5f0 0%, #ecf0ea 100%);
 }
 
 .quota-value {
-  font-size: 34rpx;
+  font-size: 32rpx;
   line-height: 1.2;
   font-weight: 700;
-  color: #3d5afe;
+  color: #274539;
 }
 
 .quota-title {
+  margin-top: 10rpx;
   font-size: 24rpx;
   font-weight: 600;
-  color: #333;
-  margin-top: 10rpx;
+  color: #22342b;
 }
 
 .quota-desc {
-  font-size: 20rpx;
-  color: #7a7f8c;
   margin-top: 6rpx;
+  font-size: 20rpx;
+  line-height: 1.55;
+  color: #7c8781;
 }
 
 .feature-group {
@@ -122,30 +155,29 @@
 }
 
 .feature-group-title {
-  font-size: 24rpx;
-  font-weight: 600;
-  color: #667085;
   margin-bottom: 16rpx;
+  font-size: 23rpx;
+  font-weight: 700;
+  color: #738078;
 }
 
 .feature-list {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
+  gap: 14rpx;
 }
 
 .benefit-item {
-  background: #f5f7fb;
-  border-radius: 12rpx;
   padding: 20rpx;
+  background: #f4f6f2;
 }
 
 .benefit-item.vip {
-  background: linear-gradient(135deg, #fef3e2 0%, #fde8d0 100%);
+  background: linear-gradient(135deg, #f8f4ed 0%, #f2ece2 100%);
 }
 
 .benefit-item.upsell {
-  background: linear-gradient(180deg, #fff8f0 0%, #fff2df 100%);
+  background: linear-gradient(180deg, #f7f3eb 0%, #f1ece1 100%);
 }
 
 .benefit-main {
@@ -153,195 +185,125 @@
   flex-direction: column;
 }
 
-.benefit-title-row {
+.benefit-title-row,
+.product-top,
+.product-title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16rpx;
-  margin-bottom: 8rpx;
 }
 
 .benefit-title {
   font-size: 26rpx;
-  font-weight: 600;
-  color: #333;
+  font-weight: 700;
+  color: #22342b;
 }
 
-.benefit-desc {
+.benefit-desc,
+.benefit-extra,
+.product-subtitle,
+.product-desc,
+.experience-desc,
+.dev-desc,
+.faq-a,
+.order-desc {
+  line-height: 1.65;
+  color: #748179;
+}
+
+.benefit-desc,
+.order-desc {
   font-size: 22rpx;
-  color: #667085;
-  line-height: 1.6;
 }
 
-.benefit-tag {
-  background: #f5a623;
-  color: #fff;
-  font-size: 20rpx;
-  padding: 4rpx 8rpx;
-  border-radius: 8rpx;
-  flex-shrink: 0;
-}
-
-.benefit-tag.upsell {
-  background: #ff8f1f;
+.benefit-extra,
+.product-subtitle,
+.product-desc,
+.experience-desc,
+.dev-desc,
+.faq-a {
+  font-size: 21rpx;
 }
 
 .benefit-extra {
   margin-top: 10rpx;
+}
+
+.benefit-tag,
+.product-badge {
+  padding: 6rpx 12rpx;
+  border-radius: 999rpx;
+  background: #e5ece7;
+  color: #486154;
   font-size: 20rpx;
-  color: #667085;
+  font-weight: 700;
+}
+
+.benefit-tag.upsell,
+.product-badge {
+  background: #efe6d8;
+  color: #8a673f;
 }
 
 .order-item {
   padding: 18rpx 0;
-  border-bottom: 1rpx solid #f1f3f5;
+  border-bottom: 1rpx solid rgba(34, 52, 43, 0.06);
 }
 
 .order-item:last-child {
-  border-bottom: none;
   padding-bottom: 0;
+  border-bottom: none;
 }
 
-.order-title {
+.order-title,
+.faq-q,
+.experience-title,
+.product-title {
+  color: #22342b;
+  font-weight: 700;
+}
+
+.order-title,
+.faq-q,
+.product-title {
   font-size: 26rpx;
-  font-weight: 600;
-  color: #333;
-}
-
-.order-desc {
-  font-size: 22rpx;
-  color: #8a8f99;
-  margin-top: 8rpx;
 }
 
 .faq-item {
-  margin-bottom: 20rpx;
+  margin-bottom: 18rpx;
 }
 
 .faq-item:last-child {
   margin-bottom: 0;
 }
 
-.faq-q {
-  font-size: 26rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 8rpx;
-}
-
-.faq-a {
-  font-size: 24rpx;
-  color: #999;
-  line-height: 1.5;
-}
-
-.share-section {
-  padding: 24rpx 0;
-}
-
-.dev-section {
-  margin-top: 24rpx;
-  padding: 28rpx;
-  border-radius: 24rpx;
-  background: #eef6ff;
-  border: 1rpx dashed #90bfff;
-}
-
-.dev-desc {
-  font-size: 22rpx;
-  color: #5c6f82;
-  line-height: 1.6;
-  margin-bottom: 20rpx;
-}
-
-.dev-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16rpx;
-}
-
-.dev-btn {
-  flex: 1;
-  min-width: 260rpx;
-  border-radius: 999rpx;
-  font-size: 24rpx;
-  color: #2f4f7f;
-  background: #ffffff;
-  border: 1rpx solid #bfd7ff;
-}
-
-.dev-btn.primary {
-  background: #4f8cff;
-  color: #ffffff;
-  border-color: #4f8cff;
-}
-
-.dev-btn.danger {
-  margin-top: 16rpx;
-  background: #fff1f0;
-  color: #c0392b;
-  border-color: #f5b7b1;
-}
-
-.dev-btn.full {
-  width: 100%;
-}
-
-
-.experience-section {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  margin-bottom: 24rpx;
-}
-
-.experience-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16rpx;
-}
-
 .experience-card {
   padding: 22rpx 18rpx;
-  border-radius: 18rpx;
-  background: linear-gradient(135deg, #f3f7ff, #eef3ff);
+  background: #f4f6f2;
 }
 
 .experience-card.warm {
-  background: linear-gradient(135deg, #fff8ef, #fff0de);
+  background: linear-gradient(135deg, #f8f2e8, #f0e8dc);
 }
 
 .experience-card.light {
-  background: linear-gradient(135deg, #f3faf5, #eef8f1);
+  background: linear-gradient(135deg, #eff3ef, #e7eee8);
 }
 
 .experience-title {
-  font-size: 25rpx;
-  font-weight: 700;
-  color: #333;
+  font-size: 24rpx;
 }
 
 .experience-desc {
   margin-top: 10rpx;
-  font-size: 21rpx;
-  line-height: 1.6;
-  color: #667085;
-}
-
-
-.product-section {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  margin-bottom: 24rpx;
 }
 
 .product-card {
   padding: 22rpx;
-  border-radius: 18rpx;
-  background: #f7f9fc;
-  border: 1rpx solid #edf1f5;
-  margin-bottom: 16rpx;
+  background: #f6f7f3;
+  border: 1rpx solid rgba(39, 69, 57, 0.06);
+  margin-bottom: 14rpx;
 }
 
 .product-card:last-child {
@@ -349,19 +311,12 @@
 }
 
 .product-card.active {
-  background: linear-gradient(135deg, #fff8ef, #fff0de);
-  border-color: #ffc982;
-}
-
-.product-top,
-.product-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  background: linear-gradient(135deg, #f7f1e8, #efe8dc);
+  border-color: rgba(141, 106, 64, 0.16);
 }
 
 .product-top {
-  gap: 20rpx;
+  align-items: flex-start;
 }
 
 .product-title-row {
@@ -369,38 +324,16 @@
   gap: 10rpx;
 }
 
-.product-title {
-  font-size: 28rpx;
-  font-weight: 700;
-  color: #333;
-}
-
-.product-badge {
-  padding: 4rpx 10rpx;
-  border-radius: 999rpx;
-  background: #ff8f1f;
-  color: #fff;
-  font-size: 20rpx;
-}
-
-.product-subtitle,
-.product-desc {
-  margin-top: 8rpx;
-  font-size: 22rpx;
-  color: #667085;
-  line-height: 1.6;
-}
-
 .product-price {
   font-size: 34rpx;
   font-weight: 700;
-  color: #111827;
+  color: #22342b;
 }
 
 .product-highlight-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 12rpx;
+  gap: 10rpx;
   margin-top: 16rpx;
 }
 
@@ -408,6 +341,71 @@
   padding: 8rpx 12rpx;
   border-radius: 999rpx;
   background: #ffffff;
-  color: #49566a;
+  color: #607068;
   font-size: 20rpx;
+}
+
+.dev-section {
+  margin-bottom: 18rpx;
+  padding: 28rpx;
+  border-radius: 30rpx;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18rpx 40rpx rgba(34, 52, 43, 0.08);
+}
+
+.dev-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+}
+
+.dev-btn {
+  flex: 1;
+  min-width: 260rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  color: #486154;
+  background: #f4f6f2;
+  border: 1rpx solid rgba(39, 69, 57, 0.08);
+}
+
+.dev-btn.primary {
+  background: #274539;
+  color: #ffffff;
+  border-color: #274539;
+}
+
+.dev-btn.danger {
+  margin-top: 14rpx;
+  background: #f7eee9;
+  color: #b1644f;
+  border-color: rgba(177, 100, 79, 0.12);
+}
+
+.dev-btn.full {
+  width: 100%;
+}
+
+.share-section {
+  padding: 8rpx 0 20rpx;
+}
+
+.share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  width: 100%;
+  padding: 24rpx 0;
+  background: linear-gradient(135deg, #274539, #325849);
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.share-btn::after,
+.btn-member::after,
+.btn-login::after,
+.dev-btn::after {
+  border: none;
 }

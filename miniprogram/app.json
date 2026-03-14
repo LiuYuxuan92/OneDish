@@ -11,14 +11,15 @@
   ],
   "window": {
     "navigationBarTitleText": "简家厨",
-    "navigationBarBackgroundColor": "#1677ff",
-    "navigationBarTextStyle": "white",
+    "navigationBarBackgroundColor": "#f7f3ec",
+    "navigationBarTextStyle": "black",
     "backgroundTextStyle": "light"
   },
   "tabBar": {
-    "color": "#666",
-    "selectedColor": "#1677ff",
-    "borderStyle": "black",
+    "color": "#7a847d",
+    "selectedColor": "#274539",
+    "borderStyle": "white",
+    "backgroundColor": "#fcfaf6",
     "list": [
       {
         "pagePath": "pages/home/home",

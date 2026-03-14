@@ -95,7 +95,7 @@
       <block wx:for="{{items}}" wx:key="index">
         <view class="shopping-item {{item.checked ? 'checked' : ''}}">
           <view class="check-indicator {{item.checked ? 'active' : ''}}" bindtap="toggleItem" data-index="{{index}}">
-            <text wx:if="{{item.checked}}">✓</text>
+            <van-icon wx:if="{{item.checked}}" name="success" size="16" color="#ffffff" />
           </view>
           <view class="shopping-body" bindtap="toggleItem" data-index="{{index}}">
             <text class="shopping-name">{{item.name}}</text>
