@@ -176,6 +176,13 @@ Page({
     }, 3200);
   },
 
+  clearFeedbackTimer() {
+    if (this.feedbackTimer) {
+      clearTimeout(this.feedbackTimer);
+      this.feedbackTimer = null;
+    }
+  },
+
   flashBabyVersionCard() {
     this.setData({ babyVersionFlash: true });
     if (this.flashTimer) {
@@ -201,6 +208,28 @@ Page({
     if (this.pendingDetailId) {
       this.openRecipeDetail(this.pendingDetailId);
       this.pendingDetailId = '';
+    }
+  },
+
+  onHide() {
+    this.clearFeedbackTimer();
+    this.setData({
+      detail: null,
+      actionFeedback: null,
+      babyVersionFlash: false,
+      detailScrollTarget: '',
+      showAIGenerateModal: false,
+      showAIResultModal: false,
+      aiResult: null,
+      isGenerating: false,
+    });
+  },
+
+  onUnload() {
+    this.clearFeedbackTimer();
+    if (this.flashTimer) {
+      clearTimeout(this.flashTimer);
+      this.flashTimer = null;
     }
   },
 

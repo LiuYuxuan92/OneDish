@@ -6,6 +6,16 @@
     <view class="preference-chip" wx:if="{{preferenceSummaryText}}">
       <text>{{preferenceSummaryText}}</text>
     </view>
+    <view class="hero-meta-row">
+      <view class="hero-meta-card">
+        <text class="hero-meta-label">INVENTORY</text>
+        <text class="hero-meta-value">{{inventoryIngredients.length}} 种食材</text>
+      </view>
+      <view class="hero-meta-card">
+        <text class="hero-meta-label">SEARCH MODE</text>
+        <text class="hero-meta-value">{{inventoryFirst ? '库存优先' : '口味优先'}}</text>
+      </view>
+    </view>
   </view>
 
   <view class="search-panel">
@@ -29,7 +39,7 @@
       <view>
         <text class="assist-title">{{inventoryFirst ? '库存优先已开启' : '库存优先已关闭'}}</text>
         <text class="assist-desc">
-          {{inventoryIngredients.length ? '已识别 ' + inventoryIngredients.length + ' 种库存食材' : '登录后可自动识别库存食材'}}
+          {{inventoryIngredients.length ? ('已识别 ' + inventoryIngredients.length + ' 种库存食材') : '登录后可自动识别库存食材'}}
         </text>
       </view>
       <text class="assist-switch">{{inventoryFirst ? 'ON' : 'OFF'}}</text>
@@ -38,7 +48,7 @@
     <scroll-view scroll-x class="scenario-scroll">
       <view class="scenario-list">
         <view
-          class="scenario-chip {{selectedScenario === item.query ? 'active' : ''}}"
+          class="scenario-chip {{selectedScenario === item.query ? 'active' : ''}} {{item.key}}"
           wx:for="{{scenarios}}"
           wx:key="key"
           bindtap="onScenarioTap"
@@ -57,7 +67,7 @@
 
   <view class="history-card" wx:if="{{showHistory && history.length}}">
     <view class="section-header">
-      <text class="section-title">最近搜过</text>
+      <text class="section-title">最近搜索</text>
       <text class="section-link" bindtap="clearHistory">清空</text>
     </view>
     <view class="history-list">
@@ -89,7 +99,11 @@
 
     <block wx:for="{{results}}" wx:key="id">
       <view class="result-item" bindtap="goToRecipe" data-index="{{index}}">
-        <image class="result-cover" src="{{item.cover_url || ''}}" mode="aspectFill" />
+        <image wx:if="{{item.cover_url}}" class="result-cover" src="{{item.cover_url}}" mode="aspectFill" lazy-load="true" />
+        <view wx:else class="result-cover result-cover-fallback">
+          <text class="result-cover-kicker">RECIPE</text>
+          <text class="result-cover-copy">{{item.source_label}}</text>
+        </view>
         <view class="result-main">
           <text class="result-title">{{item.title || item.name}}</text>
           <view class="result-meta">

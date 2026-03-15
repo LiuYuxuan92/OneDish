@@ -1,4 +1,24 @@
 <view class="page-shell">
+  <view class="favorites-hero">
+    <text class="favorites-kicker">FAVORITES</text>
+    <text class="favorites-title">把值得反复做的菜先收在这里</text>
+    <text class="favorites-desc">常做、想再做的菜谱都留在这里，临时做饭也能很快找到。</text>
+    <view class="favorites-meta-row">
+      <view class="favorites-meta-card">
+        <text class="favorites-meta-value">{{favorites.length || localFavorites.length}}</text>
+        <text class="favorites-meta-label">已收菜谱</text>
+      </view>
+      <view class="favorites-meta-card soft">
+        <text class="favorites-meta-value">{{favorites.length ? '云端同步' : '本地收藏'}}</text>
+        <text class="favorites-meta-label">当前来源</text>
+      </view>
+    </view>
+    <view class="favorites-hero-actions">
+      <view class="favorites-hero-btn primary" bindtap="goToRecipeList">继续找菜</view>
+      <view class="favorites-hero-btn secondary">常做菜先留着，做饭更省脑力</view>
+    </view>
+  </view>
+
   <view class="loading" wx:if="{{loading}}">
     <view class="spinner"></view>
     <text>加载中...</text>
@@ -8,16 +28,26 @@
     <block wx:for="{{favorites.length ? favorites : localFavorites}}" wx:key="id">
       <view class="favorite-item">
         <view class="item-content" bindtap="goToRecipe" data-id="{{item.id}}">
-          <image class="item-cover" src="{{item.cover_url || ''}}" mode="aspectFill" />
+          <image wx:if="{{item.cover_url}}" class="item-cover" src="{{item.cover_url}}" mode="aspectFill" lazy-load="true" />
+          <view wx:else class="item-cover item-cover-fallback">
+            <text class="item-cover-kicker">RECIPE</text>
+            <text class="item-cover-copy">{{item.difficulty || '家常'}}</text>
+          </view>
           <view class="item-info">
+            <view class="item-source-row">
+              <text class="item-source-tag {{favorites.length ? 'cloud' : 'local'}}">{{favorites.length ? '云端已同步' : '本地保存'}}</text>
+              <text class="item-link">查看做法</text>
+            </view>
             <view class="item-title">{{item.title || item.name}}</view>
             <view class="item-meta">
               <text wx:if="{{item.difficulty}}">{{item.difficulty}}</text>
               <text wx:if="{{item.cook_time}}">{{item.cook_time}}分钟</text>
             </view>
+            <text class="item-note">留给下一次临时决定吃什么的时候，能直接拎出来做。</text>
           </view>
         </view>
         <view class="item-actions">
+          <text class="btn-open" bindtap="goToRecipe" data-id="{{item.id}}">继续做</text>
           <text class="btn-remove" bindtap="removeFavorite" data-id="{{item.id}}">取消收藏</text>
         </view>
       </view>
@@ -28,8 +58,8 @@
     <view class="empty-icon-wrap">
       <van-icon name="star-o" size="34" color="#7b857f" />
     </view>
-    <text class="empty-text">暂无收藏</text>
-    <text class="empty-hint">把值得反复做的菜谱留在这里，随时回来继续安排。</text>
-    <button class="btn-go" bindtap="goToRecipeList">浏览菜谱</button>
+    <text class="empty-text">还没有收藏</text>
+    <text class="empty-hint">把值得重复做的菜谱留在这里，随时回来继续安排。</text>
+    <button class="btn-go" bindtap="goToRecipeList">去看菜谱</button>
   </view>
 </view>

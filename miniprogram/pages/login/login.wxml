@@ -4,38 +4,55 @@
       <van-icon name="shop-o" size="38" color="#274539" />
     </view>
     <view class="app-name">简家厨</view>
-    <view class="slogan">一道菜，让大人和宝宝都吃得更安心</view>
+    <view class="slogan">一餐两用，让大人和宝宝都吃得更安心</view>
   </view>
 
   <view class="login-panel" wx:if="{{!loggedIn}}">
     <view class="panel-copy">
       <text class="panel-kicker">ACCOUNT ACCESS</text>
-      <text class="panel-title">登录后同步会员、收藏与采购清单</text>
+      <text class="panel-title">登录后同步会员、收藏与购物清单</text>
       <text class="panel-desc">保留偏好设置，在小程序与 App 间获得一致体验。</text>
     </view>
 
-    <button 
-      class="btn-wechat" 
-      bindtap="wechatLogin" 
+    <view class="benefit-row">
+      <view class="benefit-pill">同步收藏</view>
+      <view class="benefit-pill">云端清单</view>
+      <view class="benefit-pill">会员权益</view>
+    </view>
+
+    <view class="path-grid">
+      <view class="path-card">
+        <text class="path-title">微信登录</text>
+        <text class="path-desc">直接同步偏好、收藏和成长会员权益。</text>
+      </view>
+      <view class="path-card soft">
+        <text class="path-title">先游客体验</text>
+        <text class="path-desc">先看看界面，后续也能升级并迁移数据。</text>
+      </view>
+    </view>
+
+    <button
+      class="btn-wechat"
+      bindtap="wechatLogin"
       loading="{{loading}}"
     >
       {{loading ? '登录中...' : '微信一键登录'}}
     </button>
-    
+
     <view class="divider">
       <view class="line"></view>
       <text class="text">或</text>
       <view class="line"></view>
     </view>
-    
-    <button 
-      class="btn-guest" 
+
+    <button
+      class="btn-guest"
       bindtap="guestLogin"
       loading="{{loading}}"
     >
       游客体验
     </button>
-    
+
     <view class="tips">
       登录后可使用收藏菜谱、生成购物清单、家庭共享等完整能力。
     </view>
@@ -48,7 +65,7 @@
     <view class="username">{{userInfo.username || '用户'}}</view>
     <view class="role">已登录</view>
     <view class="status-note">你的偏好与权益已准备就绪，可继续浏览推荐或同步到其他设备。</view>
-    
+
     <button class="btn-logout" bindtap="logout">退出登录</button>
   </view>
 </view>

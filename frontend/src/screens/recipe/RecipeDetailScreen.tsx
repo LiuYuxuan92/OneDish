@@ -288,6 +288,18 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
         >
           <ChevronLeftIcon size={24} color={Colors.text.primary} />
         </TouchableOpacity>
+        <View style={styles.headerTitleWrap}>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {recipe.name}
+          </Text>
+          <Text style={styles.headerSubtitle}>
+            {activeTab === "adult"
+              ? "成人版做法"
+              : activeTab === "baby"
+                ? "宝宝版适配"
+                : "同步烹饪"}
+          </Text>
+        </View>
         <View style={styles.headerActions}>
           <TouchableOpacity
             style={styles.headerAction}
@@ -329,8 +341,6 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
             <RecipeHeroPanel
               hero={pageVm.hero}
               recipe={recipeVm.recipe}
-              activeTab={activeTab === "baby" ? "baby" : "adult"}
-              onSelectTab={setActiveTab}
             />
           ) : null}
         </View>
@@ -1230,16 +1240,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     backgroundColor: Colors.background.primary,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border.light,
   },
   backButton: {
-    padding: Spacing.sm,
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.full,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.background.secondary,
+  },
+  headerTitleWrap: {
+    flex: 1,
+    alignItems: "center",
+    paddingHorizontal: Spacing.sm,
+  },
+  headerTitle: {
+    maxWidth: "100%",
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.text.primary,
+  },
+  headerSubtitle: {
+    marginTop: 2,
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
   },
   headerActions: {
     flexDirection: "row",
     gap: Spacing.sm,
   },
   headerAction: {
-    padding: Spacing.sm,
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.full,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.background.secondary,
   },
 
   // 滚动区域
@@ -1436,16 +1474,19 @@ const styles = StyleSheet.create({
   // Tab切换
   tabContainer: {
     flexDirection: "row",
-    backgroundColor: Colors.background.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border.light,
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.sm,
-    gap: Spacing.md,
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.sm,
+    padding: Spacing.xs,
+    backgroundColor: Colors.background.card,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+    gap: Spacing.sm,
+    ...Shadows.sm,
   },
   sectionTightTop: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
+    paddingTop: Spacing.lg,
   },
   versionShowcaseCard: {
     backgroundColor: Colors.background.primary,
@@ -1676,13 +1717,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: Spacing.md,
-    backgroundColor: Colors.neutral.gray100,
-    borderRadius: BorderRadius.md,
+    backgroundColor: "transparent",
+    borderRadius: BorderRadius.lg,
     gap: Spacing.xs,
     position: "relative",
   },
   tabActive: {
-    backgroundColor: Colors.background.card,
+    backgroundColor: Colors.background.secondary,
     ...Shadows.sm,
   },
   tabText: {
@@ -1696,10 +1737,10 @@ const styles = StyleSheet.create({
   },
   tabIndicator: {
     position: "absolute",
-    bottom: -Spacing.sm,
-    left: "20%",
-    right: "20%",
-    height: 3,
+    bottom: 6,
+    left: "28%",
+    right: "28%",
+    height: 2,
     backgroundColor: Colors.primary.main,
     borderRadius: BorderRadius.full,
   },
@@ -2490,8 +2531,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     maxWidth: width - Spacing.lg * 2,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
     borderRadius: BorderRadius.full,
     backgroundColor: Colors.primary.main,
     ...Shadows.lg,

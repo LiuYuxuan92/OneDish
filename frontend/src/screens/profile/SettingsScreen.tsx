@@ -13,6 +13,16 @@ const CACHE_KEYS = ['@recipe_filter_prefs', '@home_data_cache', '@recipe_list_ca
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Settings'>;
 
+interface SettingItem {
+  title: string;
+  description?: string;
+  value?: string;
+  type: 'switch' | 'navigation' | 'button';
+  onPress?: () => void;
+  onValueChange?: (value: boolean) => void;
+  currentValue?: boolean;
+}
+
 export function SettingsScreen({ navigation }: Props) {
   const { theme, themeMode, setThemeMode, themePreviews } = useTheme();
   const [notifications, setNotifications] = React.useState(true);
@@ -40,9 +50,9 @@ export function SettingsScreen({ navigation }: Props) {
             for (const key of CACHE_KEYS) {
               await AsyncStorage.removeItem(key);
             }
-            Alert.alert('成功', '缓存已清除');
+            Alert.alert('已清除', '缓存数据已经清空。');
           } catch {
-            Alert.alert('错误', '清除缓存失败，请重试');
+            Alert.alert('清除失败', '请稍后再试。');
           }
         },
       },
@@ -55,45 +65,79 @@ export function SettingsScreen({ navigation }: Props) {
   };
 
   const feedbackData = feedbackStats?.data;
+  const themeName = themePreviews.find((item) => item.mode === themeMode)?.name || 'Warm';
 
   const summaryCards = [
     {
       label: 'AI 配额',
       value: quota ? `${quota.daily.ai_used}/${quota.daily.ai_limit}` : '加载中',
-      helper: '查看今天还能用多少次 AI',
+      helper: '今天还能用多少次 AI',
     },
     {
       label: '联网配额',
       value: quota ? `${quota.daily.web_used}/${quota.daily.web_limit}` : '加载中',
-      helper: '控制联网搜索与抓取消耗',
+      helper: '联网搜索与抓取的消耗',
     },
     {
-      label: '近7天采纳率',
+      label: '近 7 天采纳率',
       value: feedbackData ? `${(feedbackData.adoption_rate * 100).toFixed(1)}%` : '暂无数据',
-      helper: feedbackData ? `${feedbackData.accepted}/${feedbackData.total || 0} 次被采纳` : '等更多反馈积累后再看',
+      helper: feedbackData ? `${feedbackData.accepted}/${feedbackData.total || 0} 次被采纳` : '等更多反馈后再看',
     },
   ];
 
-  const settings = [
-    { icon: '🔔', title: '推送通知', type: 'switch', value: notifications, onValueChange: setNotifications },
-    { icon: '🎨', title: '主题', type: 'navigation', value: themePreviews.find((t) => t.mode === themeMode)?.name || '温暖橙', onPress: () => setShowThemeModal(true) },
-    { icon: '🤖', title: 'AI 配置', type: 'navigation', onPress: () => navigation.navigate('AISettings') },
-    { icon: '🍽️', title: '饮食偏好', type: 'navigation', value: '宝宝月龄 / 食材 / 时间 / 难度', onPress: () => navigation.navigate('PreferenceSettings') },
-    { icon: '📊', title: '配额状态', type: 'navigation', value: quota ? `AI ${quota.daily.ai_used}/${quota.daily.ai_limit} · 联网 ${quota.daily.web_used}/${quota.daily.web_limit}` : '点击刷新', onPress: loadQuota },
-    { icon: '✅', title: '近7天推荐采纳率', type: 'navigation', value: feedbackData ? `${(feedbackData.adoption_rate * 100).toFixed(1)}% (${feedbackData.accepted}/${feedbackData.total || 0})` : '暂无数据', onPress: () => {} },
-    { icon: '🔄', title: '清除缓存', type: 'button', onPress: handleClearCache },
+  const settings: SettingItem[] = [
+    {
+      title: '推送通知',
+      description: '重要提醒和阶段更新通知',
+      type: 'switch',
+      currentValue: notifications,
+      onValueChange: setNotifications,
+    },
+    {
+      title: '主题',
+      description: '调整整体色调与观感',
+      value: themeName,
+      type: 'navigation',
+      onPress: () => setShowThemeModal(true),
+    },
+    {
+      title: 'AI 配置',
+      description: '控制 AI 生成和推荐偏好',
+      type: 'navigation',
+      onPress: () => navigation.navigate('AISettings'),
+    },
+    {
+      title: '饮食偏好',
+      description: '宝宝月龄、食材、时间和难度',
+      type: 'navigation',
+      onPress: () => navigation.navigate('PreferenceSettings'),
+    },
+    {
+      title: '配额状态',
+      description: '查看并刷新今天的 AI 与联网额度',
+      value: quota ? `AI ${quota.daily.ai_used}/${quota.daily.ai_limit} · 联网 ${quota.daily.web_used}/${quota.daily.web_limit}` : '点击刷新',
+      type: 'navigation',
+      onPress: loadQuota,
+    },
+    {
+      title: '清除缓存',
+      description: '清掉搜索和列表缓存，不影响登录',
+      type: 'button',
+      onPress: handleClearCache,
+    },
   ];
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.Colors.background.secondary }]} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={[styles.heroCard, { backgroundColor: theme.Colors.background.primary }]}> 
-          <Text style={styles.eyebrow}>设置中心</Text>
-          <Text style={[styles.heroTitle, { color: theme.Colors.text.primary }]}>把主题、配额、偏好和缓存管理收在一个地方</Text>
-          <Text style={[styles.heroSubtitle, { color: theme.Colors.text.secondary }]}>这里主要负责全局体验调节，不改业务逻辑，但让关键控制项更容易找到。</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={[styles.heroCard, { backgroundColor: theme.Colors.background.primary }]}>
+          <Text style={styles.heroKicker}>SETTINGS</Text>
+          <Text style={[styles.heroTitle, { color: theme.Colors.text.primary }]}>把主题、配额和偏好收进一个清晰的控制台</Text>
+          <Text style={[styles.heroSubtitle, { color: theme.Colors.text.secondary }]}>这里只放真正影响整体体验的控制项，不把页面做成密密麻麻的开关墙。</Text>
+
           <View style={styles.summaryRow}>
             {summaryCards.map((card) => (
-              <View key={card.label} style={[styles.summaryCard, { backgroundColor: theme.Colors.background.secondary }]}> 
+              <View key={card.label} style={[styles.summaryCard, { backgroundColor: theme.Colors.background.secondary }]}>
                 <Text style={[styles.summaryValue, { color: theme.Colors.text.primary }]}>{card.value}</Text>
                 <Text style={[styles.summaryLabel, { color: theme.Colors.text.secondary }]}>{card.label}</Text>
                 <Text style={[styles.summaryHelper, { color: theme.Colors.text.tertiary }]}>{card.helper}</Text>
@@ -102,42 +146,52 @@ export function SettingsScreen({ navigation }: Props) {
           </View>
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.Colors.background.primary }]}> 
+        <View style={[styles.section, { backgroundColor: theme.Colors.background.primary }]}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.Colors.text.primary }]}>主要控制项</Text>
+            <Text style={[styles.sectionDesc, { color: theme.Colors.text.secondary }]}>优先保留最常动到的设置。</Text>
+          </View>
+
           {settings.map((item, index) => (
             <TouchableOpacity
-              key={index}
+              key={`${item.title}-${index}`}
               style={[styles.settingItem, { borderBottomColor: theme.Colors.border.light }]}
               onPress={item.onPress}
               disabled={item.type === 'switch'}
+              activeOpacity={0.78}
             >
-              <View style={styles.settingLeft}>
-                <Text style={styles.settingIcon}>{item.icon}</Text>
-                <View style={styles.settingTextWrap}>
-                  <Text style={[styles.settingTitle, { color: theme.Colors.text.primary }]}>{item.title}</Text>
-                  {item.value ? <Text style={[styles.settingSubtitle, { color: theme.Colors.text.secondary }]}>{item.value}</Text> : null}
-                </View>
+              <View style={styles.settingCopy}>
+                <Text style={[styles.settingTitle, { color: theme.Colors.text.primary }]}>{item.title}</Text>
+                {item.description ? <Text style={[styles.settingDescription, { color: theme.Colors.text.secondary }]}>{item.description}</Text> : null}
+                {item.value ? <Text style={[styles.settingValue, { color: theme.Colors.primary.main }]}>{item.value}</Text> : null}
               </View>
-              <View style={styles.settingRight}>
-                {item.type === 'switch' ? (
-                  <Switch
-                    value={Boolean(item.value)}
-                    onValueChange={item.onValueChange}
-                    trackColor={{ false: theme.Colors.neutral.gray300, true: theme.Colors.primary.main }}
-                    thumbColor={theme.Colors.background.primary}
-                  />
-                ) : (
-                  <Text style={[styles.settingArrow, { color: theme.Colors.neutral.gray400 }]}>›</Text>
-                )}
-              </View>
+
+              {item.type === 'switch' ? (
+                <Switch
+                  value={Boolean(item.currentValue)}
+                  onValueChange={item.onValueChange}
+                  trackColor={{ false: theme.Colors.neutral.gray300, true: theme.Colors.primary.main }}
+                  thumbColor={theme.Colors.background.primary}
+                />
+              ) : (
+                <Text style={[styles.settingArrow, { color: theme.Colors.text.tertiary }]}>›</Text>
+              )}
             </TouchableOpacity>
           ))}
         </View>
 
-        <View style={[styles.section, { backgroundColor: theme.Colors.background.primary }]}> 
-          <Text style={[styles.sectionTitle, { color: theme.Colors.text.secondary }]}>关于</Text>
+        <View style={[styles.section, { backgroundColor: theme.Colors.background.primary }]}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.Colors.text.primary }]}>关于</Text>
+            <Text style={[styles.sectionDesc, { color: theme.Colors.text.secondary }]}>版本和配额重置时间。</Text>
+          </View>
           <View style={styles.aboutCard}>
             <Text style={[styles.versionText, { color: theme.Colors.text.primary }]}>简家厨 v1.0.0</Text>
-            {quota?.reset_at ? <Text style={[styles.quotaResetText, { color: theme.Colors.text.secondary }]}>配额重置时间：{new Date(quota.reset_at).toLocaleString('zh-CN')}</Text> : null}
+            {quota?.reset_at ? (
+              <Text style={[styles.quotaResetText, { color: theme.Colors.text.secondary }]}>
+                配额重置时间：{new Date(quota.reset_at).toLocaleString('zh-CN')}
+              </Text>
+            ) : null}
           </View>
         </View>
       </ScrollView>
@@ -148,10 +202,11 @@ export function SettingsScreen({ navigation }: Props) {
             <View style={styles.themeModalHeader}>
               <Text style={[styles.themeModalTitle, { color: theme.Colors.text.primary }]}>选择主题</Text>
               <TouchableOpacity onPress={() => setShowThemeModal(false)}>
-                <Text style={{ color: theme.Colors.primary.main, fontSize: 16 }}>关闭</Text>
+                <Text style={[styles.closeText, { color: theme.Colors.primary.main }]}>关闭</Text>
               </TouchableOpacity>
             </View>
-            <ScrollView>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
               {themePreviews.map((item) => (
                 <TouchableOpacity
                   key={item.mode}
@@ -161,9 +216,10 @@ export function SettingsScreen({ navigation }: Props) {
                     themeMode === item.mode && [styles.themeOptionSelected, { borderColor: theme.Colors.primary.main }],
                   ]}
                   onPress={() => handleThemeSelect(item.mode)}
+                  activeOpacity={0.82}
                 >
-                  <View style={[styles.themePreview, { backgroundColor: item.backgroundColor }]}> 
-                    <View style={{ flex: 1, backgroundColor: item.primaryColor, borderTopLeftRadius: 12, borderTopRightRadius: 12 }} />
+                  <View style={[styles.themePreview, { backgroundColor: item.backgroundColor }]}>
+                    <View style={[styles.themePreviewTop, { backgroundColor: item.primaryColor }]} />
                   </View>
                   <View style={styles.themeInfo}>
                     <Text style={[styles.themeName, { color: theme.Colors.text.primary }]}>{item.name}</Text>
@@ -182,38 +238,178 @@ export function SettingsScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { padding: Spacing.md, paddingBottom: Spacing['3xl'] },
-  heroCard: { borderRadius: BorderRadius.xl, padding: Spacing.lg, ...Shadows.sm },
-  eyebrow: { fontSize: Typography.fontSize.xs, color: Colors.primary.main, fontWeight: Typography.fontWeight.bold, textTransform: 'uppercase', marginBottom: Spacing.xs },
-  heroTitle: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, lineHeight: 28 },
-  heroSubtitle: { marginTop: Spacing.xs, fontSize: Typography.fontSize.sm, lineHeight: 20 },
-  summaryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.md },
-  summaryCard: { flexGrow: 1, minWidth: '30%', borderRadius: BorderRadius.lg, padding: Spacing.md },
-  summaryValue: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.bold },
-  summaryLabel: { marginTop: Spacing.xs, fontSize: Typography.fontSize.xs },
-  summaryHelper: { marginTop: 4, fontSize: Typography.fontSize.xs, lineHeight: 18 },
-  section: { marginTop: Spacing.md, borderRadius: BorderRadius.xl, overflow: 'hidden', ...Shadows.sm },
-  sectionTitle: { fontSize: Typography.fontSize.xs, padding: Spacing.md, paddingBottom: 0, textTransform: 'uppercase', fontWeight: Typography.fontWeight.semibold },
-  settingItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: Spacing.md, borderBottomWidth: 1 },
-  settingLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  settingTextWrap: { flex: 1 },
-  settingIcon: { fontSize: 20, marginRight: 16 },
-  settingTitle: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.medium },
-  settingSubtitle: { fontSize: Typography.fontSize.xs, marginTop: 4 },
-  settingRight: { flexDirection: 'row', alignItems: 'center' },
-  settingArrow: { fontSize: 24 },
-  aboutCard: { padding: Spacing.md },
-  versionText: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.medium },
-  quotaResetText: { fontSize: Typography.fontSize.xs, marginTop: 4 },
-  themeModalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'flex-end' },
-  themeModalContent: { borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 20, paddingBottom: 40 },
-  themeModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 20 },
-  themeModalTitle: { fontSize: 18, fontWeight: '600' },
-  themeOption: { flexDirection: 'row', alignItems: 'center', padding: 16, marginHorizontal: 16, marginBottom: 12, borderRadius: 12 },
-  themeOptionSelected: { borderWidth: 2 },
-  themePreview: { width: 48, height: 48, borderRadius: 12, marginRight: 16 },
-  themeInfo: { flex: 1 },
-  themeName: { fontSize: 16, fontWeight: '500', marginBottom: 4 },
-  themeDescription: { fontSize: 13 },
-  checkIcon: { fontSize: 20 },
+  scrollContent: { padding: Spacing.md, paddingBottom: Spacing['3xl'], gap: Spacing.md },
+  heroCard: {
+    borderRadius: BorderRadius['2xl'],
+    padding: Spacing.lg,
+    ...Shadows.sm,
+  },
+  heroKicker: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
+    fontWeight: Typography.fontWeight.semibold,
+    letterSpacing: 0.8,
+  },
+  heroTitle: {
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
+    lineHeight: 30,
+  },
+  heroSubtitle: {
+    marginTop: Spacing.sm,
+    fontSize: Typography.fontSize.sm,
+    lineHeight: 20,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  summaryCard: {
+    flexGrow: 1,
+    minWidth: '30%',
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.md,
+  },
+  summaryValue: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
+  },
+  summaryLabel: {
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.xs,
+  },
+  summaryHelper: {
+    marginTop: 4,
+    fontSize: Typography.fontSize.xs,
+    lineHeight: 18,
+  },
+  section: {
+    borderRadius: BorderRadius['2xl'],
+    overflow: 'hidden',
+    ...Shadows.sm,
+  },
+  sectionHeader: {
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
+  },
+  sectionTitle: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
+  },
+  sectionDesc: {
+    marginTop: 4,
+    fontSize: Typography.fontSize.xs,
+    lineHeight: 18,
+  },
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: Spacing.md,
+    borderTopWidth: 1,
+  },
+  settingCopy: {
+    flex: 1,
+    paddingRight: Spacing.md,
+  },
+  settingTitle: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  settingDescription: {
+    marginTop: 4,
+    fontSize: Typography.fontSize.sm,
+    lineHeight: 19,
+  },
+  settingValue: {
+    marginTop: 6,
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  settingArrow: {
+    fontSize: 24,
+  },
+  aboutCard: {
+    padding: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border.light,
+  },
+  versionText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  quotaResetText: {
+    marginTop: 4,
+    fontSize: Typography.fontSize.xs,
+  },
+  themeModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(20, 25, 22, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  themeModalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 20,
+    paddingBottom: 40,
+    maxHeight: '78%',
+  },
+  themeModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  themeModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  closeText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  themeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 16,
+  },
+  themeOptionSelected: {
+    borderWidth: 2,
+  },
+  themePreview: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    marginRight: 16,
+    overflow: 'hidden',
+    justifyContent: 'flex-start',
+  },
+  themePreviewTop: {
+    height: 20,
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
+  },
+  themeInfo: {
+    flex: 1,
+  },
+  themeName: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  themeDescription: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  checkIcon: {
+    fontSize: 20,
+  },
 });

@@ -72,7 +72,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
   const removeMemberMutation = useRemoveWeeklyShareMember(activeShareId || undefined);
 
   useEffect(() => {
-    if (!activeShareId || !sharedWeeklyData) return;
+    if (!activeShareId || !sharedWeeklyData) {return;}
     trackEvent('shared_plan_viewed', { timestamp: new Date().toISOString(), screen: 'WeeklyPlan', source: 'weekly_plan', shareId: activeShareId, planId: null });
   }, [activeShareId, sharedWeeklyData]);
 
@@ -112,7 +112,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
   const completionPct = weekSummary.completionPercent;
 
   const handleGenerate = async () => {
-    if (isGenerating || generateMutation.isPending || generateFromPromptMutation.isPending) return;
+    if (isGenerating || generateMutation.isPending || generateFromPromptMutation.isPending) {return;}
     setIsGenerating(true);
     try {
       const allMealKeys: string[] = [];
@@ -136,8 +136,8 @@ export function WeeklyPlanScreen({ navigation }: Props) {
         setIsSmartMode(false);
         Alert.alert('AI 周计划已生成', typeof remainingQuota === 'number' ? '本次已消耗 1 次自然语言周计划，剩余 ' + remainingQuota + ' 次。' : '本周计划已按你的描述生成。');
       } else {
-        if (effectiveBabyAge) params.baby_age_months = effectiveBabyAge;
-        if (effectiveExcludeIngredients.length > 0) params.exclude_ingredients = effectiveExcludeIngredients;
+        if (effectiveBabyAge) {params.baby_age_months = effectiveBabyAge;}
+        if (effectiveExcludeIngredients.length > 0) {params.exclude_ingredients = effectiveExcludeIngredients;}
         await generateMutation.mutateAsync(params);
         if (isWebLocalGuestMode()) {
           Alert.alert('预览模式', '当前为未登录预览，已为你生成一份示例周计划，方便先看整体效果。');
@@ -145,7 +145,7 @@ export function WeeklyPlanScreen({ navigation }: Props) {
       }
     } catch (genErr: unknown) {
       const err = genErr as { response?: { status: number }; statusCode?: number; code?: number; http_status?: number; message?: string };
-      if (err?.response?.status === 429 || err?.statusCode === 429) console.warn('请求过于频繁，请稍后再试');
+      if (err?.response?.status === 429 || err?.statusCode === 429) {console.warn('请求过于频繁，请稍后再试');}
       else if (err?.http_status === 403 || err?.code === 403) {
         Alert.alert('会员次数不足', err?.message || '当前账号暂无可用的自然语言周计划次数，请开通或续费成长会员后继续使用。');
       } else {
@@ -239,8 +239,8 @@ export function WeeklyPlanScreen({ navigation }: Props) {
     setShowShareTemplate(true);
   };
 
-  if (isLoading || isPageVmLoading) return <SafeAreaView style={styles.container} edges={['bottom']}><View style={styles.centerContent}><ActivityIndicator size="large" color={Colors.primary.main} /><Text style={styles.loadingText}>加载计划中...</Text></View></SafeAreaView>;
-  if (error) return <SafeAreaView style={styles.container} edges={['bottom']}><View style={styles.centerContent}><Text style={styles.errorIcon}>⚠️</Text><Text style={styles.errorTitle}>加载失败</Text><TouchableOpacity style={styles.retryButton} onPress={() => refetch()}><Text style={styles.retryButtonText}>重试</Text></TouchableOpacity></View></SafeAreaView>;
+  if (isLoading || isPageVmLoading) {return <SafeAreaView style={styles.container} edges={['bottom']}><View style={styles.centerContent}><ActivityIndicator size="large" color={Colors.primary.main} /><Text style={styles.loadingText}>加载计划中...</Text></View></SafeAreaView>;}
+  if (error) {return <SafeAreaView style={styles.container} edges={['bottom']}><View style={styles.centerContent}><Text style={styles.errorIcon}>⚠️</Text><Text style={styles.errorTitle}>加载失败</Text><TouchableOpacity style={styles.retryButton} onPress={() => refetch()}><Text style={styles.retryButtonText}>重试</Text></TouchableOpacity></View></SafeAreaView>;}
 
   const hasPlans = pageVm.hasPlans;
 

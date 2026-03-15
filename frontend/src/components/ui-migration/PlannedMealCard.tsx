@@ -26,17 +26,26 @@ function getAcceptanceLabel(acceptance?: FeedbackAcceptance) {
   return acceptance ? ACCEPTANCE_LABELS[acceptance] : undefined;
 }
 
-export const PlannedMealCard: React.FC<PlannedMealCardProps> = ({ item, onPress, onMarkComplete, onReplace, onRemove, onAddEmpty }) => {
+export const PlannedMealCard: React.FC<PlannedMealCardProps> = ({
+  item,
+  onPress,
+  onMarkComplete,
+  onReplace,
+  onRemove,
+  onAddEmpty,
+}) => {
   if (!item.recipe) {
     return (
       <Card variant="outlined" style={styles.emptyCard}>
         <View style={styles.header}>
-          <Text style={styles.slot}>{item.slotLabel}</Text>
+          <View style={styles.slotPill}>
+            <Text style={styles.slot}>{item.slotLabel}</Text>
+          </View>
           <Text style={[styles.readiness, styles.readinessPending]}>{item.readinessLabel}</Text>
         </View>
         <Pressable onPress={() => onAddEmpty?.(item.slotKey)} style={styles.emptyAction}>
-          <Text style={styles.emptyPlus}>＋</Text>
-          <Text style={styles.emptyText}>添加菜谱</Text>
+          <Text style={styles.emptyPlus}>+</Text>
+          <Text style={styles.emptyText}>给这餐补一个菜谱</Text>
         </Pressable>
       </Card>
     );
@@ -45,27 +54,60 @@ export const PlannedMealCard: React.FC<PlannedMealCardProps> = ({ item, onPress,
   const acceptanceLabel = getAcceptanceLabel(item.acceptance);
   const actions = [
     item.planId && item.completionStatus !== 'completed' && onMarkComplete
-      ? <Pressable key="complete" onPress={() => onMarkComplete(item.planId)}><Text style={styles.actionText}>完成</Text></Pressable>
+      ? (
+        <Pressable key="complete" onPress={() => onMarkComplete(item.planId)}>
+          <Text style={styles.actionText}>完成</Text>
+        </Pressable>
+      )
       : null,
     item.planId && onReplace
-      ? <Pressable key="replace" onPress={() => onReplace(item.planId)}><Text style={styles.actionText}>替换</Text></Pressable>
+      ? (
+        <Pressable key="replace" onPress={() => onReplace(item.planId)}>
+          <Text style={styles.actionText}>替换</Text>
+        </Pressable>
+      )
       : null,
     item.planId && onRemove
-      ? <Pressable key="remove" onPress={() => onRemove(item.planId)}><Text style={styles.actionText}>移除</Text></Pressable>
+      ? (
+        <Pressable key="remove" onPress={() => onRemove(item.planId)}>
+          <Text style={styles.actionText}>移除</Text>
+        </Pressable>
+      )
       : null,
   ].filter(Boolean);
 
   return (
     <Card variant="outlined" style={item.completionStatus === 'completed' ? styles.cardCompleted : styles.card}>
       <View style={styles.header}>
-        <Text style={styles.slot}>{item.slotLabel}</Text>
-        <Text style={[styles.readiness, item.readiness === 'ready' ? styles.readinessReady : item.readiness === 'partial' ? styles.readinessPartial : styles.readinessPending]}>{item.readinessLabel}</Text>
+        <View style={styles.slotPill}>
+          <Text style={styles.slot}>{item.slotLabel}</Text>
+        </View>
+        <Text
+          style={[
+            styles.readiness,
+            item.readiness === 'ready'
+              ? styles.readinessReady
+              : item.readiness === 'partial'
+                ? styles.readinessPartial
+                : styles.readinessPending,
+          ]}
+        >
+          {item.readinessLabel}
+        </Text>
       </View>
+
       <Pressable onPress={() => onPress?.(item.recipe?.id)} style={styles.mainRow}>
-        {item.recipe.image ? <Image source={{ uri: item.recipe.image }} style={styles.image} resizeMode="cover" /> : <View style={styles.imageFallback}><Text>🍽️</Text></View>}
+        {item.recipe.image ? (
+          <Image source={{ uri: item.recipe.image }} style={styles.image} resizeMode="cover" />
+        ) : (
+          <View style={styles.imageFallback}>
+            <Text style={styles.imageFallbackText}>暂无图</Text>
+          </View>
+        )}
+
         <View style={styles.info}>
           <Text style={styles.title}>{item.recipe.title}</Text>
-          <Text style={styles.meta}>{item.recipe.cookTimeText} · {item.recipe.difficultyLabel}</Text>
+          <Text style={styles.meta}>{item.recipe.cookTimeText} 路 {item.recipe.difficultyLabel}</Text>
           <View style={styles.badgesRow}>
             <DualBadge type={item.recipe.dualType} size="xs" />
             {acceptanceLabel ? <Text style={styles.acceptance}>{acceptanceLabel}</Text> : null}
@@ -73,6 +115,7 @@ export const PlannedMealCard: React.FC<PlannedMealCardProps> = ({ item, onPress,
           </View>
         </View>
       </Pressable>
+
       {item.adaptation ? <AdaptationSummary adaptation={item.adaptation} compact /> : null}
       {actions.length ? <View style={styles.actionRow}>{actions}</View> : null}
     </Card>
@@ -82,56 +125,84 @@ export const PlannedMealCard: React.FC<PlannedMealCardProps> = ({ item, onPress,
 const styles = StyleSheet.create({
   card: {
     gap: Spacing[3],
+    borderRadius: BorderRadius['2xl'],
+    borderColor: Colors.border.light,
+    backgroundColor: Colors.background.card,
   },
   cardCompleted: {
     gap: Spacing[3],
     opacity: 0.78,
+    borderRadius: BorderRadius['2xl'],
+    borderColor: Colors.border.light,
+    backgroundColor: Colors.background.card,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing[2],
+  },
+  slotPill: {
+    paddingHorizontal: Spacing[2.5],
+    paddingVertical: Spacing[1.5],
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.background.secondary,
   },
   slot: {
-    fontSize: Typography.fontSize.sm,
+    fontSize: Typography.fontSize.xs,
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.text.primary,
   },
   readiness: {
     fontSize: Typography.fontSize['2xs'],
-    paddingHorizontal: Spacing[2],
-    paddingVertical: Spacing[1],
+    paddingHorizontal: Spacing[2.5],
+    paddingVertical: Spacing[1.5],
     borderRadius: BorderRadius.full,
   },
-  readinessReady: { backgroundColor: Colors.secondary[50], color: Colors.secondary[700] },
-  readinessPartial: { backgroundColor: '#FFF3E0', color: '#8D5A00' },
-  readinessPending: { backgroundColor: Colors.neutral.gray100, color: Colors.text.secondary },
+  readinessReady: {
+    backgroundColor: Colors.secondary[50],
+    color: Colors.secondary[700],
+  },
+  readinessPartial: {
+    backgroundColor: '#FFF3E0',
+    color: '#8D5A00',
+  },
+  readinessPending: {
+    backgroundColor: Colors.neutral.gray100,
+    color: Colors.text.secondary,
+  },
   mainRow: {
     flexDirection: 'row',
     gap: Spacing[3],
+    alignItems: 'center',
   },
   image: {
-    width: 56,
-    height: 56,
+    width: 72,
+    height: 72,
     borderRadius: BorderRadius.xl,
   },
   imageFallback: {
-    width: 56,
-    height: 56,
+    width: 72,
+    height: 72,
     borderRadius: BorderRadius.xl,
-    backgroundColor: Colors.neutral.gray100,
+    backgroundColor: Colors.background.secondary,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  imageFallbackText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
   },
   info: {
     flex: 1,
-    gap: Spacing[1],
+    gap: Spacing[1.5],
   },
   title: {
     fontSize: Typography.fontSize.sm,
     color: Colors.text.primary,
     fontWeight: Typography.fontWeight.semibold,
+    lineHeight: 20,
   },
   meta: {
     fontSize: Typography.fontSize.xs,
@@ -160,20 +231,25 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
   },
   actionRow: {
-    marginTop: Spacing[2],
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: Spacing[4],
+    flexWrap: 'wrap',
+    gap: Spacing[2],
   },
   actionText: {
     color: Colors.primary.main,
     fontSize: Typography.fontSize.xs,
     fontWeight: Typography.fontWeight.medium,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing[2],
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.full,
   },
   emptyCard: {
     gap: Spacing[3],
     borderStyle: 'dashed',
     borderColor: Colors.border.default,
+    borderRadius: BorderRadius['2xl'],
+    backgroundColor: Colors.background.card,
   },
   emptyAction: {
     alignItems: 'center',
@@ -183,7 +259,7 @@ const styles = StyleSheet.create({
   },
   emptyPlus: {
     fontSize: Typography.fontSize['2xl'],
-    color: Colors.text.tertiary,
+    color: Colors.primary.main,
   },
   emptyText: {
     fontSize: Typography.fontSize.sm,

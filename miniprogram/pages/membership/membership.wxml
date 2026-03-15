@@ -13,10 +13,25 @@
       <view class="member-subtitle" wx:else>同一会员，小程序优先体验核心 AI，App 解锁完整家庭协作体验</view>
 
       <button class="btn-member" bindtap="openMember" wx:if="{{!isMember}}">
-        {{selectedProduct ? '¥' + selectedProduct.price_yuan + '/' + (selectedProduct.code === 'growth_quarterly_4900' ? '季' : '月') : '查看方案'}}
+        {{selectedProduct ? ('¥' + selectedProduct.price_yuan + '/' + (selectedProduct.code === 'growth_quarterly_4900' ? '季' : '月')) : '查看方案'}}
       </button>
       <button class="btn-member" bindtap="renewMember" wx:else>续费会员</button>
       <button class="btn-login" bindtap="goToLogin" wx:if="{{!isLoggedIn}}">登录后同步权益</button>
+    </view>
+
+    <view class="member-strip">
+      <view class="member-strip-item">
+        <text class="member-strip-value">{{isMember ? '已开通' : '未开通'}}</text>
+        <text class="member-strip-label">当前状态</text>
+      </view>
+      <view class="member-strip-item">
+        <text class="member-strip-value">{{featureGroups.length}} 组</text>
+        <text class="member-strip-label">权益分类</text>
+      </view>
+      <view class="member-strip-item">
+        <text class="member-strip-value">{{products.length}} 档</text>
+        <text class="member-strip-label">可选方案</text>
+      </view>
     </view>
 
     <view class="quota-section" wx:if="{{isMember && quotaCards.length}}">
@@ -109,7 +124,7 @@
 
     <view class="dev-section" wx:if="{{isLoggedIn && isDevToolsVisible}}">
       <view class="section-title">开发测试工具</view>
-      <view class="dev-desc">仅测试环境显示，方便反复验证开会员、续费与重置额度等链路。</view>
+      <view class="dev-desc">仅测试环境显示，方便验证开通会员、续费与重置额度等链路。</view>
       <view class="dev-grid">
         <button class="dev-btn primary" loading="{{devActionLoading}}" bindtap="grantDevMonthly">一键开月卡</button>
         <button class="dev-btn" loading="{{devActionLoading}}" bindtap="grantDevQuarterly">一键开季卡</button>

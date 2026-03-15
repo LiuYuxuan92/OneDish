@@ -1,5 +1,5 @@
-const app = getApp();
 const api = require('../../utils/api');
+const LOCAL_FAVORITES_KEY = 'local_favorites';
 
 Page({
   data: {
@@ -16,13 +16,30 @@ Page({
       cooking_time_limit: 30,
       difficulty_preference: 'medium'
     },
-    isSavingAI: false
+    isSavingAI: false,
+    favoritesCount: 0,
+    hasToken: false
   },
 
   onLoad() {
     this.initAgeOptions();
     this.loadBabyAge();
     this.loadAIConfig();
+    this.refreshProfileHub();
+  },
+
+  onShow() {
+    this.loadBabyAge();
+    this.loadAIConfig();
+    this.refreshProfileHub();
+  },
+
+  onHide() {
+    this.setData({
+      showPicker: false,
+      showAIConfigModal: false,
+      isSavingAI: false,
+    });
   },
 
   initAgeOptions() {
@@ -50,6 +67,13 @@ Page({
       const text = this.getAgeText(babyAge);
       this.setData({ babyAge, babyAgeText: text });
     }
+  },
+
+  refreshProfileHub() {
+    const localFavorites = wx.getStorageSync(LOCAL_FAVORITES_KEY);
+    const favoritesCount = Array.isArray(localFavorites) ? localFavorites.length : 0;
+    const hasToken = !!wx.getStorageSync('token');
+    this.setData({ favoritesCount, hasToken });
   },
 
   getAgeText(age) {
@@ -109,6 +133,10 @@ Page({
 
   goToPlan() {
     wx.switchTab({ url: '/pages/plan/plan' });
+  },
+
+  goToFavorites() {
+    wx.switchTab({ url: '/pages/favorites/favorites' });
   },
 
   onShareAppMessage() {
@@ -183,6 +211,7 @@ Page({
         showAIConfigModal: false,
         isSavingAI: false
       });
+      this.refreshProfileHub();
       wx.showToast({ title: '偏好已保存', icon: 'success' });
     } catch (err) {
       console.error('[profile] save user preferences failed:', err);

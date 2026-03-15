@@ -160,6 +160,7 @@ Page({
     preferenceSummaryText: '',
     recommendationReasons: [],
     isFavorited: false,
+    recentRecommendationIds: [],
     actionFeedback: null,
     quotaCards: [],
     memberSummary: {
@@ -184,10 +185,39 @@ Page({
     }, 3000);
   },
 
+  pushRecentRecommendationId(recipeId, reset = false) {
+    if (!recipeId) {
+      if (reset) {
+        this.setData({ recentRecommendationIds: [] });
+      }
+      return;
+    }
+
+    const baseList = reset ? [] : (Array.isArray(this.data.recentRecommendationIds) ? this.data.recentRecommendationIds : []);
+    const nextList = [recipeId, ...baseList.filter((item) => item !== recipeId)].slice(0, 6);
+    this.setData({ recentRecommendationIds: nextList });
+  },
+
+  clearFeedbackTimer() {
+    if (this.feedbackTimer) {
+      clearTimeout(this.feedbackTimer);
+      this.feedbackTimer = null;
+    }
+  },
+
   async onShow() {
     await this.ensureUserPreferences();
     await this.loadBillingSnapshot();
     await this.loadTodayRecommendation();
+  },
+
+  onHide() {
+    this.clearFeedbackTimer();
+    this.setData({ actionFeedback: null });
+  },
+
+  onUnload() {
+    this.clearFeedbackTimer();
   },
 
   updateMembershipBanner() {
@@ -287,9 +317,22 @@ Page({
     }
   },
 
-  async applyRecommendation(recipe) {
+  async applyRecommendation(recipe, options = {}) {
     const adaptedRecipe = adaptRecipeData(recipe);
+    if (!adaptedRecipe?.id) {
+      this.setData({
+        recommendation: null,
+        recommendationReasons: [],
+        isFavorited: false,
+      });
+      if (options.resetHistory) {
+        this.setData({ recentRecommendationIds: [] });
+      }
+      return;
+    }
+
     const isFavorited = await this.syncFavoriteState(adaptedRecipe);
+    this.pushRecentRecommendationId(adaptedRecipe.id, Boolean(options.resetHistory));
 
     this.setData({
       recommendation: {
@@ -307,7 +350,7 @@ Page({
 
     try {
       const data = await api.getTodayRecommendation();
-      await this.applyRecommendation(data?.recipe || null);
+      await this.applyRecommendation(data?.recipe || null, { resetHistory: true });
       this.setData({ loading: false });
     } catch (err) {
       console.error('[home] getTodayRecommendation failed:', err);
@@ -327,11 +370,14 @@ Page({
     if (this.data.swapping) return;
 
     const currentId = this.data.recommendation?.id;
+    const excludeRecipeIds = Array.isArray(this.data.recentRecommendationIds)
+      ? this.data.recentRecommendationIds.filter(Boolean)
+      : [];
     await this.ensureUserPreferences();
     this.setData({ swapping: true });
 
     try {
-      const next = await api.swapRecommendation(currentId);
+      const next = await api.swapRecommendation(currentId, { excludeRecipeIds });
       if (!next) {
         wx.showToast({ title: '暂时没有更合适的替换菜谱', icon: 'none' });
         return;
@@ -406,7 +452,7 @@ Page({
   },
 
   goToProfile() {
-    wx.navigateTo({ url: '/pages/profile/profile' });
+    wx.switchTab({ url: '/pages/profile/profile' });
   },
 
   goToPlan() {
@@ -417,6 +463,10 @@ Page({
   goToMembership() {
     trackEvent('mp_membership_tap', { source: 'home_banner' });
     wx.navigateTo({ url: '/pages/membership/membership' });
+  },
+
+  goToFavorites() {
+    wx.switchTab({ url: '/pages/favorites/favorites' });
   },
 
   goToBabyRewrite() {

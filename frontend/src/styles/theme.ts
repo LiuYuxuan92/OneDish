@@ -1,135 +1,100 @@
-/**
- * 简家厨 - 设计系统主题配置
- * 遵循温馨活泼 + 现代简约的设计原则
- */
-
-// ============================================
-// 类型定义
-// ============================================
-export type ColorsType = typeof Colors;
-export type TypographyType = typeof Typography;
-export type SpacingType = typeof Spacing;
-export type BorderRadiusType = typeof BorderRadius;
-export type ShadowsType = typeof Shadows;
-export type AnimationType = typeof Animation;
-export type ZIndexType = typeof ZIndex;
-export type SizingType = typeof Sizing;
-
-// ============================================
-// 颜色系统
-// ============================================
 export const Colors = {
-  // 主色调 - 温暖橙色系
   primary: {
-    50: '#FFF5EB',
-    100: '#FFE6D1',
-    200: '#FFC9A3',
-    300: '#FFA375',
-    400: '#FF7D4A',
-    500: '#FF8C42', // 品牌主色
-    600: '#E66E1F',
-    700: '#CC5A14',
-    800: '#A34710',
-    900: '#7A350C',
-    main: '#FF8C42',
-    light: '#FFB77D',
-    dark: '#E66E1F',
+    50: '#EEF4EF',
+    100: '#DCE8DE',
+    200: '#C4D4C7',
+    300: '#A4B9A9',
+    400: '#7F9686',
+    500: '#486154',
+    600: '#3C5145',
+    700: '#314239',
+    800: '#27352E',
+    900: '#1D2721',
+    main: '#486154',
+    light: '#7F9686',
+    dark: '#314239',
   },
-
-  // 辅助色 - 健康绿色系
   secondary: {
-    50: '#E8F5E9',
-    100: '#C8E6C9',
-    200: '#A5D6A7',
-    300: '#81C784',
-    400: '#66BB6A',
-    500: '#4CAF50',
-    600: '#43A047',
-    700: '#388E3C',
-    800: '#2E7D32',
-    900: '#1B5E20',
-    main: '#4CAF50',
-    light: '#81C784',
-    dark: '#388E3C',
+    50: '#FBF5EE',
+    100: '#F1E3D1',
+    200: '#E2CBB0',
+    300: '#D0AB83',
+    400: '#B8895A',
+    500: '#99663C',
+    600: '#825632',
+    700: '#6A4629',
+    800: '#50351F',
+    900: '#372314',
+    main: '#99663C',
+    light: '#C39A73',
+    dark: '#6A4629',
   },
-
-  // 中性色 - 温暖灰调
   neutral: {
-    white: '#FFFFFF',
-    gray50: '#FDFCFA',  // 温暖的米白色
-    gray100: '#F7F5F2', // 奶油色
-    gray200: '#EDE9E4',
-    gray300: '#D9D4CC',
-    gray400: '#B8B2A7',
-    gray500: '#9A9184',
-    gray600: '#7A7268',
-    gray700: '#5C564F',
-    gray800: '#3D3A36',
-    gray900: '#1F1D1B',
+    white: '#FFFEFB',
+    gray50: '#FBF8F2',
+    gray100: '#F3EEE5',
+    gray200: '#E7E0D4',
+    gray300: '#D7CEBF',
+    gray400: '#BAAF9C',
+    gray500: '#988E80',
+    gray600: '#786F63',
+    gray700: '#5A5349',
+    gray800: '#3E3932',
+    gray900: '#24211D',
   },
-
-  // 功能色
   functional: {
-    success: '#4CAF50',
-    warning: '#FF9800',
-    error: '#F44336',
-    info: '#2196F3',
-    successLight: '#E8F5E9',
-    warningLight: '#FFF3E0',
-    errorLight: '#FFEBEE',
-    infoLight: '#E3F2FD',
+    success: '#5B8062',
+    warning: '#C58A37',
+    error: '#C76C5B',
+    info: '#6F8795',
+    successLight: '#EDF4EE',
+    warningLight: '#FAF1E3',
+    errorLight: '#F9ECE9',
+    infoLight: '#EBF1F4',
   },
-
-  // 背景色
   background: {
-    primary: '#FFFFFF',
-    secondary: '#FFF8F0',    // 温馨的奶白色
-    tertiary: '#FDF6ED',     // 浅橙色背景
-    card: '#FFFFFF',
+    primary: '#FFFCF7',
+    secondary: '#F6F1E8',
+    tertiary: '#EEF3EE',
+    card: '#FFFDF9',
     elevated: '#FFFFFF',
-    scrim: 'rgba(0, 0, 0, 0.5)',
+    scrim: 'rgba(28, 34, 30, 0.48)',
   },
-
-  // 文字色
   text: {
-    primary: '#1F1D1B',
-    secondary: '#5C564F',
-    tertiary: '#9A9184',
-    disabled: '#B8B2A7',
+    primary: '#22342B',
+    secondary: '#5B6860',
+    tertiary: '#7E8A83',
+    disabled: '#B5BBB6',
     inverse: '#FFFFFF',
-    link: '#FF8C42',
+    link: '#486154',
   },
-
-  // 边框色
   border: {
-    light: '#EDE9E4',
-    default: '#D9D4CC',
-    dark: '#B8B2A7',
+    light: '#E8E1D6',
+    default: '#D8D0C3',
+    dark: '#BAB19F',
   },
-
-  // 食物相关色彩
+  success: '#5B8062',
+  warning: '#C58A37',
+  error: '#C76C5B',
+  info: '#6F8795',
   food: {
-    vegetable: '#66BB6A',
-    meat: '#EF5350',
-    grain: '#FFCA28',
-    dairy: '#42A5F5',
-    fruit: '#FFA726',
-    seasoning: '#8D6E63',
+    vegetable: '#7FA170',
+    meat: '#C77967',
+    grain: '#D4A34A',
+    dairy: '#8DA8B8',
+    fruit: '#D68D54',
+    seasoning: '#8A6B54',
   },
 };
 
-// ============================================
-// 字体系统
-// ============================================
 export const Typography = {
-  // 字体家族
   fontFamily: {
-    primary: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif',
-    secondary: '"Nunito", "Quicksand", sans-serif',
+    primary:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif',
+    secondary:
+      '"Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif',
     mono: '"SF Mono", "Monaco", "Inconsolata", "Roboto Mono", monospace',
   },
-
-  // 字号系统
   fontSize: {
     '2xs': 10,
     xs: 12,
@@ -142,8 +107,6 @@ export const Typography = {
     '4xl': 36,
     '5xl': 48,
   },
-
-  // 字重
   fontWeight: {
     light: '300' as const,
     regular: '400' as const,
@@ -152,8 +115,6 @@ export const Typography = {
     bold: '700' as const,
     extrabold: '800' as const,
   },
-
-  // 行高
   lineHeight: {
     none: 1,
     tight: 1.25,
@@ -162,8 +123,6 @@ export const Typography = {
     relaxed: 1.625,
     loose: 2,
   },
-
-  // 字间距
   letterSpacing: {
     tighter: -0.05,
     tight: -0.025,
@@ -172,75 +131,22 @@ export const Typography = {
     wider: 0.05,
     widest: 0.1,
   },
-
-  // 标题样式预设
   heading: {
-    h1: {
-      fontSize: 30,
-      fontWeight: '700' as const,
-      lineHeight: 1.25,
-      letterSpacing: -0.025,
-    },
-    h2: {
-      fontSize: 24,
-      fontWeight: '700' as const,
-      lineHeight: 1.3,
-      letterSpacing: -0.025,
-    },
-    h3: {
-      fontSize: 20,
-      fontWeight: '600' as const,
-      lineHeight: 1.35,
-      letterSpacing: -0.025,
-    },
-    h4: {
-      fontSize: 18,
-      fontWeight: '600' as const,
-      lineHeight: 1.4,
-      letterSpacing: -0.025,
-    },
-    h5: {
-      fontSize: 16,
-      fontWeight: '600' as const,
-      lineHeight: 1.5,
-      letterSpacing: -0.025,
-    },
-    h6: {
-      fontSize: 14,
-      fontWeight: '600' as const,
-      lineHeight: 1.5,
-      letterSpacing: -0.025,
-    },
+    h1: { fontSize: 30, fontWeight: '700' as const, lineHeight: 1.25, letterSpacing: -0.025 },
+    h2: { fontSize: 24, fontWeight: '700' as const, lineHeight: 1.3, letterSpacing: -0.025 },
+    h3: { fontSize: 20, fontWeight: '600' as const, lineHeight: 1.35, letterSpacing: -0.025 },
+    h4: { fontSize: 18, fontWeight: '600' as const, lineHeight: 1.4, letterSpacing: -0.025 },
+    h5: { fontSize: 16, fontWeight: '600' as const, lineHeight: 1.5, letterSpacing: -0.025 },
+    h6: { fontSize: 14, fontWeight: '600' as const, lineHeight: 1.5, letterSpacing: -0.025 },
   },
-
-  // 正文样式预设
   body: {
-    large: {
-      fontSize: 18,
-      fontWeight: '400' as const,
-      lineHeight: 1.6,
-    },
-    regular: {
-      fontSize: 16,
-      fontWeight: '400' as const,
-      lineHeight: 1.6,
-    },
-    small: {
-      fontSize: 14,
-      fontWeight: '400' as const,
-      lineHeight: 1.5,
-    },
-    caption: {
-      fontSize: 12,
-      fontWeight: '400' as const,
-      lineHeight: 1.5,
-    },
+    large: { fontSize: 18, fontWeight: '400' as const, lineHeight: 1.6 },
+    regular: { fontSize: 16, fontWeight: '400' as const, lineHeight: 1.6 },
+    small: { fontSize: 14, fontWeight: '400' as const, lineHeight: 1.5 },
+    caption: { fontSize: 12, fontWeight: '400' as const, lineHeight: 1.5 },
   },
 };
 
-// ============================================
-// 间距系统 (8px 基准)
-// ============================================
 export const Spacing = {
   0: 0,
   0.5: 2,
@@ -276,7 +182,6 @@ export const Spacing = {
   72: 288,
   80: 320,
   96: 384,
-  // 别名
   xs: 4,
   sm: 8,
   md: 16,
@@ -288,9 +193,6 @@ export const Spacing = {
   '5xl': 128,
 };
 
-// ============================================
-// 圆角系统
-// ============================================
 export const BorderRadius = {
   none: 0,
   xs: 2,
@@ -303,9 +205,6 @@ export const BorderRadius = {
   full: 9999,
 };
 
-// ============================================
-// 阴影系统
-// ============================================
 export const Shadows = {
   none: {
     shadowColor: 'transparent',
@@ -315,69 +214,63 @@ export const Shadows = {
     elevation: 0,
   },
   xs: {
-    shadowColor: '#000',
+    shadowColor: '#2A302C',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 1,
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
     elevation: 1,
   },
   sm: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
+    shadowColor: '#2A302C',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
     elevation: 2,
   },
   md: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowColor: '#2A302C',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
     elevation: 4,
   },
   lg: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
+    shadowColor: '#2A302C',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.09,
+    shadowRadius: 18,
     elevation: 6,
   },
   xl: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.14,
-    shadowRadius: 12,
-    elevation: 12,
+    shadowColor: '#2A302C',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.12,
+    shadowRadius: 26,
+    elevation: 10,
   },
   '2xl': {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    elevation: 20,
+    shadowColor: '#2A302C',
+    shadowOffset: { width: 0, height: 24 },
+    shadowOpacity: 0.16,
+    shadowRadius: 36,
+    elevation: 16,
   },
   inner: {
-    shadowColor: '#000',
+    shadowColor: '#2A302C',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 0,
   },
 };
 
-// ============================================
-// 动画配置
-// ============================================
 export const Animation = {
-  // 持续时间
   duration: {
     fast: 150,
     normal: 250,
     slow: 350,
     slower: 500,
   },
-
-  // 缓动函数
   easing: {
     linear: 'linear',
     ease: 'ease',
@@ -387,8 +280,6 @@ export const Animation = {
     spring: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
     bounce: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
   },
-
-  // 预设动画
   preset: {
     fadeIn: {
       initial: { opacity: 0 },
@@ -429,9 +320,6 @@ export const Animation = {
   },
 };
 
-// ============================================
-// 断点系统
-// ============================================
 export const Breakpoints = {
   xs: 0,
   sm: 640,
@@ -441,9 +329,6 @@ export const Breakpoints = {
   '2xl': 1536,
 };
 
-// ============================================
-// Z-Index 层级
-// ============================================
 export const ZIndex = {
   hide: -1,
   base: 0,
@@ -459,17 +344,11 @@ export const ZIndex = {
   tooltip: 1800,
 };
 
-// ============================================
-// 尺寸规范
-// ============================================
 export const Sizing = {
-  // 触摸目标最小尺寸
   touchTarget: {
     min: 44,
     comfortable: 48,
   },
-
-  // 图标尺寸
   icon: {
     xs: 12,
     sm: 16,
@@ -478,8 +357,6 @@ export const Sizing = {
     xl: 32,
     '2xl': 40,
   },
-
-  // 按钮尺寸
   button: {
     xs: { height: 24, padding: 8, fontSize: 12 },
     sm: { height: 32, padding: 12, fontSize: 12 },
@@ -487,22 +364,16 @@ export const Sizing = {
     lg: { height: 48, padding: 20, fontSize: 16 },
     xl: { height: 56, padding: 24, fontSize: 18 },
   },
-
-  // 输入框尺寸
   input: {
     sm: { height: 32, padding: 8, fontSize: 12 },
     md: { height: 40, padding: 12, fontSize: 14 },
     lg: { height: 48, padding: 16, fontSize: 16 },
   },
-
-  // 卡片尺寸
   card: {
     sm: { padding: 12, borderRadius: 8 },
     md: { padding: 16, borderRadius: 12 },
     lg: { padding: 24, borderRadius: 16 },
   },
-
-  // 容器最大宽度
   container: {
     sm: 640,
     md: 768,
@@ -512,9 +383,15 @@ export const Sizing = {
   },
 };
 
-// ============================================
-// 主题对象
-// ============================================
+export type ColorsType = typeof Colors;
+export type TypographyType = typeof Typography;
+export type SpacingType = typeof Spacing;
+export type BorderRadiusType = typeof BorderRadius;
+export type ShadowsType = typeof Shadows;
+export type AnimationType = typeof Animation;
+export type ZIndexType = typeof ZIndex;
+export type SizingType = typeof Sizing;
+
 export const theme = {
   Colors,
   Typography,

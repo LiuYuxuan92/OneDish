@@ -3,8 +3,13 @@
     <text class="hero-kicker">SHOPPING FLOW</text>
     <text class="hero-title">把推荐、计划和采购单收拢到一处</text>
     <text class="hero-desc">
-      {{listMode === 'server' ? '当前为云端清单，可直接同步到后端并生成分享邀请码。' : '当前为本地兜底模式，登录后会自动切换到云端清单。'}}
+      {{listMode === 'server' ? '当前是云端清单，可直接同步到后端并生成分享邀请码。' : '当前是本地兜底模式，登录后会自动切换到云端清单。'}}
     </text>
+
+    <view class="hero-flags">
+      <text class="hero-flag">{{listMode === 'server' ? '云端清单' : '本地清单'}}</text>
+      <text class="hero-flag soft">{{activeListDate || '尚未同步日期'}}</text>
+    </view>
 
     <view class="hero-stats">
       <view class="stat-pill">
@@ -16,8 +21,8 @@
         <text class="stat-label">已完成</text>
       </view>
       <view class="stat-pill">
-        <text class="stat-value">{{listMode === 'server' ? '云端' : '本地'}}</text>
-        <text class="stat-label">{{activeListDate || '未同步'}}</text>
+        <text class="stat-value">{{stats.total}}</text>
+        <text class="stat-label">总项目</text>
       </view>
     </view>
 
@@ -37,6 +42,27 @@
     <text>{{actionFeedback.message}}</text>
   </view>
 
+  <view class="member-hint-card {{weeklyPlanQuotaCard ? 'active' : ''}}">
+    <view class="member-hint-main">
+      <text class="member-hint-title">{{weeklyPlanQuotaCard ? '本周计划能力已可用' : '开通后周计划会更顺手'}}</text>
+      <text class="member-hint-desc">
+        {{weeklyPlanQuotaCard ? '支持自然语言生成、查看剩余次数，并在小程序里继续补清单。' : '会员可用自然语言周计划、智能推荐和跨端同步。'}}
+      </text>
+    </view>
+    <view class="member-hint-btn" bindtap="goToMembership">{{weeklyPlanQuotaCard ? '看权益' : '去开通'}}</view>
+  </view>
+
+  <view class="member-quota-row" wx:if="{{weeklyPlanQuotaCard || smartRecommendationQuotaCard}}">
+    <view class="member-quota-pill" wx:if="{{weeklyPlanQuotaCard}}">
+      <text class="member-quota-value">{{weeklyPlanQuotaCard.value}}</text>
+      <text class="member-quota-title">周计划剩余</text>
+    </view>
+    <view class="member-quota-pill" wx:if="{{smartRecommendationQuotaCard}}">
+      <text class="member-quota-value">{{smartRecommendationQuotaCard.value}}</text>
+      <text class="member-quota-title">智能推荐剩余</text>
+    </view>
+  </view>
+
   <view class="tab-bar">
     <view class="tab {{activeTab === 'current' ? 'active' : ''}}" bindtap="onTabSwitch" data-tab="current">当前清单</view>
     <view class="tab {{activeTab === 'generate' ? 'active' : ''}}" bindtap="onTabSwitch" data-tab="generate">智能生成</view>
@@ -51,7 +77,7 @@
       </view>
       <text class="summary-title">清单与库存联动结果</text>
       <text class="summary-desc">
-        {{shoppingSummary.expiring_items.length ? '有 ' + shoppingSummary.expiring_items.length + ' 项临期食材可优先消耗。' : '当前没有临期食材提醒。'}}
+        {{shoppingSummary.expiring_items.length ? ('有 ' + shoppingSummary.expiring_items.length + ' 项临期食材可优先消耗。') : '当前没有临期食材提醒。'}}
       </text>
       <view class="summary-list" wx:if="{{shoppingSummary.missing_items.length}}">
         <block wx:for="{{shoppingSummary.missing_items}}" wx:key="index">
@@ -168,7 +194,7 @@
     <view class="generate-guide-row">
       <view class="guide-card" bindtap="goToMembership">
         <text class="guide-card-title">会员说明</text>
-        <text class="guide-card-desc">看剩余次数和跨端权益</text>
+        <text class="guide-card-desc">查看剩余次数和跨端权益</text>
       </view>
       <view class="guide-card light" bindtap="goToRecipe">
         <text class="guide-card-title">去找菜谱</text>
@@ -196,12 +222,12 @@
         <text class="option-title">宝宝月龄</text>
         <view class="option-list">
           <view class="option-chip {{babyAge === null ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="">不限</view>
-          <view class="option-chip {{babyAge === 6 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="{{6}}">6个月</view>
-          <view class="option-chip {{babyAge === 8 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="{{8}}">8个月</view>
-          <view class="option-chip {{babyAge === 10 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="{{10}}">10个月</view>
-          <view class="option-chip {{babyAge === 12 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="{{12}}">12个月</view>
-          <view class="option-chip {{babyAge === 18 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="{{18}}">18个月</view>
-          <view class="option-chip {{babyAge === 24 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="{{24}}">24个月</view>
+          <view class="option-chip {{babyAge === 6 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="{{6}}">6 个月</view>
+          <view class="option-chip {{babyAge === 8 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="{{8}}">8 个月</view>
+          <view class="option-chip {{babyAge === 10 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="{{10}}">10 个月</view>
+          <view class="option-chip {{babyAge === 12 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="{{12}}">12 个月</view>
+          <view class="option-chip {{babyAge === 18 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="{{18}}">18 个月</view>
+          <view class="option-chip {{babyAge === 24 ? 'active' : ''}}" bindtap="onBabyAgeSelect" data-age="{{24}}">24 个月</view>
         </view>
       </view>
 

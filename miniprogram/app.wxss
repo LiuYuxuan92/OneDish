@@ -1,9 +1,13 @@
-/* Vant Weapp 样式已通过 usingComponents 自动引入 */
+/* Vant Weapp styles are loaded via usingComponents */
 
 page {
-  background: #f7f3ec;
+  background:
+    radial-gradient(circle at top right, rgba(244, 214, 172, 0.32), transparent 30%),
+    radial-gradient(circle at top left, rgba(207, 228, 213, 0.2), transparent 24%),
+    linear-gradient(180deg, #faf5ed 0%, #f3f5ef 36%, #eef3ef 100%);
   color: #22342b;
   font-size: 28rpx;
+  line-height: 1.5;
   --van-button-primary-color: #274539;
   --van-primary-color: #274539;
   --van-success-color: #3d6956;
@@ -11,18 +15,37 @@ page {
   --van-danger-color: #bb6a52;
 }
 
-.container {
-  padding: 28rpx;
+button {
+  border-radius: 999rpx;
+  overflow: hidden;
+}
+
+button::after {
+  border: none;
+}
+
+.container,
+.page-shell,
+.page {
   min-height: 100vh;
   box-sizing: border-box;
 }
 
-.card {
+.container {
+  padding: 28rpx;
+}
+
+.card,
+.surface-card {
   background: rgba(255, 255, 255, 0.94);
-  border-radius: 28rpx;
+  border: 1rpx solid rgba(39, 69, 57, 0.05);
+  border-radius: 32rpx;
+  box-shadow: 0 18rpx 42rpx rgba(31, 47, 37, 0.08);
+}
+
+.card {
   padding: 28rpx;
   margin-bottom: 20rpx;
-  box-shadow: 0 18rpx 40rpx rgba(34, 52, 43, 0.08);
 }
 
 .title {
@@ -32,9 +55,21 @@ page {
 }
 
 .sub {
-  color: #748179;
-  font-size: 24rpx;
   margin-top: 10rpx;
+  color: #728078;
+  font-size: 24rpx;
+  line-height: 1.68;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: rgba(39, 69, 57, 0.08);
+  color: #607068;
+  font-size: 20rpx;
+  letter-spacing: 2rpx;
 }
 
 .btn-row {
@@ -44,24 +79,62 @@ page {
   margin-top: 18rpx;
 }
 
-.btn {
-  background: linear-gradient(135deg, #274539, #325849);
-  color: #fff;
+.btn,
+.primary-btn {
+  background: linear-gradient(135deg, #274539, #355b49);
+  color: #ffffff;
   border-radius: 999rpx;
-  padding: 20rpx 40rpx;
+  padding: 22rpx 40rpx;
   font-size: 28rpx;
+  font-weight: 700;
   border: none;
 }
 
-.btn.secondary {
+.btn.secondary,
+.secondary-btn {
   background: rgba(255, 255, 255, 0.88);
   color: #274539;
   border: 2rpx solid rgba(39, 69, 57, 0.12);
 }
 
+.soft-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  background: #edf2ee;
+  color: #617169;
+  font-size: 22rpx;
+}
+
+.warm-tag {
+  background: #f8efe2;
+  color: #8d6a40;
+}
+
 .placeholder {
-  color: #b7bfb9;
+  color: #a5afa8;
   font-size: 24rpx;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 96rpx 36rpx 40rpx;
+}
+
+.empty-state-title {
+  display: block;
+  color: #22342b;
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.empty-state-desc {
+  display: block;
+  margin-top: 14rpx;
+  color: #768079;
+  font-size: 24rpx;
+  line-height: 1.7;
 }
 
 .flex { display: flex; }

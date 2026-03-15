@@ -23,7 +23,7 @@
     "list": [
       {
         "pagePath": "pages/home/home",
-        "text": "今日推荐"
+        "text": "今日"
       },
       {
         "pagePath": "pages/recipe/recipe",
@@ -32,6 +32,14 @@
       {
         "pagePath": "pages/plan/plan",
         "text": "清单"
+      },
+      {
+        "pagePath": "pages/favorites/favorites",
+        "text": "收藏"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的"
       }
     ]
   },

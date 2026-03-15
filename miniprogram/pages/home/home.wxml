@@ -12,8 +12,19 @@
 
     <view class="hero-copy">
       <text class="hero-kicker">TODAY'S PICK</text>
-      <text class="hero-title">一鱼两吃，今天省掉选菜成本</text>
-      <text class="hero-desc">推荐会优先参考你的宝宝月龄、常用口味和下厨时间。</text>
+      <text class="hero-title">今天先给你一份更稳妥的晚餐建议</text>
+      <text class="hero-desc">推荐会优先参考宝宝月龄、口味偏好和下厨时间，把更适合你家的方案放到前面。</text>
+    </view>
+
+    <view class="hero-metrics">
+      <view class="hero-metric" wx:if="{{preferenceSummaryText}}">
+        <text class="hero-metric-label">PREFERENCE</text>
+        <text class="hero-metric-value">{{preferenceSummaryText}}</text>
+      </view>
+      <view class="hero-metric">
+        <text class="hero-metric-label">{{memberSummary.isMember ? 'MEMBER' : 'STATUS'}}</text>
+        <text class="hero-metric-value">{{memberSummary.isMember ? '已开通成长会员' : '可升级成长会员'}}</text>
+      </view>
     </view>
   </view>
 
@@ -45,6 +56,10 @@
       <text class="shortcut-title">逛菜谱库</text>
       <text class="shortcut-desc">不想等推荐就直接挑。</text>
     </view>
+    <view class="shortcut-card soft" bindtap="goToFavorites">
+      <text class="shortcut-title">我的收藏</text>
+      <text class="shortcut-desc">把反复做的菜集中收好。</text>
+    </view>
   </view>
 
   <view class="state-card" wx:if="{{loading}}">
@@ -55,7 +70,7 @@
 
   <view class="state-card error" wx:elif="{{error}}">
     <text class="state-title">{{error}}</text>
-    <text class="state-desc">可以重新拉取推荐，或者直接去菜谱列表浏览。</text>
+    <text class="state-desc">可以重新拉取推荐，或者直接去菜谱页浏览。</text>
     <view class="state-actions">
       <view class="outline-btn" bindtap="loadTodayRecommendation">重新加载</view>
       <view class="solid-btn" bindtap="goRecipe">浏览菜谱</view>
@@ -87,12 +102,28 @@
     </view>
 
     <view class="recipe-card">
-      <image
-        class="recipe-cover"
-        src="{{currentVersion === 'baby' && recommendation.baby_version ? recommendation.baby_version.cover_url : recommendation.cover_url}}"
-        mode="aspectFill"
-        bindtap="goRecipe"
-      />
+      <view class="recipe-media" bindtap="goRecipe">
+        <image
+          wx:if="{{currentVersion === 'baby' && recommendation.baby_version ? recommendation.baby_version.cover_url : recommendation.cover_url}}"
+          class="recipe-cover"
+          src="{{currentVersion === 'baby' && recommendation.baby_version ? recommendation.baby_version.cover_url : recommendation.cover_url}}"
+          mode="aspectFill"
+          lazy-load="true"
+        />
+        <view wx:else class="recipe-cover recipe-cover-fallback">
+          <text class="recipe-cover-kicker">TODAY'S MENU</text>
+          <view class="recipe-cover-placeholder">
+            <view class="recipe-cover-plate"></view>
+            <view class="recipe-cover-placeholder-copy">
+              <text class="recipe-cover-placeholder-title">暂无菜谱图</text>
+              <text class="recipe-cover-placeholder-desc">
+                先看下面的做法重点、时长和推荐理由。
+              </text>
+            </view>
+          </view>
+          <view class="recipe-cover-orb"></view>
+        </view>
+      </view>
 
       <view class="recipe-body">
         <view class="recipe-head">
@@ -137,8 +168,8 @@
 
     <view class="action-grid">
       <view class="primary-action" bindtap="onSwap">
-        <text class="action-title">{{swapping ? '正在重算推荐' : '换一道更适合的'}}</text>
-        <text class="action-desc">保持今天的偏好条件，重新找一份更匹配的方案。</text>
+        <text class="action-title">{{swapping ? '正在重新计算推荐' : '换一份更合适的'}}</text>
+        <text class="action-desc">保留今天的偏好条件，重新找一份更匹配的方案。</text>
       </view>
 
       <view class="secondary-actions">
@@ -148,7 +179,7 @@
         </view>
         <button class="action-card share" open-type="share">
           <text class="action-card-title">分享推荐</text>
-          <text class="action-card-desc">直接转给家人一起确认今晚吃什么。</text>
+          <text class="action-card-desc">直接转给家人，一起确认今晚吃什么。</text>
         </button>
       </view>
     </view>

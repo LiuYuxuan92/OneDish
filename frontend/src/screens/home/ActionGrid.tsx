@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Colors, Typography, Spacing, BorderRadius } from '../../styles/theme';
+import { BorderRadius, Colors, Spacing, Typography } from '../../styles/theme';
 
 interface ActionItem {
   icon: string;
@@ -17,10 +17,8 @@ export function ActionGrid({ actions }: ActionGridProps) {
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <View>
-          <Text style={styles.title}>快捷入口</Text>
-          <Text style={styles.caption}>轻量直达，不打断主流程</Text>
-        </View>
+        <Text style={styles.title}>常用入口</Text>
+        <Text style={styles.caption}>少走一步，直接去最常用的流程</Text>
       </View>
       <View style={styles.grid}>
         {actions.map((action, index) => (
@@ -46,40 +44,36 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 2,
   },
   title: {
-    fontSize: Typography.fontSize.sm,
+    fontSize: Typography.fontSize.base,
     color: Colors.text.primary,
     fontWeight: Typography.fontWeight.semibold,
   },
   caption: {
-    marginTop: 2,
     fontSize: Typography.fontSize.xs,
     color: Colors.text.tertiary,
   },
   grid: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
     gap: Spacing.sm,
   },
   button: {
-    flex: 1,
-    minWidth: 0,
-    backgroundColor: 'rgba(255,255,255,0.52)',
-    borderRadius: BorderRadius.xl,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: 6,
+    width: '48.5%',
+    backgroundColor: Colors.background.card,
+    borderRadius: BorderRadius['2xl'],
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(240,216,191,0.72)',
+    borderColor: Colors.border.light,
   },
   icon: {
-    width: 38,
-    height: 38,
-    borderRadius: BorderRadius.lg,
+    width: 42,
+    height: 42,
+    borderRadius: BorderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -87,9 +81,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   text: {
-    fontSize: Typography.fontSize.xs,
+    fontSize: Typography.fontSize.sm,
     color: Colors.text.primary,
-    marginTop: 6,
+    marginTop: 8,
     fontWeight: Typography.fontWeight.medium,
     textAlign: 'center',
   },

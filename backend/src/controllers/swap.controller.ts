@@ -17,7 +17,7 @@ export class SwapController {
    */
   swapRecipe = async (req: Request, res: Response) => {
     try {
-      const { current_recipe_id, baby_age_months, preferred_categories } = req.body;
+      const { current_recipe_id, baby_age_months, preferred_categories, exclude_recipe_ids } = req.body;
 
       if (!current_recipe_id) {
         res.status(400).json({
@@ -36,6 +36,7 @@ export class SwapController {
         user_id: userId,
         baby_age_months: baby_age_months ? Number(baby_age_months) : undefined,
         preferred_categories,
+        exclude_recipe_ids: Array.isArray(exclude_recipe_ids) ? exclude_recipe_ids : [],
       });
 
       if (!result) {

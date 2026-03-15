@@ -169,6 +169,13 @@ Page({
     }, 3200);
   },
 
+  clearFeedbackTimer() {
+    if (this.feedbackTimer) {
+      clearTimeout(this.feedbackTimer);
+      this.feedbackTimer = null;
+    }
+  },
+
   onShow() {
     this.consumePendingImport();
 
@@ -184,6 +191,19 @@ Page({
     this.loadHistory();
     this.loadData();
     this.loadBillingSnapshot();
+  },
+
+  onHide() {
+    this.clearFeedbackTimer();
+    this.setData({
+      actionFeedback: null,
+      showShareModal: false,
+      showDebug: false,
+    });
+  },
+
+  onUnload() {
+    this.clearFeedbackTimer();
   },
 
   consumePendingImport() {

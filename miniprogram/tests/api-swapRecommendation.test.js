@@ -14,14 +14,17 @@ describe('miniprogram swapRecommendation response unwrap', () => {
     jest.doMock('../utils/request', () => requestMock);
 
     const api = require('../utils/api');
-    await expect(api.swapRecommendation('recipe_001')).resolves.toEqual({
+    await expect(api.swapRecommendation('recipe_001', { excludeRecipeIds: ['recipe_002', 'recipe_003'] })).resolves.toEqual({
       id: 'swap-1',
       name: '清蒸鲈鱼',
     });
     expect(requestMock).toHaveBeenCalledWith(expect.objectContaining({
       url: '/recipes/swap',
       method: 'POST',
-      data: { current_recipe_id: 'recipe_001' },
+      data: {
+        current_recipe_id: 'recipe_001',
+        exclude_recipe_ids: ['recipe_002', 'recipe_003'],
+      },
       withAuth: true,
     }));
   });

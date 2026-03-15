@@ -54,12 +54,19 @@ function getRecipeDetail(id) {
   });
 }
 
-async function swapRecommendation(currentId) {
+async function swapRecommendation(currentId, options = {}) {
+  const excludeRecipeIds = Array.isArray(options.excludeRecipeIds)
+    ? options.excludeRecipeIds.filter(Boolean)
+    : [];
+
   try {
     const result = await request({
       url: '/recipes/swap',
       method: 'POST',
-      data: { current_recipe_id: currentId },
+      data: {
+        current_recipe_id: currentId,
+        exclude_recipe_ids: excludeRecipeIds,
+      },
       withAuth: true,
     });
 
@@ -67,16 +74,17 @@ async function swapRecommendation(currentId) {
       return result.recipe;
     }
 
-    return swapRecommendationFallback(currentId);
+    return swapRecommendationFallback(currentId, excludeRecipeIds);
   } catch (_err) {
-    return swapRecommendationFallback(currentId);
+    return swapRecommendationFallback(currentId, excludeRecipeIds);
   }
 }
 
-async function swapRecommendationFallback(currentId) {
+async function swapRecommendationFallback(currentId, excludeRecipeIds = []) {
   const result = await getRecipeList({ limit: 30 });
   const items = Array.isArray(result?.items) ? result.items : [];
-  const pool = items.filter((item) => item.id !== currentId);
+  const blockedIds = new Set([currentId, ...excludeRecipeIds].filter(Boolean));
+  const pool = items.filter((item) => !blockedIds.has(item.id));
 
   if (!pool.length) return null;
 

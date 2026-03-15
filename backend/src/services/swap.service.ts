@@ -22,6 +22,7 @@ interface SwapParams {
   user_id?: string;
   baby_age_months?: number;
   preferred_categories?: string[];
+  exclude_recipe_ids?: string[];
 }
 
 interface SwapResult {
@@ -148,11 +149,19 @@ export class SwapService {
    * 智能换菜 - 返回带评分的候选菜谱
    */
   async swapRecipe(params: SwapParams): Promise<SwapResult | null> {
-    const { current_recipe_id, user_id, baby_age_months, preferred_categories: inputCategories } = params;
+    const {
+      current_recipe_id,
+      user_id,
+      baby_age_months,
+      preferred_categories: inputCategories,
+      exclude_recipe_ids: excludedRecipeIds = [],
+    } = params;
 
     const userPrefs = await userPreferenceService.getUserPreferences(user_id);
     const effectiveBabyAge = baby_age_months || userPrefs.default_baby_age;
     const effectiveTimeLimit = userPrefs.cooking_time_limit;
+
+    const blockedRecipeIds = new Set([current_recipe_id, ...excludedRecipeIds].filter(Boolean));
 
     // 获取当前菜谱
     const currentRecipe = await db('recipes').where('id', current_recipe_id).first();
@@ -164,7 +173,6 @@ export class SwapService {
     // 获取所有可用菜谱（排除当前）
     let recipeQuery = db('recipes')
       .where('is_active', true)
-      .whereNot('id', current_recipe_id)
       .select(
         'id',
         'name',
@@ -186,6 +194,9 @@ export class SwapService {
     }
 
     const allRecipes = (await recipeQuery.limit(100)).filter((recipe: any) => {
+      if (blockedRecipeIds.has(recipe.id)) {
+        return false;
+      }
       if (userPreferenceService.recipeContainsExcludedIngredient(recipe, userPrefs.exclude_ingredients)) {
         return false;
       }
@@ -299,28 +310,28 @@ export class SwapService {
     // 排序
     scored.sort((a, b) => b.score - a.score);
 
+    const pickWinner = (entries: any[]) => {
+      if (!entries.length) {
+        return null;
+      }
+
+      const shortlist = entries.slice(0, Math.min(4, entries.length));
+      return shortlist[Math.floor(Math.random() * shortlist.length)];
+    };
+
     // 优先级筛选
     const tierPreferred = scored.filter((entry) => entry.preferredCategoryHit > 0);
-    if (tierPreferred.length > 0) {
-      const winner = tierPreferred[0];
-      return this.buildResult(winner, currentRecipe);
-    }
-
     const tierTimeWindow = scored.filter((entry) => entry.inSameTimeWindow);
-    if (tierTimeWindow.length > 0) {
-      const winner = tierTimeWindow[0];
-      return this.buildResult(winner, currentRecipe);
-    }
-
     const tierStageMatched = scored.filter((entry) => entry.stageMatched);
-    if (tierStageMatched.length > 0) {
-      const winner = tierStageMatched[0];
-      return this.buildResult(winner, currentRecipe);
-    }
 
-    // 兜底：返回最高分
-    if (scored.length > 0) {
-      return this.buildResult(scored[0], currentRecipe);
+    const winner =
+      pickWinner(tierPreferred) ||
+      pickWinner(tierTimeWindow) ||
+      pickWinner(tierStageMatched) ||
+      pickWinner(scored);
+
+    if (winner) {
+      return this.buildResult(winner, currentRecipe);
     }
 
     return null;

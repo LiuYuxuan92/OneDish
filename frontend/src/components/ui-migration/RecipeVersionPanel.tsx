@@ -9,7 +9,9 @@ interface RecipeVersionPanelProps {
 }
 
 export const RecipeVersionPanel: React.FC<RecipeVersionPanelProps> = ({ section }) => {
-  if (!section) return null;
+  if (!section) {
+    return null;
+  }
 
   return (
     <View style={styles.section}>
@@ -25,7 +27,10 @@ export const RecipeVersionPanel: React.FC<RecipeVersionPanelProps> = ({ section 
 
       {section.ingredients.length ? (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>📝 食材清单</Text>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>食材清单</Text>
+            <Text style={styles.cardMeta}>{section.ingredients.length} 项</Text>
+          </View>
           <View style={styles.list}>
             {section.ingredients.map((item) => (
               <View key={`${item.name}-${item.amount}`} style={styles.ingredientItem}>
@@ -47,7 +52,10 @@ export const RecipeVersionPanel: React.FC<RecipeVersionPanelProps> = ({ section 
 
       {section.seasonings.length ? (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>🧂 调料</Text>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>调味</Text>
+            <Text style={styles.cardMeta}>{section.seasonings.length} 项</Text>
+          </View>
           <View style={styles.seasoningsRow}>
             {section.seasonings.map((item) => (
               <View key={`${item.name}-${item.amount}`} style={styles.seasoningTag}>
@@ -61,7 +69,10 @@ export const RecipeVersionPanel: React.FC<RecipeVersionPanelProps> = ({ section 
 
       {section.steps.length ? (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>👨‍🍳 制作步骤</Text>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>制作步骤</Text>
+            <Text style={styles.cardMeta}>{section.steps.length} 步</Text>
+          </View>
           <View style={styles.list}>
             {section.steps.map((step) => (
               <View key={step.id} style={styles.stepItem}>
@@ -86,7 +97,9 @@ export const RecipeVersionPanel: React.FC<RecipeVersionPanelProps> = ({ section 
                   </View>
                   {step.note ? (
                     <View style={[styles.stepNote, step.highlighted && styles.stepNoteHighlight]}>
-                      <Text style={[styles.stepNoteText, step.highlighted && styles.stepNoteTextHighlight]}>{step.note}</Text>
+                      <Text style={[styles.stepNoteText, step.highlighted && styles.stepNoteTextHighlight]}>
+                        {step.note}
+                      </Text>
                     </View>
                   ) : null}
                 </View>
@@ -98,22 +111,22 @@ export const RecipeVersionPanel: React.FC<RecipeVersionPanelProps> = ({ section 
 
       {section.nutritionTips ? (
         <View style={[styles.card, styles.softCard]}>
-          <Text style={styles.cardTitle}>💡 营养要点</Text>
+          <Text style={styles.cardTitle}>营养要点</Text>
           <Text style={styles.bodyText}>{section.nutritionTips}</Text>
         </View>
       ) : null}
 
       {section.allergyAlert ? (
         <View style={[styles.card, styles.warningCard]}>
-          <Text style={styles.cardTitle}>⚠️ 过敏提醒</Text>
+          <Text style={styles.cardTitle}>过敏提醒</Text>
           <Text style={styles.bodyText}>{section.allergyAlert}</Text>
-          <Text style={styles.warningText}>首次添加辅食请遵循“3天观察期”原则。</Text>
+          <Text style={styles.warningText}>首次添加辅食请遵循“三天观察期”原则。</Text>
         </View>
       ) : null}
 
       {section.preparationNotes ? (
         <View style={[styles.card, styles.softCard]}>
-          <Text style={styles.cardTitle}>📝 准备要点</Text>
+          <Text style={styles.cardTitle}>准备要点</Text>
           <Text style={styles.bodyText}>{section.preparationNotes}</Text>
         </View>
       ) : null}
@@ -155,6 +168,8 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius['2xl'],
     padding: Spacing[4],
     gap: Spacing[3],
+    borderWidth: 1,
+    borderColor: Colors.border.light,
   },
   softCard: {
     backgroundColor: Colors.secondary[50],
@@ -162,10 +177,21 @@ const styles = StyleSheet.create({
   warningCard: {
     backgroundColor: '#FFF8E1',
   },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing[2],
+  },
   cardTitle: {
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.text.primary,
+  },
+  cardMeta: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
+    fontWeight: Typography.fontWeight.medium,
   },
   list: {
     gap: Spacing[3],
