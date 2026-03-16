@@ -3,6 +3,7 @@ import type { AIBabyVersionResult } from '../api/pairing';
 import type { IngredientItem, Recipe, RecipeStep, RecipeVersion, SeasoningItem, SyncCookingInfo, SyncTimeline } from '../types';
 import type { FeedbackAcceptance, RecipeDetailPageViewModel, RecipeDetailTabKey, RecipeDetailVersionSectionViewModel } from '../viewmodels/uiMigration';
 import { mapFeedbackAcceptance, mapRecipeToDisplayModel } from './recipeDisplayMapper';
+import { resolveRecipeImageUrls } from '../utils/media';
 
 type ExtendedRecipeVersion = RecipeVersion & {
   age_range?: string;
@@ -26,10 +27,8 @@ function parseStructuredData<T>(value: T | string | null | undefined): T | undef
   return value;
 }
 
-function normalizeStringArray(value?: string[] | string | null): string[] {
-  if (Array.isArray(value)) return value.filter(Boolean);
-  if (typeof value === 'string' && value.trim()) return [value];
-  return [];
+function normalizeStringArray(recipeId: string, value?: string[] | string | null): string[] {
+  return resolveRecipeImageUrls(recipeId, value);
 }
 
 function formatBabyAge(months?: number): string {
@@ -155,7 +154,7 @@ export function mapRecipeDetailPage(params: {
     hero: {
       title: params.recipe.name,
       summary: buildHeroSummary(isPaired),
-      imageUrls: normalizeStringArray(params.recipe.image_url),
+      imageUrls: normalizeStringArray(params.recipe.id, params.recipe.image_url),
       meta: [
         { key: 'time', label: recipeDisplay.cookTimeText },
         { key: 'difficulty', label: recipeDisplay.difficultyLabel },

@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import path from 'path';
 
 dotenv.config({ path: __dirname + '/../.env' });
 
@@ -74,6 +75,12 @@ app.get('/metrics', (_req, res) => {
   res.setHeader('Content-Type', 'text/plain; version=0.0.4');
   res.send(metricsService.renderPrometheus());
 });
+
+const publicDir = path.resolve(__dirname, '../public');
+app.use('/media', express.static(publicDir, {
+  fallthrough: true,
+  maxAge: '7d',
+}));
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/recipes', recipeRoutes);

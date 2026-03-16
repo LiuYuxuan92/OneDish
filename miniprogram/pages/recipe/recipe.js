@@ -2,6 +2,7 @@ const api = require('../../utils/api');
 const cache = require('../../utils/cache');
 const { trackEvent } = require('../../utils/analytics');
 const { buildQuotaCard, buildBannerModel, handleQuotaUpgradeError } = require('../../utils/entitlements');
+const { normalizeRecipeImageList, pickImage, pickRecipeImage } = require('../../utils/media');
 
 const CACHE_KEY_RECIPES = 'recipes_list';
 const RECIPE_DETAIL_PENDING_KEY = 'pending_recipe_detail_id';
@@ -17,12 +18,6 @@ function parsePossibleJson(data) {
     }
   }
   return data;
-}
-
-function normalizeImageList(imageValue) {
-  if (Array.isArray(imageValue)) return imageValue.filter(Boolean);
-  if (typeof imageValue === 'string' && imageValue.trim()) return [imageValue.trim()];
-  return [];
 }
 
 function normalizeFeedbackItems(result) {
@@ -107,9 +102,9 @@ function adaptRecipeData(recipe) {
 
   const adapted = {
     ...recipe,
-    image_url: normalizeImageList(recipe.image_url),
+    image_url: normalizeRecipeImageList(recipe.id, recipe.image_url),
     title: recipe.name || recipe.title,
-    cover_url: recipe.cover_url || normalizeImageList(recipe.image_url)[0] || '',
+    cover_url: pickImage(recipe.cover_url) || pickRecipeImage(recipe.id, recipe.image_url) || '',
     cook_time: recipe.cook_time || recipe.total_time || recipe.prep_time || 0,
     adult_version: adultVersion,
     ingredients: adultIngredients,

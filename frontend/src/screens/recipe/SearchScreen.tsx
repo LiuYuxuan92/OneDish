@@ -27,6 +27,7 @@ import { feedingFeedbackApi } from '../../api/feedingFeedback';
 import { getSearchResultKey } from '../../mappers/searchMapper';
 import { buildMockFeedingFeedback, buildMockInventory, shouldUseWebMockFallback } from '../../mock/webFallback';
 import { useSearchPageViewModel } from '../../viewmodels/useSearchPageViewModel';
+import { resolveMediaUrl, resolveRecipeImageUrl } from '../../utils/media';
 
 type Props = NativeStackScreenProps<RecipeStackParamList, 'Search'>;
 type SearchSource = 'all' | 'local' | 'tianxing' | 'ai';
@@ -245,6 +246,7 @@ export function SearchScreen({ navigation }: Props) {
 
   if (selectedRecipe) {
     const baby = babyTransformResult?.baby_version;
+    const selectedRecipeImage = resolveRecipeImageUrl(selectedRecipe.id, selectedRecipe.image_url);
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.detailHeader}>
@@ -262,7 +264,7 @@ export function SearchScreen({ navigation }: Props) {
               {selectedRecipe.prep_time ? <View style={styles.detailMetaItem}><ClockIcon size={15} color={Colors.text.secondary} /><Text style={styles.detailMetaText}>{selectedRecipe.prep_time} 分钟</Text></View> : null}
               {selectedRecipe.difficulty ? <View style={styles.detailMetaItem}><ChefHatIcon size={15} color={Colors.text.secondary} /><Text style={styles.detailMetaText}>{selectedRecipe.difficulty}</Text></View> : null}
             </View>
-            {selectedRecipe.image_url?.[0] ? <Image source={{ uri: selectedRecipe.image_url[0] }} style={styles.detailImage} resizeMode="cover" /> : null}
+            {selectedRecipeImage ? <Image source={{ uri: selectedRecipeImage }} style={styles.detailImage} resizeMode="cover" /> : null}
           </View>
           <View style={styles.detailTabs}>
             <TouchableOpacity style={[styles.filterTab, activeDetailTab === 'adult' && styles.filterTabActive]} onPress={() => setActiveDetailTab('adult')}>

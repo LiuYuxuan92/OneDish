@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image } from 'react-native';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
 import type { Recipe } from '../../types';
 import type { BabyStageGuide } from '../../types';
 import type { RecommendationReasons } from './useHomeRecommendation';
+import { resolveRecipeImageUrl } from '../../utils/media';
 
 export interface RecipeCardProps {
   recipe: Recipe;
@@ -26,8 +27,15 @@ export function RecipeCard({
   onCookingStart,
   onRecipePress,
 }: RecipeCardProps) {
+  const coverImage = resolveRecipeImageUrl(recipe.id, recipe.image_url);
+
   return (
     <View style={styles.pairingCard}>
+      {coverImage ? (
+        <TouchableOpacity onPress={onRecipePress} activeOpacity={0.9} style={styles.heroMedia}>
+          <Image source={{ uri: coverImage }} style={styles.heroImage} resizeMode="cover" />
+        </TouchableOpacity>
+      ) : null}
       {/* 配对卡片头部 */}
       <TouchableOpacity
         onPress={onRecipePress}
@@ -126,6 +134,15 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     ...Shadows.md,
+  },
+  heroMedia: {
+    marginBottom: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    overflow: 'hidden',
+  },
+  heroImage: {
+    width: '100%',
+    height: Math.min(width * 0.52, 220),
   },
   pairingHeader: {
     marginBottom: Spacing.md,

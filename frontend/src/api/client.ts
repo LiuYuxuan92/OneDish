@@ -38,6 +38,28 @@ const getBaseUrl = () => {
 
 const BASE_URL = getBaseUrl();
 
+export const API_BASE_URL = BASE_URL;
+export const API_ORIGIN = BASE_URL.replace(/\/api\/v1\/?$/, '');
+
+export function resolveMediaUrl(url?: string | null): string | undefined {
+  if (!url) return undefined;
+  const trimmed = String(url).trim();
+  if (!trimmed) return undefined;
+  if (/^(https?:)?\/\//.test(trimmed) || trimmed.startsWith('data:')) {
+    return trimmed;
+  }
+  if (!API_ORIGIN) return trimmed;
+  return trimmed.startsWith('/') ? `${API_ORIGIN}${trimmed}` : `${API_ORIGIN}/${trimmed}`;
+}
+
+export function resolveMediaUrls(value?: string[] | string | null): string[] {
+  if (Array.isArray(value)) {
+    return value.map((item) => resolveMediaUrl(item)).filter(Boolean) as string[];
+  }
+  const single = resolveMediaUrl(value);
+  return single ? [single] : [];
+}
+
 let webToken: string | null = null;
 
 function initWebToken() {

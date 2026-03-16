@@ -1,4 +1,5 @@
 import type { FeedingFeedbackItem } from '../api/feedingFeedback';
+import { resolveRecipeImageUrl } from '../utils/media';
 
 export type FeedbackTone = 'loved' | 'okay' | 'cautious' | 'rejected';
 
@@ -36,9 +37,6 @@ export function mapFeedingFeedbackItem(item: FeedingFeedbackItem): FeedingFeedba
     rejected: { label: '暂时拒绝', color: '#C62828', summary: '先放缓频率，过几天换质地或搭配再试。', retrySuggested: true },
   }[tone];
 
-  const image = Array.isArray(item.recipe_image_url)
-    ? item.recipe_image_url[0]
-    : item.recipe_image_url || undefined;
 
   const date = item.created_at ? new Date(item.created_at) : null;
   const dateText = date && !Number.isNaN(date.getTime()) ? date.toLocaleDateString() : '时间未知';
@@ -47,7 +45,7 @@ export function mapFeedingFeedbackItem(item: FeedingFeedbackItem): FeedingFeedba
     id: item.id,
     recipeId: item.recipe_id,
     recipeName: item.recipe_name || '未命名菜谱',
-    recipeImage: image,
+    recipeImage: resolveRecipeImageUrl(item.recipe_id, item.recipe_image_url),
     tone,
     toneLabel: toneMeta.label,
     toneColor: toneMeta.color,

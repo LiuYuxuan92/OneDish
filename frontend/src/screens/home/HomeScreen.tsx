@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Image,
   Platform,
   RefreshControl,
   ScrollView,
@@ -17,6 +18,7 @@ import { SkeletonCard } from '../../components/common/Skeleton';
 import { BorderRadius, Colors, Shadows, Spacing, Typography } from '../../styles/theme';
 import { ActionGrid } from './ActionGrid';
 import { useHomeDashboardViewModel } from './useHomeDashboardViewModel';
+import { resolveMediaUrl } from '../../utils/media';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
@@ -60,6 +62,7 @@ export function HomeScreen({ navigation }: Props) {
   ];
 
   const topQuickEntries = vm.quickEntries.slice(0, 2);
+  const homeHeroCover = resolveMediaUrl('/media/generated/covers/onedish-family-cover.jpg');
 
   return (
     <SafeAreaView style={styles.container}>
@@ -90,6 +93,17 @@ export function HomeScreen({ navigation }: Props) {
                 <Text style={styles.searchEntryText}>搜菜谱</Text>
               </TouchableOpacity>
             </View>
+
+            {homeHeroCover ? (
+              <View style={styles.heroVisualCard}>
+                <Image source={{ uri: homeHeroCover }} style={styles.heroVisualImage} resizeMode="cover" />
+                <View style={styles.heroVisualOverlay}>
+                  <Text style={styles.heroVisualBadge}>ONE DISH · TWO WAYS</Text>
+                  <Text style={styles.heroVisualTitle}>一锅备菜，先顾全家，再顺手照顾宝宝。</Text>
+                  <Text style={styles.heroVisualCaption}>把“今天吃什么”变成一眼能做决定的首屏入口。</Text>
+                </View>
+              </View>
+            ) : null}
 
             <View style={styles.focusCard}>
               <View style={styles.focusCopy}>
@@ -384,6 +398,50 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     color: Colors.primary.main,
     fontWeight: Typography.fontWeight.semibold,
+  },
+  heroVisualCard: {
+    marginTop: Spacing.lg,
+    borderRadius: BorderRadius['2xl'],
+    overflow: 'hidden',
+    backgroundColor: Colors.background.secondary,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  heroVisualImage: {
+    width: '100%',
+    height: Platform.OS === 'web' ? 280 : 220,
+  },
+  heroVisualOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    backgroundColor: 'rgba(31, 47, 37, 0.42)',
+  },
+  heroVisualBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.full,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    color: Colors.text.inverse,
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.semibold,
+    letterSpacing: 0.6,
+  },
+  heroVisualTitle: {
+    marginTop: Spacing.sm,
+    color: Colors.text.inverse,
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
+  },
+  heroVisualCaption: {
+    marginTop: 6,
+    color: 'rgba(255,255,255,0.88)',
+    fontSize: Typography.fontSize.sm,
+    lineHeight: 20,
   },
   focusCard: {
     marginTop: Spacing.lg,

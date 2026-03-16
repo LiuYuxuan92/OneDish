@@ -1,0 +1,997 @@
+{
+  "generated_at": "2026-03-16T17:28:01Z",
+  "project": "project-708841ba-a5b6-4440-aa6",
+  "location": "global",
+  "model": [
+    "gemini-2.5-flash-image",
+    "gemini-3.1-flash-image-preview"
+  ],
+  "home_cover": "/media/generated/covers/onedish-family-cover.jpg",
+  "recipes": {
+    "baby_001": {
+      "name": "南瓜米糊",
+      "url": "/media/generated/recipes/baby_001.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 南瓜米糊. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 南瓜. Scene emphasis: 日常、入门. Nutritional focus suggested by the dish: 维生素A、铁、锌. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 6-8个月. Texture should read as puree. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 2938201913,
+      "status": "reused"
+    },
+    "baby_002": {
+      "name": "胡萝卜泥",
+      "url": "/media/generated/recipes/baby_002.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 胡萝卜泥. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 胡萝卜. Scene emphasis: 日常、首次引入. Nutritional focus suggested by the dish: 维生素A、维生素C、β-胡萝卜素. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 6-8个月. Texture should read as puree. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 366139732,
+      "status": "reused"
+    },
+    "baby_003": {
+      "name": "苹果泥",
+      "url": "/media/generated/recipes/baby_003.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 苹果泥. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 苹果. Scene emphasis: 日常、首次引入、快手. Nutritional focus suggested by the dish: 维生素C、膳食纤维、果糖. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 6-8个月. Texture should read as puree. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 986555212,
+      "status": "reused"
+    },
+    "baby_004": {
+      "name": "红薯泥",
+      "url": "/media/generated/recipes/baby_004.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 红薯泥. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 红薯. Scene emphasis: 日常、首次引入. Nutritional focus suggested by the dish: 维生素A、钾、膳食纤维. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 6-8个月. Texture should read as puree. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 2720031159,
+      "status": "reused"
+    },
+    "baby_005": {
+      "name": "菠菜泥米糊",
+      "url": "/media/generated/recipes/baby_005.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 菠菜泥米糊. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 菠菜. Scene emphasis: 日常、补铁. Nutritional focus suggested by the dish: 铁、叶酸、维生素K. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 6-8个月. Texture should read as puree. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 1883296571,
+      "status": "reused"
+    },
+    "baby_006": {
+      "name": "梨子泥",
+      "url": "/media/generated/recipes/baby_006.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 梨子泥. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 梨. Scene emphasis: 日常、首次引入、生病. Nutritional focus suggested by the dish: 维生素C、膳食纤维、水分. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 6-8个月. Texture should read as puree. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 2171603499,
+      "status": "reused"
+    },
+    "baby_007": {
+      "name": "土豆泥",
+      "url": "/media/generated/recipes/baby_007.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 土豆泥. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 土豆. Scene emphasis: 日常、首次引入. Nutritional focus suggested by the dish: 钾、维生素C、碳水化合物. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 6-8个月. Texture should read as puree. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 3230672405,
+      "status": "reused"
+    },
+    "baby_008": {
+      "name": "香蕉泥",
+      "url": "/media/generated/recipes/baby_008.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 香蕉泥. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 香蕉. Scene emphasis: 日常、首次引入、快手. Nutritional focus suggested by the dish: 钾、维生素B6、碳水化合物. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 6-8个月. Texture should read as puree. This is a quick home dish that can be ready in about 2 minutes.",
+      "seed": 995338042,
+      "status": "reused"
+    },
+    "baby_009": {
+      "name": "蛋黄南瓜粥",
+      "url": "/media/generated/recipes/baby_009.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 蛋黄南瓜粥. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 南瓜, 大米, 鸡蛋. Scene emphasis: 日常、补铁. Nutritional focus suggested by the dish: 铁、DHA、蛋白质. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 8-10个月. Texture should read as mash. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 370959754,
+      "status": "reused"
+    },
+    "baby_010": {
+      "name": "猪肝泥",
+      "url": "/media/generated/recipes/baby_010.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 猪肝泥. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 猪肝, 姜片. Scene emphasis: 日常、补铁. Nutritional focus suggested by the dish: 铁、锌、维生素A. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 8-10个月. Texture should read as mash. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 1012379962,
+      "status": "reused"
+    },
+    "baby_011": {
+      "name": "豆腐蛋黄羹",
+      "url": "/media/generated/recipes/baby_011.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 豆腐蛋黄羹. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 豆腐, 鸡蛋. Scene emphasis: 日常、快手. Nutritional focus suggested by the dish: 蛋白质、钙、铁. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 8-10个月. Texture should read as mash. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 505738473,
+      "status": "reused"
+    },
+    "baby_012": {
+      "name": "鱼泥粥",
+      "url": "/media/generated/recipes/baby_012.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 鱼泥粥. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 鲈鱼, 大米. Scene emphasis: 日常、补脑. Nutritional focus suggested by the dish: DHA、蛋白质、锌. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 8-10个月. Texture should read as mash. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 3209629070,
+      "status": "reused"
+    },
+    "baby_013": {
+      "name": "猪肉泥菠菜粥",
+      "url": "/media/generated/recipes/baby_013.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 猪肉泥菠菜粥. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 猪瘦肉, 菠菜. Scene emphasis: 日常、补铁. Nutritional focus suggested by the dish: 铁、蛋白质、叶酸. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 8-10个月. Texture should read as mash. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 2875464880,
+      "status": "reused"
+    },
+    "baby_014": {
+      "name": "软烂小米粥",
+      "url": "/media/generated/recipes/baby_014.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 软烂小米粥. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 小米. Scene emphasis: 日常、生病. Nutritional focus suggested by the dish: 铁、维生素B1、锌. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 8-10个月. Texture should read as mash. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 14236178,
+      "status": "reused"
+    },
+    "baby_015": {
+      "name": "西兰花豆腐泥",
+      "url": "/media/generated/recipes/baby_015.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 西兰花豆腐泥. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 西兰花, 豆腐. Scene emphasis: 日常、补钙. Nutritional focus suggested by the dish: 钙、维生素C、蛋白质. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 8-10个月. Texture should read as mash. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 2334663641,
+      "status": "reused"
+    },
+    "baby_016": {
+      "name": "鸡肉蔬菜烂面条",
+      "url": "/media/generated/recipes/baby_016.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 鸡肉蔬菜烂面条. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 面条, 鸡胸肉. Scene emphasis: 日常、快手. Nutritional focus suggested by the dish: 蛋白质、铁、维生素B. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 8-10个月. Texture should read as mash. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 3030481745,
+      "status": "reused"
+    },
+    "baby_017": {
+      "name": "全蛋蒸蛋羹",
+      "url": "/media/generated/recipes/baby_017.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 全蛋蒸蛋羹. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 鸡蛋. Scene emphasis: 日常、快手. Nutritional focus suggested by the dish: 蛋白质、卵磷脂、DHA. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 10-12个月. Texture should read as minced. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 3612248281,
+      "status": "reused"
+    },
+    "baby_018": {
+      "name": "虾仁豆腐软饭",
+      "url": "/media/generated/recipes/baby_018.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 虾仁豆腐软饭. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 虾仁, 豆腐. Scene emphasis: 日常. Nutritional focus suggested by the dish: 蛋白质、钙、DHA. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 10-12个月. Texture should read as minced. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 531337890,
+      "status": "reused"
+    },
+    "baby_019": {
+      "name": "番茄鸡蛋软饭",
+      "url": "/media/generated/recipes/baby_019.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 番茄鸡蛋软饭. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 番茄, 鸡蛋. Scene emphasis: 日常、快手. Nutritional focus suggested by the dish: 维生素C、蛋白质、番茄红素. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 10-12个月. Texture should read as minced. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 3461122208,
+      "status": "reused"
+    },
+    "baby_020": {
+      "name": "牛肉蔬菜粥",
+      "url": "/media/generated/recipes/baby_020.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 牛肉蔬菜粥. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 牛肉, 大米. Scene emphasis: 日常、补铁. Nutritional focus suggested by the dish: 铁、锌、蛋白质. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 10-12个月. Texture should read as minced. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 863749434,
+      "status": "reused"
+    },
+    "baby_021": {
+      "name": "三文鱼南瓜软饭",
+      "url": "/media/generated/recipes/baby_021.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 三文鱼南瓜软饭. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 三文鱼, 南瓜. Scene emphasis: 日常、补脑. Nutritional focus suggested by the dish: DHA、Omega-3、蛋白质. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 10-12个月. Texture should read as minced. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 1684220949,
+      "status": "reused"
+    },
+    "baby_022": {
+      "name": "蔬菜鸡蛋饼",
+      "url": "/media/generated/recipes/baby_022.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 蔬菜鸡蛋饼. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 鸡蛋, 西葫芦, 面粉. Scene emphasis: 日常、快手、手指食物. Nutritional focus suggested by the dish: 蛋白质、维生素C、钙. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 10-12个月. Texture should read as minced. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 358587828,
+      "status": "reused"
+    },
+    "baby_023": {
+      "name": "宝宝版番茄牛肉面",
+      "url": "/media/generated/recipes/baby_023.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 宝宝版番茄牛肉面. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 番茄, 牛肉, 面条. Scene emphasis: 日常. Nutritional focus suggested by the dish: 铁、蛋白质、番茄红素. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 12-18个月. Texture should read as chunks. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 1867181643,
+      "status": "reused"
+    },
+    "baby_024": {
+      "name": "宝宝版蛋炒饭",
+      "url": "/media/generated/recipes/baby_024.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 宝宝版蛋炒饭. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 米饭, 鸡蛋. Scene emphasis: 日常、快手. Nutritional focus suggested by the dish: 蛋白质、碳水化合物、卵磷脂. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 12-18个月. Texture should read as chunks. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 2205618666,
+      "status": "reused"
+    },
+    "baby_025": {
+      "name": "清蒸鳕鱼配菜泥",
+      "url": "/media/generated/recipes/baby_025.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 清蒸鳕鱼配菜泥. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 鳕鱼, 姜丝. Scene emphasis: 日常、补脑. Nutritional focus suggested by the dish: DHA、蛋白质、Omega-3. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 12-18个月. Texture should read as chunks. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 907808921,
+      "status": "reused"
+    },
+    "baby_026": {
+      "name": "宝宝馄饨",
+      "url": "/media/generated/recipes/baby_026.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 宝宝馄饨. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 猪肉馅, 馄饨皮. Scene emphasis: 日常、节日. Nutritional focus suggested by the dish: 蛋白质、铁、维生素B. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 12-18个月. Texture should read as chunks. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 857472056,
+      "status": "reused"
+    },
+    "baby_027": {
+      "name": "宝宝三色饭团",
+      "url": "/media/generated/recipes/baby_027.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 宝宝三色饭团. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 米饭. Scene emphasis: 日常、快手、手指食物. Nutritional focus suggested by the dish: 碳水化合物、蛋白质、维生素. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 12-18个月. Texture should read as chunks. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 3609580398,
+      "status": "reused"
+    },
+    "baby_028": {
+      "name": "宝宝版红烧豆腐",
+      "url": "/media/generated/recipes/baby_028.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 宝宝版红烧豆腐. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 豆腐. Scene emphasis: 日常、补钙. Nutritional focus suggested by the dish: 钙、蛋白质、铁. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 12-18个月. Texture should read as chunks. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 691446079,
+      "status": "reused"
+    },
+    "baby_029": {
+      "name": "番茄牛肉炖土豆",
+      "url": "/media/generated/recipes/baby_029.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 番茄牛肉炖土豆. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 牛肉, 土豆, 番茄. Scene emphasis: 日常、节日. Nutritional focus suggested by the dish: 铁、蛋白质、钾. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 18-24个月. Texture should read as chunks. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 954860017,
+      "status": "reused"
+    },
+    "baby_030": {
+      "name": "宝宝版鸡蛋羹配菜碎",
+      "url": "/media/generated/recipes/baby_030.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 宝宝版鸡蛋羹配菜碎. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 鸡蛋. Scene emphasis: 日常、快手、生病. Nutritional focus suggested by the dish: 蛋白质、卵磷脂、钙. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 18-24个月. Texture should read as chunks. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 4211028953,
+      "status": "reused"
+    },
+    "baby_031": {
+      "name": "宝宝版虾皮豆腐汤",
+      "url": "/media/generated/recipes/baby_031.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 宝宝版虾皮豆腐汤. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 豆腐, 虾皮. Scene emphasis: 日常、补钙. Nutritional focus suggested by the dish: 钙、蛋白质、碘. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 18-24个月. Texture should read as chunks. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 3861960710,
+      "status": "reused"
+    },
+    "baby_032": {
+      "name": "宝宝版花椰菜炒鸡蛋",
+      "url": "/media/generated/recipes/baby_032.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 宝宝版花椰菜炒鸡蛋. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 花椰菜, 鸡蛋. Scene emphasis: 日常、快手. Nutritional focus suggested by the dish: 维生素C、叶酸、蛋白质. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 18-24个月. Texture should read as chunks. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 3738662772,
+      "status": "reused"
+    },
+    "baby_033": {
+      "name": "宝宝肉末茄子",
+      "url": "/media/generated/recipes/baby_033.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 宝宝肉末茄子. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 茄子, 猪肉末. Scene emphasis: 日常. Nutritional focus suggested by the dish: 铁、蛋白质、花青素. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 18-24个月. Texture should read as chunks. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 957511822,
+      "status": "reused"
+    },
+    "baby_034": {
+      "name": "宝宝版西红柿炖牛腩",
+      "url": "/media/generated/recipes/baby_034.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 宝宝版西红柿炖牛腩. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 牛腩, 番茄, 土豆. Scene emphasis: 日常、节日. Nutritional focus suggested by the dish: 铁、蛋白质、胶原蛋白. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 24-36个月. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 908947759,
+      "status": "reused"
+    },
+    "baby_035": {
+      "name": "宝宝版菠菜猪肝炒饭",
+      "url": "/media/generated/recipes/baby_035.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 宝宝版菠菜猪肝炒饭. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 猪肝, 菠菜, 米饭. Scene emphasis: 日常、补铁. Nutritional focus suggested by the dish: 铁、叶酸、维生素A. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 24-36个月. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 1414529525,
+      "status": "reused"
+    },
+    "baby_036": {
+      "name": "宝宝版鸡肉蔬菜饺子",
+      "url": "/media/generated/recipes/baby_036.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 宝宝版鸡肉蔬菜饺子. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 鸡肉, 白菜, 饺子皮. Scene emphasis: 日常、节日. Nutritional focus suggested by the dish: 蛋白质、维生素、碳水化合物. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 24-36个月. This is a quick home dish that can be ready in about 30 minutes.",
+      "seed": 1974093485,
+      "status": "reused"
+    },
+    "baby_037": {
+      "name": "宝宝版清炒时蔬",
+      "url": "/media/generated/recipes/baby_037.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 宝宝版清炒时蔬. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 时令蔬菜. Scene emphasis: 日常、快手. Nutritional focus suggested by the dish: 维生素C、膳食纤维、叶酸. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 24-36个月. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 1488072640,
+      "status": "reused"
+    },
+    "baby_038": {
+      "name": "宝宝版三鲜汤",
+      "url": "/media/generated/recipes/baby_038.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 宝宝版三鲜汤. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 虾, 豆腐, 蛋花. Scene emphasis: 日常、补钙. Nutritional focus suggested by the dish: 蛋白质、钙、DHA. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 24-36个月. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 463347387,
+      "status": "reused"
+    },
+    "baby_039": {
+      "name": "宝宝版黑芝麻糊",
+      "url": "/media/generated/recipes/baby_039.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 宝宝版黑芝麻糊. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 黑芝麻. Scene emphasis: 日常、补钙. Nutritional focus suggested by the dish: 钙、铁、不饱和脂肪酸. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 24-36个月. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 1916944024,
+      "status": "reused"
+    },
+    "baby_040": {
+      "name": "宝宝版蔬菜疙瘩汤",
+      "url": "/media/generated/recipes/baby_040.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 宝宝版蔬菜疙瘩汤. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 面粉, 番茄, 鸡蛋. Scene emphasis: 日常、生病、快手. Nutritional focus suggested by the dish: 碳水化合物、维生素、蛋白质. Present it as a baby-friendly dish with a small safe portion in a clean baby bowl. Appropriate for baby stage: 24-36个月. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 319325305,
+      "status": "reused"
+    },
+    "recipe_001": {
+      "name": "红烧鸡翅",
+      "url": "/media/generated/recipes/recipe_001.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 红烧鸡翅. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 鸡翅中, 生姜, 酱油, 料酒, 白糖. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 25 minutes.",
+      "seed": 910307012,
+      "status": "reused"
+    },
+    "recipe_002": {
+      "name": "番茄鸡蛋面",
+      "url": "/media/generated/recipes/recipe_002.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 番茄鸡蛋面. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Breakfast scene, lighter and fresher plating. Key ingredients visible: 面条, 鸡蛋, 番茄, 大葱, 食用油. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 1032490817,
+      "status": "reused"
+    },
+    "recipe_003": {
+      "name": "清蒸鲈鱼",
+      "url": "/media/generated/recipes/recipe_003.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 清蒸鲈鱼. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 鲈鱼, 生姜, 大葱, 酱油, 食用油. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 2048511367,
+      "status": "reused"
+    },
+    "recipe_004": {
+      "name": "南瓜焖饭",
+      "url": "/media/generated/recipes/recipe_004.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 南瓜焖饭. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 大米, 南瓜, 洋葱, 食用油, 盐. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 2463558747,
+      "status": "reused"
+    },
+    "recipe_005": {
+      "name": "三文鱼炒饭",
+      "url": "/media/generated/recipes/recipe_005.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 三文鱼炒饭. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 米饭, 三文鱼, 鸡蛋, 洋葱, 胡萝卜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 1228321414,
+      "status": "reused"
+    },
+    "recipe_006": {
+      "name": "红烧肉",
+      "url": "/media/generated/recipes/recipe_006.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 红烧肉. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 五花肉, 生姜, 八角, 桂皮, 酱油. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 4287246092,
+      "status": "reused"
+    },
+    "recipe_007": {
+      "name": "糖醋排骨",
+      "url": "/media/generated/recipes/recipe_007.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 糖醋排骨. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 排骨, 醋, 白糖, 酱油, 料酒. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 1891541475,
+      "status": "reused"
+    },
+    "recipe_008": {
+      "name": "蒜蓉西兰花",
+      "url": "/media/generated/recipes/recipe_008.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 蒜蓉西兰花. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 西兰花, 大蒜, 盐, 食用油. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 1966286276,
+      "status": "reused"
+    },
+    "recipe_009": {
+      "name": "土豆炖牛肉",
+      "url": "/media/generated/recipes/recipe_009.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 土豆炖牛肉. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 牛腩, 土豆, 胡萝卜, 洋葱, 番茄酱. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 2740962801,
+      "status": "reused"
+    },
+    "recipe_010": {
+      "name": "虾仁蒸蛋",
+      "url": "/media/generated/recipes/recipe_010.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 虾仁蒸蛋. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Breakfast scene, lighter and fresher plating. Key ingredients visible: 鸡蛋, 虾仁, 温水, 盐, 酱油. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 1797016990,
+      "status": "reused"
+    },
+    "recipe_011": {
+      "name": "番茄牛腩面",
+      "url": "/media/generated/recipes/recipe_011.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 番茄牛腩面. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 牛腩, 番茄, 面条, 洋葱, 番茄酱. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 301447286,
+      "status": "reused"
+    },
+    "recipe_012": {
+      "name": "香煎鳕鱼",
+      "url": "/media/generated/recipes/recipe_012.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 香煎鳕鱼. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 鳕鱼, 柠檬, 盐, 黑胡椒, 黄油. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 67134944,
+      "status": "reused"
+    },
+    "recipe_013": {
+      "name": "猪肉白菜水饺",
+      "url": "/media/generated/recipes/recipe_013.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 猪肉白菜水饺. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 面粉, 猪肉馅, 白菜, 葱, 姜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 40 minutes.",
+      "seed": 3502641711,
+      "status": "reused"
+    },
+    "recipe_014": {
+      "name": "玉米排骨汤",
+      "url": "/media/generated/recipes/recipe_014.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 玉米排骨汤. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 排骨, 玉米, 胡萝卜, 姜, 料酒. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 1771178818,
+      "status": "reused"
+    },
+    "recipe_015": {
+      "name": "葱油拌面",
+      "url": "/media/generated/recipes/recipe_015.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 葱油拌面. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Breakfast scene, lighter and fresher plating. Key ingredients visible: 面条, 小葱, 食用油, 酱油, 白糖. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 1560065068,
+      "status": "reused"
+    },
+    "recipe_016": {
+      "name": "胡萝卜炒肉丝",
+      "url": "/media/generated/recipes/recipe_016.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 胡萝卜炒肉丝. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 猪里脊, 胡萝卜, 青椒, 蒜, 酱油. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 4082453475,
+      "status": "reused"
+    },
+    "recipe_017": {
+      "name": "紫菜蛋花汤",
+      "url": "/media/generated/recipes/recipe_017.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 紫菜蛋花汤. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Breakfast scene, lighter and fresher plating. Key ingredients visible: 紫菜, 鸡蛋, 虾皮, 盐, 香油. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 3377365989,
+      "status": "reused"
+    },
+    "recipe_018": {
+      "name": "苹果松饼",
+      "url": "/media/generated/recipes/recipe_018.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 苹果松饼. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Breakfast scene, lighter and fresher plating. Key ingredients visible: 面粉, 苹果, 鸡蛋, 牛奶, 白糖. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 245086282,
+      "status": "reused"
+    },
+    "recipe_019": {
+      "name": "清炒菠菜",
+      "url": "/media/generated/recipes/recipe_019.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 清炒菠菜. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 菠菜, 蒜, 盐, 食用油. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 2001560914,
+      "status": "reused"
+    },
+    "recipe_020": {
+      "name": "香蕉蒸糕",
+      "url": "/media/generated/recipes/recipe_020.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 香蕉蒸糕. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Breakfast scene, lighter and fresher plating. Key ingredients visible: 香蕉, 面粉, 鸡蛋, 牛奶, 白糖. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 149644694,
+      "status": "reused"
+    },
+    "recipe_021": {
+      "name": "青椒肉丝",
+      "url": "/media/generated/recipes/recipe_021.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 青椒肉丝. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 猪里脊肉, 青椒, 红椒, 姜, 蒜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 1207662545,
+      "status": "reused"
+    },
+    "recipe_022": {
+      "name": "回锅肉",
+      "url": "/media/generated/recipes/recipe_022.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 回锅肉. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 五花肉, 青蒜, 郫县豆瓣酱, 姜, 蒜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 613832744,
+      "status": "reused"
+    },
+    "recipe_023": {
+      "name": "鱼香肉丝",
+      "url": "/media/generated/recipes/recipe_023.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 鱼香肉丝. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 猪里脊, 木耳, 胡萝卜, 郫县豆瓣酱, 醋. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 594625231,
+      "status": "reused"
+    },
+    "recipe_024": {
+      "name": "小炒肉",
+      "url": "/media/generated/recipes/recipe_024.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 小炒肉. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 猪腿肉, 青蒜, 小米辣, 豆豉. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 1759801118,
+      "status": "reused"
+    },
+    "recipe_025": {
+      "name": "梅菜扣肉",
+      "url": "/media/generated/recipes/recipe_025.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 梅菜扣肉. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 五花肉, 梅菜, 南乳, 酱油, 白糖. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 2233755526,
+      "status": "reused"
+    },
+    "recipe_026": {
+      "name": "宫保鸡丁",
+      "url": "/media/generated/recipes/recipe_026.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 宫保鸡丁. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 鸡胸肉, 花生, 黄瓜, 干辣椒, 花椒. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 584489732,
+      "status": "generated",
+      "model": "gemini-2.5-flash-image"
+    },
+    "recipe_027": {
+      "name": "黄焖鸡",
+      "url": "/media/generated/recipes/recipe_027.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 黄焖鸡. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 鸡腿, 香菇, 青椒, 姜, 酱油. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 2808284785,
+      "status": "reused"
+    },
+    "recipe_028": {
+      "name": "辣子鸡",
+      "url": "/media/generated/recipes/recipe_028.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 辣子鸡. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 鸡腿肉, 干辣椒, 花椒, 姜, 蒜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 2163533331,
+      "status": "reused"
+    },
+    "recipe_029": {
+      "name": "白切鸡",
+      "url": "/media/generated/recipes/recipe_029.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 白切鸡. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 三黄鸡, 姜, 葱, 香菜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 2733391350,
+      "status": "reused"
+    },
+    "recipe_030": {
+      "name": "大盘鸡",
+      "url": "/media/generated/recipes/recipe_030.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 大盘鸡. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 鸡腿, 土豆, 青椒, 面条, 豆瓣酱. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 2432998145,
+      "status": "reused"
+    },
+    "recipe_031": {
+      "name": "水煮牛肉",
+      "url": "/media/generated/recipes/recipe_031.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 水煮牛肉. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 牛肉, 豆芽, 郫县豆瓣酱, 干辣椒, 花椒. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 1005392154,
+      "status": "generated",
+      "model": "gemini-2.5-flash-image"
+    },
+    "recipe_032": {
+      "name": "红烧牛肉",
+      "url": "/media/generated/recipes/recipe_032.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 红烧牛肉. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 牛腩, 胡萝卜, 番茄, 八角, 桂皮. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 57633135,
+      "status": "reused"
+    },
+    "recipe_033": {
+      "name": "青椒牛柳",
+      "url": "/media/generated/recipes/recipe_033.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 青椒牛柳. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 牛里脊, 青椒, 黑胡椒, 酱油. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 1838695753,
+      "status": "reused"
+    },
+    "recipe_034": {
+      "name": "糖醋鲤鱼",
+      "url": "/media/generated/recipes/recipe_034.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 糖醋鲤鱼. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 鲤鱼, 面粉, 番茄酱, 白糖, 醋. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 3476633489,
+      "status": "reused"
+    },
+    "recipe_035": {
+      "name": "红烧带鱼",
+      "url": "/media/generated/recipes/recipe_035.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 红烧带鱼. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 带鱼, 姜, 蒜, 酱油, 糖. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 3252425260,
+      "status": "reused"
+    },
+    "recipe_036": {
+      "name": "酸菜鱼",
+      "url": "/media/generated/recipes/recipe_036.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 酸菜鱼. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 草鱼, 酸菜, 泡椒, 豆芽, 蛋清. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 25 minutes.",
+      "seed": 1314011540,
+      "status": "reused"
+    },
+    "recipe_037": {
+      "name": "松鼠桂鱼",
+      "url": "/media/generated/recipes/recipe_037.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 松鼠桂鱼. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 桂鱼, 松子, 番茄酱, 糖, 醋. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 25 minutes.",
+      "seed": 3706269038,
+      "status": "reused"
+    },
+    "recipe_038": {
+      "name": "酸辣土豆丝",
+      "url": "/media/generated/recipes/recipe_038.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 酸辣土豆丝. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 土豆, 干辣椒, 花椒, 白醋. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 2545903755,
+      "status": "reused"
+    },
+    "recipe_039": {
+      "name": "地三鲜",
+      "url": "/media/generated/recipes/recipe_039.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 地三鲜. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 土豆, 茄子, 青椒, 蒜, 酱油. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 2538554946,
+      "status": "reused"
+    },
+    "recipe_040": {
+      "name": "手撕包菜",
+      "url": "/media/generated/recipes/recipe_040.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 手撕包菜. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 包菜, 干辣椒, 蒜, 醋. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 1548271602,
+      "status": "reused"
+    },
+    "recipe_041": {
+      "name": "麻婆豆腐",
+      "url": "/media/generated/recipes/recipe_041.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 麻婆豆腐. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 豆腐, 猪肉末, 郫县豆瓣酱, 花椒, 蒜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 4012629886,
+      "status": "reused"
+    },
+    "recipe_042": {
+      "name": "西葫芦炒蛋",
+      "url": "/media/generated/recipes/recipe_042.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 西葫芦炒蛋. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 西葫芦, 鸡蛋, 蒜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 2020419663,
+      "status": "reused"
+    },
+    "recipe_043": {
+      "name": "苦瓜炒蛋",
+      "url": "/media/generated/recipes/recipe_043.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 苦瓜炒蛋. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 苦瓜, 鸡蛋, 盐. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 1874634806,
+      "status": "reused"
+    },
+    "recipe_044": {
+      "name": "香干芹菜",
+      "url": "/media/generated/recipes/recipe_044.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 香干芹菜. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 香干, 芹菜, 红椒, 蒜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 1729695939,
+      "status": "reused"
+    },
+    "recipe_045": {
+      "name": "木耳山药",
+      "url": "/media/generated/recipes/recipe_045.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 木耳山药. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 山药, 木耳, 胡萝卜, 蒜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 1711606690,
+      "status": "reused"
+    },
+    "recipe_046": {
+      "name": "西红柿炒鸡蛋",
+      "url": "/media/generated/recipes/recipe_046.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 西红柿炒鸡蛋. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Breakfast scene, lighter and fresher plating. Key ingredients visible: 鸡蛋, 西红柿, 葱. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 465143547,
+      "status": "reused"
+    },
+    "recipe_047": {
+      "name": "韭菜炒鸡蛋",
+      "url": "/media/generated/recipes/recipe_047.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 韭菜炒鸡蛋. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Breakfast scene, lighter and fresher plating. Key ingredients visible: 韭菜, 鸡蛋. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 1382364036,
+      "status": "reused"
+    },
+    "recipe_048": {
+      "name": "辣椒炒蛋",
+      "url": "/media/generated/recipes/recipe_048.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 辣椒炒蛋. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 青椒, 鸡蛋, 蒜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 1079051338,
+      "status": "reused"
+    },
+    "recipe_049": {
+      "name": "冬瓜排骨汤",
+      "url": "/media/generated/recipes/recipe_049.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 冬瓜排骨汤. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 排骨, 冬瓜, 姜, 葱. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 602663074,
+      "status": "reused"
+    },
+    "recipe_050": {
+      "name": "莲藕排骨汤",
+      "url": "/media/generated/recipes/recipe_050.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 莲藕排骨汤. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 排骨, 莲藕, 花生, 姜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 1611898346,
+      "status": "reused"
+    },
+    "recipe_051": {
+      "name": "丝瓜蛋汤",
+      "url": "/media/generated/recipes/recipe_051.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 丝瓜蛋汤. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Breakfast scene, lighter and fresher plating. Key ingredients visible: 丝瓜, 鸡蛋, 紫菜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 98145096,
+      "status": "generated",
+      "model": "gemini-2.5-flash-image"
+    },
+    "recipe_052": {
+      "name": "番茄蛋汤",
+      "url": "/media/generated/recipes/recipe_052.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 番茄蛋汤. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Breakfast scene, lighter and fresher plating. Key ingredients visible: 番茄, 鸡蛋, 葱花. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 3639784467,
+      "status": "reused"
+    },
+    "recipe_053": {
+      "name": "炸酱面",
+      "url": "/media/generated/recipes/recipe_053.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 炸酱面. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 面条, 猪肉末, 黄酱, 甜面酱, 黄瓜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 351942019,
+      "status": "reused"
+    },
+    "recipe_054": {
+      "name": "热干面",
+      "url": "/media/generated/recipes/recipe_054.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 热干面. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Breakfast scene, lighter and fresher plating. Key ingredients visible: 碱水面, 芝麻酱, 酱油, 榨菜, 葱花. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 316924229,
+      "status": "reused"
+    },
+    "recipe_055": {
+      "name": "刀削面",
+      "url": "/media/generated/recipes/recipe_055.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 刀削面. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 面粉, 猪肉, 番茄, 鸡蛋, 青菜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 30 minutes.",
+      "seed": 1736397623,
+      "status": "reused"
+    },
+    "recipe_056": {
+      "name": "西红柿鸡蛋打卤面",
+      "url": "/media/generated/recipes/recipe_056.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 西红柿鸡蛋打卤面. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 面条, 番茄, 鸡蛋, 木耳, 黄花菜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 3492976470,
+      "status": "reused"
+    },
+    "recipe_057": {
+      "name": "皮蛋瘦肉粥",
+      "url": "/media/generated/recipes/recipe_057.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 皮蛋瘦肉粥. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Breakfast scene, lighter and fresher plating. Key ingredients visible: 大米, 皮蛋, 瘦肉, 姜, 葱花. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 4074809062,
+      "status": "reused"
+    },
+    "recipe_058": {
+      "name": "小米粥",
+      "url": "/media/generated/recipes/recipe_058.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 小米粥. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Breakfast scene, lighter and fresher plating. Key ingredients visible: 小米, 水. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 6-12月. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 713651571,
+      "status": "reused"
+    },
+    "recipe_059": {
+      "name": "八宝粥",
+      "url": "/media/generated/recipes/recipe_059.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 八宝粥. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Breakfast scene, lighter and fresher plating. Key ingredients visible: 大米, 糯米, 红豆, 绿豆, 花生. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 3216183988,
+      "status": "reused"
+    },
+    "recipe_060": {
+      "name": "红糖糍粑",
+      "url": "/media/generated/recipes/recipe_060.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 红糖糍粑. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 糯米, 红糖, 黄豆粉. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 1628953531,
+      "status": "reused"
+    },
+    "recipe_061": {
+      "name": "酒酿圆子",
+      "url": "/media/generated/recipes/recipe_061.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 酒酿圆子. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 糯米粉, 酒酿, 鸡蛋, 白糖, 桂花. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 1253053572,
+      "status": "reused"
+    },
+    "recipe_062": {
+      "name": "蚂蚁上树",
+      "url": "/media/generated/recipes/recipe_062.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 蚂蚁上树. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 粉丝, 猪肉末, 郫县豆瓣酱, 蒜, 葱. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 241861805,
+      "status": "reused"
+    },
+    "recipe_063": {
+      "name": "蒜香排骨",
+      "url": "/media/generated/recipes/recipe_063.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 蒜香排骨. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 排骨, 大蒜, 淀粉, 椒盐. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 825171543,
+      "status": "reused"
+    },
+    "recipe_064": {
+      "name": "红烧狮子头",
+      "url": "/media/generated/recipes/recipe_064.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 红烧狮子头. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 猪肉, 马蹄, 鸡蛋, 淀粉, 酱油. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 30 minutes.",
+      "seed": 322043619,
+      "status": "reused"
+    },
+    "recipe_065": {
+      "name": "珍珠丸子",
+      "url": "/media/generated/recipes/recipe_065.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 珍珠丸子. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 猪肉, 糯米, 马蹄, 姜, 葱. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 25 minutes.",
+      "seed": 523594238,
+      "status": "reused"
+    },
+    "recipe_066": {
+      "name": "东坡肉",
+      "url": "/media/generated/recipes/recipe_066.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 东坡肉. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 五花肉, 黄酒, 酱油, 白糖, 姜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 2890478912,
+      "status": "reused"
+    },
+    "recipe_067": {
+      "name": "无锡排骨",
+      "url": "/media/generated/recipes/recipe_067.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 无锡排骨. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 排骨, 酱油, 白糖, 醋, 八角. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 2449414573,
+      "status": "reused"
+    },
+    "recipe_068": {
+      "name": "萝卜烧牛肉",
+      "url": "/media/generated/recipes/recipe_068.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 萝卜烧牛肉. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 牛肉, 白萝卜, 酱油, 糖, 姜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 4234999262,
+      "status": "reused"
+    },
+    "recipe_069": {
+      "name": "土豆烧牛肉",
+      "url": "/media/generated/recipes/recipe_069.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 土豆烧牛肉. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 牛肉, 土豆, 番茄, 洋葱, 酱油. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 3587895340,
+      "status": "reused"
+    },
+    "recipe_070": {
+      "name": "熘肝尖",
+      "url": "/media/generated/recipes/recipe_070.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 熘肝尖. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 猪肝, 木耳, 黄瓜, 蒜, 酱油. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 1704152056,
+      "status": "reused"
+    },
+    "recipe_071": {
+      "name": "爆炒腰花",
+      "url": "/media/generated/recipes/recipe_071.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 爆炒腰花. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 猪腰, 青椒, 红椒, 姜, 蒜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 464502913,
+      "status": "reused"
+    },
+    "recipe_072": {
+      "name": "夫妻肺片",
+      "url": "/media/generated/recipes/recipe_072.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 夫妻肺片. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 牛腱子肉, 牛百叶, 牛心, 花生碎, 芝麻酱. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 30 minutes.",
+      "seed": 3955330509,
+      "status": "reused"
+    },
+    "recipe_073": {
+      "name": "辣子鸡丁",
+      "url": "/media/generated/recipes/recipe_073.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 辣子鸡丁. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 鸡胸肉, 干辣椒, 花椒, 炸花生, 葱. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 3675443816,
+      "status": "reused"
+    },
+    "recipe_074": {
+      "name": "鸡米芽菜",
+      "url": "/media/generated/recipes/recipe_074.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 鸡米芽菜. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 鸡胸肉, 芽菜, 青椒, 干辣椒. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 111124887,
+      "status": "reused"
+    },
+    "recipe_075": {
+      "name": "歌乐山辣子鸡",
+      "url": "/media/generated/recipes/recipe_075.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 歌乐山辣子鸡. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 鸡腿肉, 干辣椒, 花椒, 姜, 蒜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 3373518899,
+      "status": "reused"
+    },
+    "recipe_076": {
+      "name": "烧鸡公",
+      "url": "/media/generated/recipes/recipe_076.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 烧鸡公. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 公鸡, 干辣椒, 花椒, 豆瓣酱, 魔芋. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 2016691063,
+      "status": "reused"
+    },
+    "recipe_077": {
+      "name": "重庆辣子鸡",
+      "url": "/media/generated/recipes/recipe_077.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 重庆辣子鸡. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 鸡肉, 干辣椒, 花椒, 白芝麻, 葱姜蒜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 25 minutes.",
+      "seed": 2574150093,
+      "status": "reused"
+    },
+    "recipe_078": {
+      "name": "麻辣鸡丁",
+      "url": "/media/generated/recipes/recipe_078.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 麻辣鸡丁. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 鸡胸肉, 花生, 干辣椒, 花椒. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 3440335131,
+      "status": "reused"
+    },
+    "recipe_079": {
+      "name": "干锅鸡",
+      "url": "/media/generated/recipes/recipe_079.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 干锅鸡. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 鸡肉, 土豆, 莲藕, 干辣椒, 豆瓣酱. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 3609961783,
+      "status": "reused"
+    },
+    "recipe_080": {
+      "name": "地锅鸡",
+      "url": "/media/generated/recipes/recipe_080.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 地锅鸡. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 鸡肉, 面粉, 土豆, 青椒, 豆瓣酱. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 25 minutes.",
+      "seed": 985406811,
+      "status": "reused"
+    },
+    "recipe_081": {
+      "name": "叫化鸡",
+      "url": "/media/generated/recipes/recipe_081.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 叫化鸡. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 三黄鸡, 荷叶, 泥土, 五花肉, 香菇. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 30 minutes.",
+      "seed": 1962815392,
+      "status": "reused"
+    },
+    "recipe_082": {
+      "name": "盐焗鸡",
+      "url": "/media/generated/recipes/recipe_082.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 盐焗鸡. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 三黄鸡, 粗盐, 八角, 姜, 葱. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 2634648694,
+      "status": "reused"
+    },
+    "recipe_083": {
+      "name": "东安子鸡",
+      "url": "/media/generated/recipes/recipe_083.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 东安子鸡. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 小母鸡, 红椒, 姜, 醋, 花椒. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 3630458370,
+      "status": "reused"
+    },
+    "recipe_084": {
+      "name": "左宗棠鸡",
+      "url": "/media/generated/recipes/recipe_084.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 左宗棠鸡. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 鸡腿肉, 干辣椒, 蒜, 酱油, 糖. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 2699969611,
+      "status": "reused"
+    },
+    "recipe_085": {
+      "name": "辣子田鸡",
+      "url": "/media/generated/recipes/recipe_085.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 辣子田鸡. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 田鸡, 干辣椒, 花椒, 姜蒜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 1663844055,
+      "status": "reused"
+    },
+    "recipe_086": {
+      "name": "小炒黄牛肉",
+      "url": "/media/generated/recipes/recipe_086.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 小炒黄牛肉. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 黄牛肉, 小米辣, 姜, 蒜. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 2462562318,
+      "status": "reused"
+    },
+    "recipe_087": {
+      "name": "红烧牛腩",
+      "url": "/media/generated/recipes/recipe_087.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 红烧牛腩. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 牛腩, 胡萝卜, 番茄, 八角, 桂皮. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 1019820174,
+      "status": "reused"
+    },
+    "recipe_088": {
+      "name": "番茄牛腩",
+      "url": "/media/generated/recipes/recipe_088.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 番茄牛腩. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 牛腩, 番茄, 洋葱, 番茄酱. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 3853771014,
+      "status": "reused"
+    },
+    "recipe_089": {
+      "name": "金汤肥牛",
+      "url": "/media/generated/recipes/recipe_089.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 金汤肥牛. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 肥牛片, 酸菜, 金针菇, 泡椒, 黄灯笼椒酱. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 4253174679,
+      "status": "reused"
+    },
+    "recipe_090": {
+      "name": "红烧鲤鱼",
+      "url": "/media/generated/recipes/recipe_090.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 红烧鲤鱼. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 鲤鱼, 五花肉, 姜蒜, 酱油, 糖. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 202425371,
+      "status": "reused"
+    },
+    "recipe_091": {
+      "name": "糖醋带鱼",
+      "url": "/media/generated/recipes/recipe_091.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 糖醋带鱼. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 带鱼, 番茄酱, 糖, 醋, 淀粉. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 1931136051,
+      "status": "reused"
+    },
+    "recipe_092": {
+      "name": "干烧黄鱼",
+      "url": "/media/generated/recipes/recipe_092.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 干烧黄鱼. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 黄鱼, 肉末, 豆瓣酱, 姜蒜, 泡椒. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 1359866857,
+      "status": "reused"
+    },
+    "recipe_093": {
+      "name": "豆瓣鱼",
+      "url": "/media/generated/recipes/recipe_093.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 豆瓣鱼. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 草鱼, 郫县豆瓣酱, 姜蒜, 葱, 酱油. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 2578009499,
+      "status": "reused"
+    },
+    "recipe_094": {
+      "name": "葱烧黄鱼",
+      "url": "/media/generated/recipes/recipe_094.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 葱烧黄鱼. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 黄鱼, 大葱, 姜, 酱油, 糖. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 2416291140,
+      "status": "reused"
+    },
+    "recipe_095": {
+      "name": "鲫鱼豆腐汤",
+      "url": "/media/generated/recipes/recipe_095.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 鲫鱼豆腐汤. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 鲫鱼, 豆腐, 姜, 葱. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 1369311615,
+      "status": "reused"
+    },
+    "recipe_096": {
+      "name": "豆腐皮卷",
+      "url": "/media/generated/recipes/recipe_096.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 豆腐皮卷. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Dinner scene, comforting home-cooked warmth with richer atmosphere. Key ingredients visible: 豆腐皮, 胡萝卜, 黄瓜, 香菜, 甜面酱. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 20 minutes.",
+      "seed": 4240275971,
+      "status": "reused"
+    },
+    "recipe_097": {
+      "name": "凉拌黄瓜",
+      "url": "/media/generated/recipes/recipe_097.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 凉拌黄瓜. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 黄瓜, 蒜, 小米辣, 醋, 酱油. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 10 minutes.",
+      "seed": 1088814552,
+      "status": "reused"
+    },
+    "recipe_098": {
+      "name": "凉拌木耳",
+      "url": "/media/generated/recipes/recipe_098.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 凉拌木耳. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 木耳, 洋葱, 香菜, 蒜, 醋. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1.5-2岁. This is a quick home dish that can be ready in about 15 minutes.",
+      "seed": 3991641732,
+      "status": "reused"
+    },
+    "recipe_099": {
+      "name": "拍黄瓜",
+      "url": "/media/generated/recipes/recipe_099.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 拍黄瓜. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Lunch scene, balanced everyday family meal styling. Key ingredients visible: 黄瓜, 蒜, 醋, 酱油, 辣椒油. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 1-1.5岁. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 3636774438,
+      "status": "generated",
+      "model": "gemini-2.5-flash-image"
+    },
+    "recipe_100": {
+      "name": "凉拌番茄",
+      "url": "/media/generated/recipes/recipe_100.jpg",
+      "prompt": "Premium editorial food photography for a family recipe app. Dish: 凉拌番茄. Chinese home-cooked food, realistic and appetizing, warm natural daylight, soft shadow, gentle steam, clean ceramic tableware, light wood surface, cream-white and sage-green styling, high detail. Compose for a mobile recipe card with safe margins, simple uncluttered background, single main scene, no text, no watermark. Key ingredients visible: 番茄, 白糖. Show the family main dish with a smaller baby-adapted portion beside it, expressing one dish two ways. The baby side serving should look appropriate for 6-12月. This is a quick home dish that can be ready in about 5 minutes.",
+      "seed": 1191828833,
+      "status": "generated",
+      "model": "gemini-2.5-flash-image"
+    }
+  }
+}

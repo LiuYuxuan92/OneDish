@@ -2,6 +2,7 @@ import type { Recipe, RecipeSummary, SyncTimeline } from '../types';
 import type { FeedingFeedbackItem } from '../api/feedingFeedback';
 import type { AIBabyVersionResult } from '../api/pairing';
 import type { RecommendationSource, RecipeAdapterContext, RecommendationAdapterContext, RecipeDisplayModel, RecommendationCardViewModel, DualType, FeedbackAcceptance, ExtraPrepLevel, StatusTagType } from '../viewmodels/uiMigration';
+import { resolveRecipeImageUrl } from '../utils/media';
 
 type RecipeLike = Recipe | RecipeSummary | RecommendationSource | {
   id: string;
@@ -151,7 +152,7 @@ export function mapRecipeToDisplayModel(recipe: RecipeLike, context: RecipeAdapt
   return {
     id: recipe.id,
     title: recipe.name,
-    image: Array.isArray(recipe.image_url) ? recipe.image_url[0] : (typeof recipe.image_url === 'string' ? recipe.image_url : undefined),
+    image: resolveRecipeImageUrl(recipe.id, recipe.image_url),
     cookTimeText: toMinutesText(recipe),
     difficultyLabel: formatDifficultyLabel('difficulty' in recipe ? recipe.difficulty : undefined),
     servingsLabel: 'servings' in recipe && recipe.servings ? String(recipe.servings) : '份量待补',

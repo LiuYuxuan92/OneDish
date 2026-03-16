@@ -42,6 +42,58 @@
   box-shadow: 0 10rpx 22rpx rgba(28, 49, 39, 0.24);
 }
 
+.hero-cover-card {
+  position: relative;
+  margin-top: 24rpx;
+  border-radius: 34rpx;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1rpx solid rgba(39, 69, 57, 0.05);
+  box-shadow: 0 18rpx 40rpx rgba(31, 47, 37, 0.08);
+}
+
+.hero-cover-image {
+  width: 100%;
+  height: 360rpx;
+  display: block;
+}
+
+.hero-cover-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 26rpx 28rpx 28rpx;
+  background: linear-gradient(180deg, rgba(20, 30, 24, 0.02), rgba(20, 30, 24, 0.58));
+}
+
+.hero-cover-badge {
+  display: inline-block;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 20rpx;
+  letter-spacing: 2rpx;
+}
+
+.hero-cover-title {
+  display: block;
+  margin-top: 18rpx;
+  font-size: 34rpx;
+  line-height: 1.35;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.hero-cover-desc {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  line-height: 1.58;
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .hero-copy {
   margin-top: 28rpx;
   padding: 34rpx 30rpx;

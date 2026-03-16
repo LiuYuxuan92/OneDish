@@ -10,6 +10,15 @@
       </view>
     </view>
 
+    <view class="hero-cover-card" wx:if="{{homeHeroCover}}">
+      <image class="hero-cover-image" src="{{homeHeroCover}}" mode="aspectFill" lazy-load="true" />
+      <view class="hero-cover-overlay">
+        <text class="hero-cover-badge">ONE DISH · TWO WAYS</text>
+        <text class="hero-cover-title">一锅备菜，先顾全家，再顺手照顾宝宝。</text>
+        <text class="hero-cover-desc">把“今天吃什么”变成一眼就能做决定的首页首屏。</text>
+      </view>
+    </view>
+
     <view class="hero-copy">
       <text class="hero-kicker">TODAY'S PICK</text>
       <text class="hero-title">今天先给你一份更稳妥的晚餐建议</text>

@@ -1,6 +1,7 @@
 const api = require('../../utils/api');
 const request = require('../../utils/request');
 const { openRecipeDetail } = require('../../utils/navigation');
+const { pickImage, pickRecipeImage } = require('../../utils/media');
 
 const SCENARIOS = [
   { key: 'quick', label: '赶时间', query: '快手 简单 少步骤' },
@@ -20,11 +21,6 @@ function buildPreferenceSummary(config) {
     .filter(Boolean)
     .slice(0, 3)
     .join(' · ');
-}
-
-function pickImage(value) {
-  if (Array.isArray(value)) return value.find(Boolean) || '';
-  return typeof value === 'string' ? value.trim() : '';
 }
 
 function buildPreferenceHint(item, preferenceSummaryText) {
@@ -49,7 +45,7 @@ function adaptRecipeData(recipe) {
   return {
     ...recipe,
     title: recipe.name || recipe.title,
-    cover_url: pickImage(recipe.cover_url) || pickImage(recipe.image_url),
+    cover_url: pickImage(recipe.cover_url) || pickRecipeImage(recipe.id, recipe.image_url),
     cook_time: recipe.cook_time || recipe.total_time || recipe.prep_time || 0,
     source_label: isExternal ? '联网菜谱' : '本地菜谱',
     source_hint: isExternal

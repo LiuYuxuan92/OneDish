@@ -2,6 +2,7 @@ const api = require('../../utils/api');
 const { openRecipeDetail } = require('../../utils/navigation');
 const { trackEvent } = require('../../utils/analytics');
 const { buildBannerModel, buildQuotaCards } = require('../../utils/entitlements');
+const { pickImage, pickRecipeImage, resolveMediaUrl } = require('../../utils/media');
 
 const LOCAL_FAVORITES_KEY = 'local_favorites';
 
@@ -15,14 +16,6 @@ function parseMaybeJson(value, fallback) {
     }
   }
   return value;
-}
-
-function pickImage(value) {
-  if (Array.isArray(value)) {
-    return value.find(Boolean) || '';
-  }
-
-  return typeof value === 'string' ? value.trim() : '';
 }
 
 function normalizeIngredients(list) {
@@ -100,7 +93,7 @@ function adaptRecipeData(recipe) {
   const adapted = {
     ...recipe,
     title: recipe.name || recipe.title,
-    cover_url: pickImage(recipe.cover_url) || pickImage(recipe.image_url),
+    cover_url: pickImage(recipe.cover_url) || pickRecipeImage(recipe.id, recipe.image_url),
     cook_time: recipe.cook_time || recipe.total_time || recipe.prep_time || 0,
     description: recipe.description || adultVersion?.description || '',
     ingredients: adultIngredients,
@@ -169,6 +162,7 @@ Page({
       subtitle: '小程序先做轻决策，App 解锁完整家庭管理体验',
     },
     membershipBanner: { title: '', subtitle: '', badgeText: '', actionText: '', footerText: '', quotaCards: [], theme: 'neutral' },
+    homeHeroCover: '',
   },
 
   setActionFeedback(message, tone = 'info') {
@@ -206,6 +200,7 @@ Page({
   },
 
   async onShow() {
+    this.setData({ homeHeroCover: resolveMediaUrl('/media/generated/covers/onedish-family-cover.jpg') });
     await this.ensureUserPreferences();
     await this.loadBillingSnapshot();
     await this.loadTodayRecommendation();

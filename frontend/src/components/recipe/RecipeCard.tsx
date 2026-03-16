@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet, Platform, Image } from 'react-native';
 import { Card } from '../common/Card';
 import { Colors, Typography, Spacing, BorderRadius } from '../../styles/theme';
 import { RecipeSummary, UserPreferences } from '../../types';
 import { buildSearchPreferenceHint } from '../../utils/preferenceCopy';
+import { resolveRecipeImageUrl } from '../../utils/media';
 
 interface RecipeCardProps {
   recipe: RecipeSummary;
@@ -46,24 +47,41 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 
   const topTags = [recipe.stage, ...(recipe.scene_tags || [])].filter(Boolean).slice(0, 2);
   const bottomTags = recipe.key_nutrients?.slice(0, 2) || [];
+  const coverImage = resolveRecipeImageUrl(recipe.id, recipe.image_url);
 
   return (
     <Card variant="elevated" onPress={onPress} style={styles.card}>
       <View style={styles.cover}>
-        <View style={styles.coverTopRow}>
-          <Text style={styles.coverKicker}>FAMILY RECIPE</Text>
-          {showSource && sourceInfo ? (
-            <View style={[styles.sourceBadge, { backgroundColor: sourceInfo.bg }]}>
-              <Text style={[styles.sourceText, { color: sourceInfo.color }]}>{sourceInfo.label}</Text>
+        {coverImage ? (
+          <>
+            <Image source={{ uri: coverImage }} style={styles.coverImage} resizeMode="cover" />
+            <View style={styles.coverTopRowOverlay}>
+              <Text style={styles.coverKickerOnImage}>FAMILY RECIPE</Text>
+              {showSource && sourceInfo ? (
+                <View style={[styles.sourceBadge, styles.sourceBadgeOnImage, { backgroundColor: sourceInfo.bg }]}>
+                  <Text style={[styles.sourceText, { color: sourceInfo.color }]}>{sourceInfo.label}</Text>
+                </View>
+              ) : null}
             </View>
-          ) : null}
-        </View>
+          </>
+        ) : (
+          <View style={styles.coverFallbackContent}>
+            <View style={styles.coverTopRow}>
+              <Text style={styles.coverKicker}>FAMILY RECIPE</Text>
+              {showSource && sourceInfo ? (
+                <View style={[styles.sourceBadge, { backgroundColor: sourceInfo.bg }]}>
+                  <Text style={[styles.sourceText, { color: sourceInfo.color }]}>{sourceInfo.label}</Text>
+                </View>
+              ) : null}
+            </View>
 
-        <Text style={styles.coverEmoji}>🥣</Text>
-        <Text style={styles.coverTitle} numberOfLines={2}>
-          {recipe.name || '未命名菜谱'}
-        </Text>
-        <Text style={styles.coverMeta}>{prepTime > 0 ? `${prepTime} 分钟上桌` : '适合慢慢挑选的一道菜'}</Text>
+            <Text style={styles.coverEmoji}>🥣</Text>
+            <Text style={styles.coverTitle} numberOfLines={2}>
+              {recipe.name || '未命名菜谱'}
+            </Text>
+            <Text style={styles.coverMeta}>{prepTime > 0 ? `${prepTime} 分钟上桌` : '适合慢慢挑选的一道菜'}</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.content}>
@@ -124,12 +142,33 @@ const styles = StyleSheet.create({
     }),
   },
   cover: {
-    padding: Spacing.md,
     minHeight: 156,
     backgroundColor: Colors.background.tertiary,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.light,
     justifyContent: 'space-between',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  coverImage: {
+    width: '100%',
+    height: 156,
+  },
+  coverFallbackContent: {
+    minHeight: 156,
+    padding: Spacing.md,
+    justifyContent: 'space-between',
+  },
+  coverTopRowOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    padding: Spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
   },
   coverTopRow: {
     flexDirection: 'row',
@@ -143,6 +182,15 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.semibold,
     letterSpacing: 0.8,
   },
+  coverKickerOnImage: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.inverse,
+    fontWeight: Typography.fontWeight.semibold,
+    letterSpacing: 0.8,
+    textShadowColor: 'rgba(0,0,0,0.24)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
   sourceBadge: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: 4,
@@ -151,6 +199,10 @@ const styles = StyleSheet.create({
   sourceText: {
     fontSize: Typography.fontSize.xs,
     fontWeight: Typography.fontWeight.semibold,
+  },
+  sourceBadgeOnImage: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.45)',
   },
   coverEmoji: {
     fontSize: 34,
