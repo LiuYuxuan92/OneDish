@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { UserService } from '../services/user.service';
+import { cosService } from '../services/cos.service';
 import { logger } from '../utils/logger';
 
 export class UserController {
@@ -31,7 +32,7 @@ export class UserController {
           username: user.username,
           email: user.email,
           phone: user.phone,
-          avatar_url: user.avatar_url,
+          avatar_url: cosService.resolveStoredUrl(user.avatar_url),
           family_size: user.family_size,
           baby_age: user.baby_age,
           preferences: user.preferences,
@@ -63,7 +64,10 @@ export class UserController {
       res.json({
         code: 200,
         message: '更新成功',
-        data: user,
+        data: {
+          ...user,
+          avatar_url: cosService.resolveStoredUrl(user?.avatar_url),
+        },
       });
     } catch (error) {
       logger.error('Failed to update user info', { error });

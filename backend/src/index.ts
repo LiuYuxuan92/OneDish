@@ -4,7 +4,8 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import path from 'path';
 
-dotenv.config({ path: __dirname + '/../.env' });
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+dotenv.config({ path: path.resolve(__dirname, '../.env'), override: false });
 
 import { logger } from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';

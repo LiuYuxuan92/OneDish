@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import { ProfileStackParamList } from '../../types';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../styles/theme';
 import { useUserInfo, useUpdateUserInfo } from '../../hooks/useUsers';
 import { useUploadImage } from '../../hooks/useUploads';
+import { API_BASE_URL } from '../../api/client';
 import { resolveMediaUrl } from '../../utils/media';
 
 interface EditProfileScreenProps {
@@ -29,15 +30,18 @@ interface SelectedAvatar {
   uri: string;
   name: string;
   type: string;
+  file?: File;
 }
 
 export function EditProfileScreen({ navigation }: EditProfileScreenProps) {
   const { data: user, isLoading } = useUserInfo();
   const updateMutation = useUpdateUserInfo();
   const uploadMutation = useUploadImage();
+  const webFileInputRef = useRef<any>(null);
   const [familySize, setFamilySize] = useState('');
   const [babyAge, setBabyAge] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState<SelectedAvatar | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -50,7 +54,6 @@ export function EditProfileScreen({ navigation }: EditProfileScreenProps) {
   const avatarText = userName.trim().slice(0, 1) || '家';
   const currentAvatarUrl = resolveMediaUrl(user?.avatar_url);
   const previewAvatarUrl = selectedAvatar?.uri || currentAvatarUrl;
-  const isUploadingAvatar = uploadMutation.isPending;
   const isSavingProfile = updateMutation.isPending;
   const isSubmitting = isUploadingAvatar || isSavingProfile;
   const saveButtonText = useMemo(() => {
@@ -68,7 +71,33 @@ export function EditProfileScreen({ navigation }: EditProfileScreenProps) {
     return `avatar.${extFromMime}`;
   };
 
+  const handleWebFileChange = (event: any) => {
+    const input = event.target as any;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    const mimeType = file.type || 'image/jpeg';
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
+      Alert.alert('提示', '目前仅支持 JPG、PNG、WebP 图片');
+      input.value = '';
+      return;
+    }
+
+    setSelectedAvatar({
+      uri: URL.createObjectURL(file),
+      name: file.name || buildUploadFileName(file.name, mimeType),
+      type: mimeType,
+      file,
+    });
+    input.value = '';
+  };
+
   const pickAvatar = async () => {
+    if (Platform.OS === 'web') {
+      webFileInputRef.current?.click();
+      return;
+    }
+
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -99,6 +128,47 @@ export function EditProfileScreen({ navigation }: EditProfileScreenProps) {
     }
   };
 
+  const uploadAvatarOnWeb = async (avatar: SelectedAvatar) => {
+    const token = (globalThis as typeof globalThis & {
+      localStorage?: { getItem(key: string): string | null };
+    }).localStorage?.getItem('access_token');
+
+    if (!avatar.file || !token) {
+      throw new Error('当前登录状态或文件无效，请重新选择头像后再试');
+    }
+
+    const formData = new FormData();
+    formData.append('file', avatar.file);
+
+    const response = await fetch(`${API_BASE_URL}/uploads/image`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const payload = await response.json();
+    if (!response.ok) {
+      throw {
+        response: {
+          status: response.status,
+          data: payload,
+        },
+        message: payload?.message || '上传失败',
+      };
+    }
+
+    return payload?.data;
+  };
+
+  const uploadAvatar = async (avatar: SelectedAvatar) => {
+    if (Platform.OS === 'web') {
+      return uploadAvatarOnWeb(avatar);
+    }
+    return uploadMutation.mutateAsync(avatar);
+  };
+
   const handleSave = async () => {
     const familySizeNum = familySize ? parseInt(familySize, 10) : undefined;
     const babyAgeNum = babyAge ? parseInt(babyAge, 10) : undefined;
@@ -116,10 +186,12 @@ export function EditProfileScreen({ navigation }: EditProfileScreenProps) {
       let avatarUrl = user?.avatar_url;
 
       if (selectedAvatar) {
-        const uploadResult = await uploadMutation.mutateAsync(selectedAvatar);
+        setIsUploadingAvatar(true);
+        const uploadResult = await uploadAvatar(selectedAvatar);
         avatarUrl = uploadResult.url;
       }
 
+      setIsUploadingAvatar(false);
       await updateMutation.mutateAsync({
         family_size: familySizeNum,
         baby_age: babyAgeNum,
@@ -127,8 +199,9 @@ export function EditProfileScreen({ navigation }: EditProfileScreenProps) {
       });
       navigation.goBack();
     } catch (error: any) {
+      setIsUploadingAvatar(false);
       console.error('保存失败:', error);
-      const message = error?.message || '保存失败，请稍后重试';
+      const message = error?.response?.data?.message || error?.message || '保存失败，请稍后重试';
       Alert.alert('提示', message);
     }
   };
@@ -147,6 +220,16 @@ export function EditProfileScreen({ navigation }: EditProfileScreenProps) {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          {Platform.OS === 'web' ? (
+            <input
+              ref={webFileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              style={{ display: 'none' }}
+              onChange={handleWebFileChange}
+            />
+          ) : null}
+
           <View style={styles.heroCard}>
             <Text style={styles.eyebrow}>编辑资料</Text>
             <Text style={styles.heroTitle}>把头像、家庭规模和宝宝阶段补齐，个人空间会更完整</Text>

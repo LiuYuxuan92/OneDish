@@ -8,7 +8,7 @@ const getWebOrigin = () => {
   if (typeof window !== 'undefined' && window.location?.origin) {
     return window.location.origin;
   }
-  return 'http://43.135.174.206:3000';
+  return 'http://localhost:3000';
 };
 
 const getBaseUrl = () => {
@@ -26,7 +26,7 @@ const getBaseUrl = () => {
     if (/^https:\/\//.test(origin)) {
       return `${origin}/api/v1`;
     }
-    return 'http://43.135.174.206:3000/api/v1';
+    return 'http://localhost:3000/api/v1';
   }
 
   if (Platform.OS === 'android') {
