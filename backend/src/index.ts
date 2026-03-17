@@ -37,6 +37,7 @@ import feedingFeedbackRoutes from './routes/feedingFeedback.routes';
 import weeklyReviewRoutes from './routes/weeklyReview.routes';
 import accountMergeRoutes from './routes/account-merge.routes';
 import billingRoutes from './routes/billing.routes';
+import uploadRoutes from './routes/upload.routes';
 import { RecipeTransformService } from './services/recipe-transform.service';
 import { MealPlanService } from './services/mealPlan.service';
 import { RecipeCalibrationService } from './services/recipe-calibration.service';
@@ -105,6 +106,7 @@ app.use('/api/v1/feeding-feedbacks', feedingFeedbackRoutes);
 app.use('/api/v1/feeding-reviews', weeklyReviewRoutes);
 app.use('/api/v1/account', accountMergeRoutes);
 app.use('/api/v1/billing', billingRoutes);
+app.use('/api/v1/uploads', uploadRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({
