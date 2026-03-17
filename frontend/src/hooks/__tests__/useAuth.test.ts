@@ -61,8 +61,10 @@ describe('useAuth web auth state sync', () => {
     }
 
     let renderer: import('react-test-renderer').ReactTestRenderer;
+    const createRenderer = TestRenderer.create as unknown as (element: unknown) => import('react-test-renderer').ReactTestRenderer;
+
     TestRenderer.act(() => {
-      renderer = TestRenderer.create(React.createElement(Probe));
+      renderer = createRenderer(React.createElement(Probe));
     });
 
     return {

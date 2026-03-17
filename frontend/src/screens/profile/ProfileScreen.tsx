@@ -9,6 +9,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -27,6 +28,7 @@ import {
 } from '../../components/common/Icons';
 import { useUserInfo } from '../../hooks/useUsers';
 import { BorderRadius, Colors, Shadows, Spacing, Typography } from '../../styles/theme';
+import { resolveMediaUrl } from '../../utils/media';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Profile'>;
 
@@ -87,6 +89,7 @@ export function ProfileScreen({ navigation }: Props) {
 
   const userName = user?.username || '新手爸妈的厨房空间';
   const avatarText = userName.trim().slice(0, 1) || '家';
+  const avatarUrl = resolveMediaUrl(user?.avatar_url);
   const excludeCount = Array.isArray(user?.preferences?.exclude_ingredients)
     ? user.preferences.exclude_ingredients.length
     : 0;
@@ -214,9 +217,13 @@ export function ProfileScreen({ navigation }: Props) {
           <View style={styles.heroCard}>
             <View style={styles.heroTopRow}>
               <View style={styles.avatarBlock}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{avatarText}</Text>
-                </View>
+                {avatarUrl ? (
+                  <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+                ) : (
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{avatarText}</Text>
+                  </View>
+                )}
                 <View style={styles.heroCopy}>
                   <Text style={styles.heroEyebrow}>我的空间</Text>
                   <Text style={styles.heroTitle}>{userName}</Text>
@@ -362,6 +369,14 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary.light,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  avatarImage: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: Colors.background.tertiary,
+    borderWidth: 2,
+    borderColor: Colors.primary.light,
   },
   avatarText: {
     fontSize: 28,
