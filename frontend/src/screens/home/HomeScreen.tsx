@@ -18,7 +18,14 @@ import { SkeletonCard } from '../../components/common/Skeleton';
 import { BorderRadius, Colors, Shadows, Spacing, Typography } from '../../styles/theme';
 import { ActionGrid } from './ActionGrid';
 import { useHomeDashboardViewModel } from './useHomeDashboardViewModel';
-import { resolveMediaUrl } from '../../utils/media';
+import {
+  RECIPE_PLACEHOLDER_BADGE,
+  RECIPE_PLACEHOLDER_EMOJI,
+  RECIPE_PLACEHOLDER_SUBTITLE,
+  resolveMediaUrl,
+} from '../../utils/media';
+import { DualBadge } from '../../components/ui-migration/DualBadge';
+import { StatusTag } from '../../components/ui-migration/StatusTag';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
@@ -218,46 +225,77 @@ export function HomeScreen({ navigation }: Props) {
                 onPress={() => nav.recipeDetail(featuredRecommendation.recipe.id)}
                 activeOpacity={0.9}
               >
-                <View style={styles.featuredHeader}>
-                  <View style={styles.featuredBadge}>
-                    <Text style={styles.featuredBadgeText}>今日主推荐</Text>
+                {featuredRecommendation.display.recipe.image ? (
+                  <Image source={{ uri: featuredRecommendation.display.recipe.image }} style={styles.featuredImage} resizeMode="cover" />
+                ) : (
+                  <View style={styles.featuredImageFallback}>
+                    <Text style={styles.featuredImageFallbackBadge}>{RECIPE_PLACEHOLDER_BADGE}</Text>
+                    <Text style={styles.featuredImageFallbackEmoji}>{RECIPE_PLACEHOLDER_EMOJI}</Text>
+                    <Text style={styles.featuredImageFallbackText}>{RECIPE_PLACEHOLDER_SUBTITLE}</Text>
                   </View>
-                  {currentStage ? (
-                    <View style={styles.featuredStageBadge}>
-                      <Text style={styles.featuredStageBadgeText}>{currentStage.name}</Text>
+                )}
+
+                <View style={styles.featuredBody}>
+                  <View style={styles.featuredHeader}>
+                    <View style={styles.featuredBadge}>
+                      <Text style={styles.featuredBadgeText}>今日主推荐</Text>
                     </View>
+                    {currentStage ? (
+                      <View style={styles.featuredStageBadge}>
+                        <Text style={styles.featuredStageBadgeText}>{currentStage.name}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+
+                  <Text style={styles.featuredTitle}>{featuredRecommendation.display.recipe.title}</Text>
+                  <Text style={styles.featuredReason}>{featuredRecommendation.reason}</Text>
+
+                  <View style={styles.featuredMetaRow}>
+                    <Text style={styles.featuredMetaText}>{featuredRecommendation.display.recipe.cookTimeText}</Text>
+                    <Text style={styles.featuredMetaDot}>•</Text>
+                    <Text style={styles.featuredMetaText}>{featuredRecommendation.display.recipe.difficultyLabel}</Text>
+                    <Text style={styles.featuredMetaDot}>•</Text>
+                    <Text style={styles.featuredMetaText}>{featuredRecommendation.display.recipe.servingsLabel}</Text>
+                  </View>
+
+                  <View style={styles.featuredBadgeRow}>
+                    <DualBadge type={featuredRecommendation.display.recipe.dualType} />
+                    {featuredRecommendation.display.recipe.statusTags.slice(0, 2).map((tag) => (
+                      <StatusTag key={`${tag.type}-${tag.detail || ''}`} type={tag.type} detail={tag.detail} />
+                    ))}
+                  </View>
+
+                  {featuredRecommendation.display.recipe.stageLabel ? (
+                    <Text style={styles.featuredStageText}>{featuredRecommendation.display.recipe.stageLabel}</Text>
                   ) : null}
-                </View>
 
-                <Text style={styles.featuredTitle}>{featuredRecommendation.title}</Text>
-                <Text style={styles.featuredReason}>{featuredRecommendation.reason}</Text>
+                  <View style={styles.featuredTagRow}>
+                    {featuredRecommendation.tags.map((tag) => (
+                      <View key={tag} style={styles.featuredTag}>
+                        <Text style={styles.featuredTagText}>{tag}</Text>
+                      </View>
+                    ))}
+                  </View>
 
-                <View style={styles.featuredTagRow}>
-                  {featuredRecommendation.tags.map((tag) => (
-                    <View key={tag} style={styles.featuredTag}>
-                      <Text style={styles.featuredTagText}>{tag}</Text>
+                  <View style={styles.versionHints}>
+                    <View style={styles.versionHintCard}>
+                      <Text style={styles.versionHintLabel}>推荐理由</Text>
+                      <Text style={styles.versionHintText}>{featuredRecommendation.display.recipe.whyItFits || '先做共享底菜，再按家人需要调整。'}</Text>
                     </View>
-                  ))}
-                </View>
-
-                <View style={styles.versionHints}>
-                  <View style={styles.versionHintCard}>
-                    <Text style={styles.versionHintLabel}>成人版</Text>
-                    <Text style={styles.versionHintText}>先做共享底菜，再按大人口味补层次。</Text>
+                    <View style={[styles.versionHintCard, styles.versionHintCardBaby]}>
+                      <Text style={styles.versionHintLabel}>双版本提示</Text>
+                      <Text style={styles.versionHintText}>{featuredRecommendation.display.recipe.dualType === 'dual' ? '同一份底菜可继续拆分出宝宝版。' : '先确认是否需要按阶段调整口感和颗粒度。'}</Text>
+                    </View>
                   </View>
-                  <View style={[styles.versionHintCard, styles.versionHintCardBaby]}>
-                    <Text style={styles.versionHintLabel}>宝宝版</Text>
-                    <Text style={styles.versionHintText}>提前分出一份，按阶段调整口感和颗粒度。</Text>
-                  </View>
-                </View>
 
-                <View style={styles.featuredActions}>
-                  <TouchableOpacity style={styles.secondaryButton} onPress={() => nav.recipeDetail(featuredRecommendation.recipe.id)}>
-                    <Text style={styles.secondaryButtonText}>看详情</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.primaryButton} onPress={nav.plan}>
-                    <Text style={styles.primaryButtonText}>加入计划</Text>
-                  </TouchableOpacity>
+                  <View style={styles.featuredActions}>
+                    <TouchableOpacity style={styles.secondaryButton} onPress={() => nav.recipeDetail(featuredRecommendation.recipe.id)}>
+                      <Text style={styles.secondaryButtonText}>看详情</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.primaryButton} onPress={nav.plan}>
+                      <Text style={styles.primaryButtonText}>加入计划</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </TouchableOpacity>
             ) : (
@@ -669,13 +707,43 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   featuredCard: {
-    padding: Spacing.lg,
     borderRadius: BorderRadius['3xl'],
     backgroundColor: Colors.background.card,
     borderWidth: 1,
     borderColor: Colors.border.light,
-    gap: Spacing.md,
+    overflow: 'hidden',
     ...Shadows.md,
+  },
+  featuredImage: {
+    width: '100%',
+    height: Platform.OS === 'web' ? 260 : 220,
+  },
+  featuredImageFallback: {
+    width: '100%',
+    height: Platform.OS === 'web' ? 260 : 220,
+    backgroundColor: '#F4EEE5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    padding: Spacing.lg,
+  },
+  featuredImageFallbackBadge: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
+    fontWeight: Typography.fontWeight.semibold,
+    letterSpacing: 0.8,
+  },
+  featuredImageFallbackEmoji: {
+    fontSize: 36,
+  },
+  featuredImageFallbackText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+  },
+  featuredBody: {
+    padding: Spacing.lg,
+    gap: Spacing.md,
   },
   featuredHeader: {
     flexDirection: 'row',
@@ -715,6 +783,31 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     color: Colors.text.secondary,
     lineHeight: 21,
+  },
+  featuredMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  featuredMetaText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+  },
+  featuredMetaDot: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
+  },
+  featuredBadgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    alignItems: 'center',
+  },
+  featuredStageText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.medium,
   },
   featuredTagRow: {
     flexDirection: 'row',

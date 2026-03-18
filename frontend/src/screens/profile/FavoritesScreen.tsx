@@ -1,4 +1,7 @@
 import React, { useMemo, useState } from 'react';
+import { mapRecipeToDisplayModel } from '../../mappers/recipeDisplayMapper';
+import type { RecipeDisplayModel } from '../../viewmodels/uiMigration';
+import type { RecipeSummary } from '../../types';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -23,6 +26,18 @@ export function FavoritesScreen({ navigation }: Props) {
   const { data, isLoading, error, refetch } = useFavorites({ page: 1, limit: 50 });
   const removeFavoriteMutation = useRemoveFavorite();
   const favorites = data?.items || [];
+  const favoriteCards = useMemo(() => favorites.map((item) => ({
+    ...item,
+    displayRecipe: mapRecipeToDisplayModel({
+      id: item.recipe.id,
+      name: item.recipe.name,
+      prep_time: item.recipe.prep_time,
+      image_url: item.recipe.image_url,
+      source: 'local',
+    } as RecipeSummary, {
+      onShoppingList: false,
+    }),
+  })), [favorites]);
 
   const averagePrepTime = favorites.length
     ? Math.round(favorites.reduce((sum, item) => sum + Number(item.recipe?.prep_time || 0), 0) / favorites.length)
@@ -180,17 +195,32 @@ export function FavoritesScreen({ navigation }: Props) {
             </View>
 
             <View style={styles.recipeList}>
-              {favorites.map((item) => (
+              {favoriteCards.map((item) => (
                 <View key={item.id} style={styles.recipeCardShell}>
                   <TouchableOpacity activeOpacity={0.9} onPress={() => handleRecipePress(item.recipe.id)}>
                     <RecipeCard
                       recipe={{
-                        id: item.recipe.id,
-                        name: item.recipe.name,
-                        prep_time: item.recipe.prep_time,
+                        id: item.displayRecipe.id,
+                        name: item.displayRecipe.title,
+                        prep_time: Number(item.recipe.prep_time || 0),
                         image_url: item.recipe.image_url,
-                      }}
+                        stage: item.displayRecipe.stageLabel,
+                        source: item.displayRecipe.source,
+                        recommendation_explain: item.displayRecipe.recommendationReasons,
+                        difficulty: item.displayRecipe.difficultyLabel,
+                        servings: item.displayRecipe.servingsLabel,
+                      } as RecipeSummary}
                     />
+                    <View style={styles.inlineMetaRow}>
+                      <Text style={styles.inlineMetaText}>{item.displayRecipe.cookTimeText}</Text>
+                      <Text style={styles.inlineMetaDot}>•</Text>
+                      <Text style={styles.inlineMetaText}>{item.displayRecipe.difficultyLabel}</Text>
+                      <Text style={styles.inlineMetaDot}>•</Text>
+                      <Text style={styles.inlineMetaText}>{item.displayRecipe.servingsLabel}</Text>
+                    </View>
+                    {item.displayRecipe.whyItFits ? (
+                      <Text style={styles.inlineReason} numberOfLines={2}>{item.displayRecipe.whyItFits}</Text>
+                    ) : null}
                   </TouchableOpacity>
 
                   <View style={styles.recipeFooter}>
@@ -452,6 +482,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border.light,
     ...Shadows.sm,
+  },
+  inlineMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    paddingTop: Spacing.sm,
+  },
+  inlineMetaText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+  },
+  inlineMetaDot: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
+  },
+  inlineReason: {
+    paddingHorizontal: Spacing.sm,
+    paddingTop: Spacing.xs,
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    lineHeight: 18,
   },
   recipeFooter: {
     flexDirection: 'row',

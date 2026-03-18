@@ -8,6 +8,9 @@ export interface SearchResult {
   type?: string;
   prep_time?: number;
   difficulty?: string;
+  servings?: string;
+  stage?: string;
+  texture_level?: string;
   image_url?: string[];
   description?: string;
   ingredients?: string[];

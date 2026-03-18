@@ -1,5 +1,11 @@
 import { API_ORIGIN } from '../api/client';
 
+export const RECIPE_PLACEHOLDER_GRADIENT = ['#F6F1E8', '#E6F0E8'] as const;
+export const RECIPE_PLACEHOLDER_BADGE = 'FAMILY RECIPE';
+export const RECIPE_PLACEHOLDER_EMOJI = '🥣';
+export const RECIPE_PLACEHOLDER_TITLE = '待补充菜谱图';
+export const RECIPE_PLACEHOLDER_SUBTITLE = '先看做法与关键步骤';
+
 function tryParseMediaList(value?: string | null): string[] | null {
   const raw = String(value || '').trim();
   if (!raw || (!raw.startsWith('[') && !raw.startsWith('"'))) {

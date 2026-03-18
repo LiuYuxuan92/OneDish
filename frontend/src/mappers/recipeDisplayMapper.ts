@@ -157,6 +157,7 @@ export function mapRecipeToDisplayModel(recipe: RecipeLike, context: RecipeAdapt
     difficultyLabel: formatDifficultyLabel('difficulty' in recipe ? recipe.difficulty : undefined),
     servingsLabel: 'servings' in recipe && recipe.servings ? String(recipe.servings) : '份量待补',
     dualType,
+    stageLabel: 'stage' in recipe && recipe.stage ? String(recipe.stage) : undefined,
     whyItFits: recommendationReasons[0],
     recommendationReasons,
     statusTags: deriveStatusTags(context, dualType, feedback),

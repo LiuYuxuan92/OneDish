@@ -11,6 +11,9 @@ import {
   shouldUseWebMockFallback,
 } from '../../mock/webFallback';
 import { useHomeRecommendation } from './useHomeRecommendation';
+import { mapRecommendationToCardViewModel } from '../../mappers/recipeDisplayMapper';
+import { resolveRecipeImageUrl } from '../../utils/media';
+import type { RecommendationCardViewModel } from '../../viewmodels/uiMigration';
 
 const mealTypeLabelMap: Record<string, string> = {
   breakfast: '早餐',
@@ -114,14 +117,24 @@ export function useHomeDashboardViewModel() {
     const unloggedFeedingCount = Math.max(0, cookedCount - recentFeedbackCount);
     const retrySuggestedCount = feedbackItems.filter((item: any) => item?.accepted_level === 'reject').length;
 
-    const recommendationCards = [recommendation.recipe].filter(Boolean).map((recipe: any) => ({
-      id: recipe.id,
-      title: recipe.name,
-      recipe,
-      reason: recommendation.recommendationReasons?.[0]?.detail || recommendation.recommendationReasons?.[0]?.title || '适合今天安排的一菜两吃候选',
-      tags: (recommendation.recommendationReasons || []).map((item) => item.title).slice(0, 3),
-      isPrimary: true,
-    }));
+    const recommendationCards = [recommendation.recipe].filter(Boolean).map((recipe: any) => {
+      const display = mapRecommendationToCardViewModel(recipe, {
+        recommendationReason: recommendation.recommendationReasons?.[0]?.detail || recommendation.recommendationReasons?.[0]?.title || '适合今天安排的一菜两吃候选',
+        recommendationTags: (recommendation.recommendationReasons || []).map((item) => item.title).slice(0, 3),
+        babyAgeMonths: recommendation.currentStage?.age_min,
+      });
+
+      return {
+        id: recipe.id,
+        title: display.recipe.title,
+        recipe,
+        display,
+        reason: display.recipe.whyItFits || '适合今天安排的一菜两吃候选',
+        tags: display.tags,
+        image: display.recipe.image || resolveRecipeImageUrl(recipe.id, recipe.image_url),
+        isPrimary: true,
+      };
+    });
 
     const summaryPrimary = nextMeal
       ? `下一顿先看${nextMeal.mealLabel}`

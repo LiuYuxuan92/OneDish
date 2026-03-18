@@ -263,8 +263,13 @@ export function SearchScreen({ navigation }: Props) {
             <View style={styles.detailMetaRow}>
               {selectedRecipe.prep_time ? <View style={styles.detailMetaItem}><ClockIcon size={15} color={Colors.text.secondary} /><Text style={styles.detailMetaText}>{selectedRecipe.prep_time} 分钟</Text></View> : null}
               {selectedRecipe.difficulty ? <View style={styles.detailMetaItem}><ChefHatIcon size={15} color={Colors.text.secondary} /><Text style={styles.detailMetaText}>{selectedRecipe.difficulty}</Text></View> : null}
+              {selectedRecipe.servings ? <View style={styles.detailMetaItem}><Text style={styles.detailMetaText}>{selectedRecipe.servings}</Text></View> : null}
+              {selectedRecipe.stage ? <View style={styles.detailMetaItem}><Text style={styles.detailMetaHighlight}>{selectedRecipe.stage}</Text></View> : null}
             </View>
             {selectedRecipeImage ? <Image source={{ uri: selectedRecipeImage }} style={styles.detailImage} resizeMode="cover" /> : null}
+            {!!selectedRecipe.recommendation_explain?.length && <View style={styles.detailReasonCard}><Text style={styles.detailCardTitle}>推荐理由</Text>{selectedRecipe.recommendation_explain.slice(0, 3).map((item, index) => <Text key={`${item}-${index}`} style={styles.detailListText}>• {item}</Text>)}</View>}
+            {!!selectedRecipe.tags?.length && <View style={styles.detailTagRow}>{selectedRecipe.tags.slice(0, 4).map((tag) => <View key={tag} style={styles.detailTag}><Text style={styles.detailTagText}>{tag}</Text></View>)}</View>}
+            {!!selectedRecipe.cooking_tips?.length && <View style={styles.detailInlineTips}><Text style={styles.detailInlineTipsText}>{selectedRecipe.cooking_tips.slice(0, 2).join(' · ')}</Text></View>}
           </View>
           <View style={styles.detailTabs}>
             <TouchableOpacity style={[styles.filterTab, activeDetailTab === 'adult' && styles.filterTabActive]} onPress={() => setActiveDetailTab('adult')}>
@@ -298,6 +303,9 @@ export function SearchScreen({ navigation }: Props) {
               {baby && !isTransforming ? (
                 <>
                   <View style={styles.infoCard}><Text style={styles.infoTitle}>当前适配</Text><Text style={styles.infoText}>{baby.age_range ? `适合 ${baby.age_range}` : '按当前月龄适配'}{baby.texture ? ` · ${baby.texture}` : ''}</Text></View>
+                  {baby.preparation_notes ? <View style={styles.detailCard}><Text style={styles.detailCardTitle}>宝宝版处理要点</Text><Text style={styles.detailText}>{baby.preparation_notes}</Text></View> : null}
+                  {baby.nutrition_tips ? <View style={styles.detailCard}><Text style={styles.detailCardTitle}>营养提示</Text><Text style={styles.detailText}>{baby.nutrition_tips}</Text></View> : null}
+                  {baby.allergy_alert ? <View style={styles.detailCard}><Text style={styles.detailCardTitle}>过敏提醒</Text><Text style={styles.detailText}>{baby.allergy_alert}</Text></View> : null}
                   <View style={styles.detailCard}><Text style={styles.detailCardTitle}>宝宝版食材</Text>{baby.ingredients?.length ? baby.ingredients.map((item: any, index: number) => <Text key={`${item.name}-${index}`} style={styles.detailListText}>· {item.name} {item.amount}</Text>) : <Text style={styles.detailText}>暂时没有宝宝版食材信息。</Text>}</View>
                   <View style={styles.detailCard}><Text style={styles.detailCardTitle}>宝宝版步骤</Text>{baby.steps?.length ? baby.steps.map((item: any, index: number) => <Text key={`${item.action}-${index}`} style={styles.detailListText}>{item.step || index + 1}. {item.action}</Text>) : <Text style={styles.detailText}>暂时没有宝宝版步骤信息。</Text>}</View>
                 </>
@@ -428,7 +436,14 @@ const styles = StyleSheet.create({
   detailMetaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginTop: Spacing.sm },
   detailMetaItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   detailMetaText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary },
+  detailMetaHighlight: { fontSize: Typography.fontSize.sm, color: Colors.primary.main, fontWeight: Typography.fontWeight.semibold },
   detailImage: { width: '100%', height: 220, borderRadius: BorderRadius.xl, marginTop: Spacing.md },
+  detailReasonCard: { marginTop: Spacing.md, backgroundColor: Colors.background.secondary, borderRadius: BorderRadius.xl, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border.light },
+  detailTagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.md },
+  detailTag: { backgroundColor: Colors.neutral.gray50, borderRadius: BorderRadius.full, paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs, borderWidth: 1, borderColor: Colors.border.light },
+  detailTagText: { fontSize: Typography.fontSize.xs, color: Colors.text.secondary },
+  detailInlineTips: { marginTop: Spacing.md, padding: Spacing.sm, borderRadius: BorderRadius.lg, backgroundColor: Colors.secondary[50], borderWidth: 1, borderColor: Colors.secondary[100] },
+  detailInlineTipsText: { fontSize: Typography.fontSize.sm, color: Colors.secondary.dark, lineHeight: 20 },
   detailTabs: { flexDirection: 'row', gap: Spacing.sm },
   detailCardTitle: { fontSize: Typography.fontSize.base, fontWeight: Typography.fontWeight.bold, color: Colors.text.primary, marginBottom: Spacing.md },
   detailText: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, lineHeight: 20 },

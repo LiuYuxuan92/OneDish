@@ -408,17 +408,92 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
       ? "已加入 / 去查看"
       : "加入购物清单";
   const adultSummaryChips = [
-    pageVm?.hero?.timeLabel || `${recipe.prep_time} 分钟`,
-    pageVm?.hero?.difficultyLabel,
-    recipeVm?.recipe?.nutrition_focus,
+    ...(pageVm?.hero?.meta || []).map((item) => item.label),
+    recipeVm?.recipe?.stageLabel,
   ].filter(Boolean);
+  const adultVersionCard = pageVm?.hero?.versionCards.find((card) => card.key === 'adult');
+  const babyVersionCard = pageVm?.hero?.versionCards.find((card) => card.key === 'baby');
+  const adultHighlights = [
+    adultVersionCard?.subtitle,
+    adultVersionCard?.description,
+    currentVersionSection?.preparationNotes,
+  ].filter(Boolean).slice(0, 3);
+  const babyHighlights = [
+    babyVersionCard?.subtitle,
+    babyVersionCard?.description,
+    currentVersionSection?.nutritionTips,
+    currentVersionSection?.allergyAlert,
+  ].filter(Boolean).slice(0, 3);
+
+  const timelineSummaryText = [
+    pageVm?.timelinePanel.totalTimeText,
+    pageVm?.timelinePanel.savedTimeText,
+    pageVm?.timelinePanel.syncTips,
+  ].filter(Boolean).join(' · ');
+
+  const feedbackItems = pageVm?.feedback.items || [];
+  const detailImageUrls = pageVm?.hero.imageUrls || [];
+  const detailPrimaryImage = detailImageUrls[0];
+  const currentVersionDescription = currentVersionSection?.preparationNotes
+    || currentVersionSection?.nutritionTips
+    || currentVersionSection?.steps?.[0]?.action
+    || recipe.description;
+  const sourceLabel = recipe.source === 'tianxing' ? '联网菜谱' : recipe.source === 'ai' ? 'AI 推荐' : '本地菜谱';
+  const sourceMetaLabels = (pageVm?.hero.meta || []).map((item) => item.label);
+  const sourceWhyItFits = pageVm?.hero.whyItFits || [];
+  const sourceVersionCards = pageVm?.hero.versionCards || [];
+  const hasIngredientComparison = !!pageVm?.isPaired && !!pageVm?.ingredientComparison.length;
+  const shouldShowFeedback = feedbackItems.length > 0;
+  const shouldShowTimelineSummary = !!pageVm?.timelinePanel.summary;
+  const shouldShowTips = parsedTips.length > 0;
+  const shouldShowDetailImage = !!detailPrimaryImage;
+  const shouldShowWhyItFits = sourceWhyItFits.length > 0;
+  const shouldShowVersionCards = sourceVersionCards.length > 0;
+  const shouldShowSourceMeta = sourceMetaLabels.length > 0;
+  const shouldShowCurrentVersion = !!pageVm?.currentVersion;
+  const shouldShowTimelinePanel = !!pageVm?.timelinePanel;
+  const shouldShowFeedbackSection = !!pageVm?.feedback;
+  const shouldShowFeedbackLatest = !!pageVm?.feedback.latestLabel;
+  const shouldShowTimelineSharedSteps = !!pageVm?.timelinePanel.sharedSteps?.length;
+  const shouldShowTimelineAction = !!pageVm?.timelinePanel.hasTimeline;
+  const shouldShowVersionShowcaseHint = !!timelineSummaryText;
+  const shouldShowVersionShowcaseDescription = !!currentVersionDescription;
+  const shouldShowSourceImageFallback = !detailPrimaryImage;
+  const sourceFallbackTitle = recipe.name;
+  const sourceFallbackSubtitle = sourceMetaLabels[0] || '先看做法与关键步骤';
+  const sourceFallbackBadge = sourceLabel;
+  const sourceFallbackEmoji = '🥣';
+  const sourceTimelineSummary = pageVm?.timelinePanel.summary || '可切换到同步烹饪查看并行节奏。';
+  const sourceFeedbackEmptyText = '做完后补一条反馈，下次更容易判断要不要继续轮换。';
+  const sourceTipsTitle = activeTab === 'baby' ? '宝宝版提示' : '烹饪提示';
+  const sourceVersionSectionTitle = activeTab === 'baby' ? '宝宝版详情' : '当前版本详情';
+  const sourceComparisonTitle = '大人版 / 宝宝版食材差异';
+  const sourceFeedbackTitle = '最近反馈';
+  const sourceTimelineTitle = '同步烹饪';
+  const sourceVersionCardsTitle = '版本摘要';
+  const sourceWhyItFitsTitle = '这道菜为什么值得做';
+  const sourceMetaTitle = '关键信息';
+  const sourceTipsEmptyText = '当前还没有补充额外提示。';
+  const sourceVersionEmptyText = '当前版本信息还不完整。';
+  const sourceTimelineButtonText = pageVm?.timelinePanel.hasTimeline ? '查看时间线' : '等待时间线';
+  const sourceTimelineInlineText = timelineSummaryText || sourceTimelineSummary;
+  const sourceFeedbackLatestLabel = pageVm?.feedback.latestLabel;
+  const sourceComparisonItems = pageVm?.ingredientComparison || [];
+  const sourceVersionSection = pageVm?.currentVersion;
+  const sourceTimelinePanel = pageVm?.timelinePanel;
+  const sourceFeedback = pageVm?.feedback;
+  const sourceTips = parsedTips;
+  const sourceHeroSummary = pageVm?.hero.summary;
+  const sourceMetaStageLabel = recipeVm?.recipe?.stageLabel;
+  const sourceDualTypeLabel = recipeVm?.recipe?.dualType;
+  const sourceStatusTags = recipeVm?.recipe?.statusTags || [];
+  const sourceBabyChips = recipeVm?.recipe?.babySuitability?.chips || [];
+  const sourceAdaptation = recipeVm?.recipe?.adaptation;
   const babySummaryChips = [
     effectiveBaby?.prep_time ? `${effectiveBaby.prep_time} 分钟` : undefined,
     formatBabyAge(selectedBabyAge),
     effectiveBaby?.texture,
   ].filter(Boolean);
-  const adultHighlights = currentVersionSection?.highlights?.slice(0, 3) || [];
-  const babyHighlights = currentVersionSection?.babyHighlights?.slice(0, 3) || [];
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
@@ -595,7 +670,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                   <Text style={styles.versionSpotlightIcon}>🍳</Text>
                 </View>
                 <Text style={styles.versionSpotlightBody}>
-                  {currentVersionSection?.summary || recipe.description}
+                  {currentVersionDescription}
                 </Text>
                 <View style={styles.versionSpotlightChipRow}>
                   {adultSummaryChips.map((chip) => (
@@ -842,10 +917,10 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                 </TouchableOpacity>
               </View>
               <Text style={styles.syncTimeSaving}>
-                ⏱ {pageVm?.timelinePanel.savedTimeText || syncCooking.time_saving}
+                ⏱ {sourceTimelineInlineText}
               </Text>
               <Text style={styles.syncTips}>
-                {pageVm?.timelinePanel.syncTips || syncCooking.tips}
+                {sourceTimelineSummary}
               </Text>
               {pageVm?.timelinePanel.sharedSteps?.length > 0 && (
                   <View style={styles.syncSteps}>
@@ -1004,8 +1079,8 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
               </TouchableOpacity>
             </View>
             <Text style={styles.feedbackRecentTitle}>最近反馈</Text>
-            {pageVm?.feedback.items.length ? (
-              pageVm.feedback.items.map((item) => (
+            {feedbackItems.length ? (
+              feedbackItems.map((item) => (
                 <View key={item.id} style={styles.feedbackRecentItem}>
                   <Text style={styles.feedbackRecentText}>
                     • {item.label} · {item.dateText}

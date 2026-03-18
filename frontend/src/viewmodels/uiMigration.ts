@@ -44,6 +44,7 @@ export interface RecipeDisplayModel {
   difficultyLabel: string;
   servingsLabel: string;
   dualType: DualType;
+  stageLabel?: string;
   whyItFits?: string;
   recommendationReasons: string[];
   statusTags: Array<{ type: StatusTagType; detail?: string }>;

@@ -5,6 +5,12 @@ import { BorderRadius, Colors, Spacing, Typography } from '../../styles/theme';
 import type { FeedbackAcceptance, PlannedMealCardViewModel } from '../../viewmodels/uiMigration';
 import { DualBadge } from './DualBadge';
 import { AdaptationSummary } from './AdaptationSummary';
+import { StatusTag } from './StatusTag';
+import {
+  RECIPE_PLACEHOLDER_BADGE,
+  RECIPE_PLACEHOLDER_EMOJI,
+  RECIPE_PLACEHOLDER_SUBTITLE,
+} from '../../utils/media';
 
 interface PlannedMealCardProps {
   item: PlannedMealCardViewModel;
@@ -101,19 +107,31 @@ export const PlannedMealCard: React.FC<PlannedMealCardProps> = ({
           <Image source={{ uri: item.recipe.image }} style={styles.image} resizeMode="cover" />
         ) : (
           <View style={styles.imageFallback}>
-            <Text style={styles.imageFallbackText}>暂无图</Text>
+            <Text style={styles.imageFallbackBadge}>{RECIPE_PLACEHOLDER_BADGE}</Text>
+            <Text style={styles.imageFallbackEmoji}>{RECIPE_PLACEHOLDER_EMOJI}</Text>
+            <Text style={styles.imageFallbackText} numberOfLines={2}>{RECIPE_PLACEHOLDER_SUBTITLE}</Text>
           </View>
         )}
 
         <View style={styles.info}>
           <Text style={styles.title}>{item.recipe.title}</Text>
-          <Text style={styles.meta}>{item.recipe.cookTimeText} 路 {item.recipe.difficultyLabel}</Text>
+          <Text style={styles.meta}>{item.recipe.cookTimeText} · {item.recipe.difficultyLabel} · {item.recipe.servingsLabel}</Text>
+          {item.recipe.stageLabel ? <Text style={styles.stageText}>{item.recipe.stageLabel}</Text> : null}
           <View style={styles.badgesRow}>
             <DualBadge type={item.recipe.dualType} size="xs" />
             {acceptanceLabel ? <Text style={styles.acceptance}>{acceptanceLabel}</Text> : null}
             {item.completionStatus === 'completed' ? <Text style={styles.completedPill}>已完成</Text> : null}
           </View>
+          {!!item.recipe.statusTags.length && (
+            <View style={styles.statusRow}>
+              {item.recipe.statusTags.slice(0, 2).map((tag) => (
+                <StatusTag key={`${tag.type}-${tag.detail || ''}`} type={tag.type} detail={tag.detail} />
+              ))}
+            </View>
+          )}
+          {item.recipe.whyItFits ? <Text style={styles.whyItFits} numberOfLines={2}>{item.recipe.whyItFits}</Text> : null}
         </View>
+
       </Pressable>
 
       {item.adaptation ? <AdaptationSummary adaptation={item.adaptation} compact /> : null}
@@ -184,15 +202,28 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: BorderRadius.xl,
-    backgroundColor: Colors.background.secondary,
+    backgroundColor: '#F4EEE5',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: Colors.border.light,
+    padding: Spacing.xs,
+    gap: 2,
+  },
+  imageFallbackBadge: {
+    fontSize: 7,
+    color: Colors.text.tertiary,
+    fontWeight: Typography.fontWeight.semibold,
+    letterSpacing: 0.3,
+  },
+  imageFallbackEmoji: {
+    fontSize: 18,
   },
   imageFallbackText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.text.tertiary,
+    fontSize: 9,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 11,
   },
   info: {
     flex: 1,
@@ -207,6 +238,11 @@ const styles = StyleSheet.create({
   meta: {
     fontSize: Typography.fontSize.xs,
     color: Colors.text.secondary,
+  },
+  stageText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.medium,
   },
   badgesRow: {
     flexDirection: 'row',
@@ -229,6 +265,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing[2],
     paddingVertical: Spacing[1],
     borderRadius: BorderRadius.full,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing[1],
+  },
+  whyItFits: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+    lineHeight: 18,
   },
   actionRow: {
     flexDirection: 'row',

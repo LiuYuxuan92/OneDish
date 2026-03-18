@@ -5,6 +5,11 @@ import { Card } from '../common/Card';
 import { DualBadge } from './DualBadge';
 import { StatusTag } from './StatusTag';
 import type { SearchResultCardViewModel } from '../../viewmodels/uiMigration';
+import {
+  RECIPE_PLACEHOLDER_BADGE,
+  RECIPE_PLACEHOLDER_EMOJI,
+  RECIPE_PLACEHOLDER_SUBTITLE,
+} from '../../utils/media';
 
 interface SearchResultCardProps {
   item: SearchResultCardViewModel;
@@ -21,7 +26,9 @@ export const SearchResultCard: React.FC<SearchResultCardProps> = ({ item, onPres
           <Image source={{ uri: recipe.image }} style={styles.image} resizeMode="cover" />
         ) : (
           <View style={styles.imageFallback}>
-            <Text style={styles.imageFallbackText}>🍽️</Text>
+            <Text style={styles.imageFallbackBadge}>{RECIPE_PLACEHOLDER_BADGE}</Text>
+            <Text style={styles.imageFallbackEmoji}>{RECIPE_PLACEHOLDER_EMOJI}</Text>
+            <Text style={styles.imageFallbackText} numberOfLines={2}>{RECIPE_PLACEHOLDER_SUBTITLE}</Text>
           </View>
         )}
         <View style={styles.content}>
@@ -31,7 +38,8 @@ export const SearchResultCard: React.FC<SearchResultCardProps> = ({ item, onPres
           </View>
           <Text style={styles.title}>{recipe.title}</Text>
           {item.description ? <Text style={styles.description} numberOfLines={2}>{item.description}</Text> : null}
-          <Text style={styles.meta}>{recipe.cookTimeText} · {recipe.difficultyLabel}</Text>
+          <Text style={styles.meta}>{recipe.cookTimeText} · {recipe.difficultyLabel} · {recipe.servingsLabel}</Text>
+          {recipe.stageLabel ? <Text style={styles.stageText}>{recipe.stageLabel}</Text> : null}
           <View style={styles.statusRow}>
             {recipe.statusTags.slice(0, 2).map((tag) => (
               <StatusTag key={`${tag.type}-${tag.detail || ''}`} type={tag.type} detail={tag.detail} />
@@ -79,12 +87,26 @@ const styles = StyleSheet.create({
     height: 88,
     margin: Spacing.md,
     borderRadius: BorderRadius.md,
-    backgroundColor: Colors.primary.light,
+    backgroundColor: '#F4EEE5',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: Spacing.xs,
+    gap: 2,
+  },
+  imageFallbackBadge: {
+    fontSize: 8,
+    color: Colors.text.tertiary,
+    fontWeight: Typography.fontWeight.semibold,
+    letterSpacing: 0.4,
+  },
+  imageFallbackEmoji: {
+    fontSize: 22,
   },
   imageFallbackText: {
-    fontSize: 32,
+    fontSize: 10,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 12,
   },
   content: {
     flex: 1,
@@ -114,6 +136,11 @@ const styles = StyleSheet.create({
   meta: {
     fontSize: Typography.fontSize.xs,
     color: Colors.text.tertiary,
+  },
+  stageText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.primary.main,
+    fontWeight: Typography.fontWeight.medium,
   },
   statusRow: {
     flexDirection: 'row',
