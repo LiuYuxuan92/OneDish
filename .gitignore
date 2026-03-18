@@ -50,3 +50,21 @@ nul
 # Debug files
 start-frontend-debug.bat
 test-search.bat
+backend-runtime.log
+backend-runtime.err.log
+frontend.log
+
+# Claude / local assistant workspace
+.claude/worktrees/
+.claude/settings.local.json
+.codebuddy/
+
+# Local debug artifacts
+frontend/android/app/debug.keystore
+frontend/*.png
+frontend/*.html
+miniprogram/project.private.config.json
+
+# Local temporary payloads
+/tmp-*.json
+backend/null
