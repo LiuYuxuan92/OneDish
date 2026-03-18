@@ -1,5 +1,6 @@
 import { db } from '../config/database';
 import { RecipeSummary } from '../types';
+import { cosService } from './cos.service';
 
 export class FavoriteService {
   // 添加收藏
@@ -68,7 +69,15 @@ export class FavoriteService {
           id: item.recipe_id,
           name: item.name,
           prep_time: item.prep_time,
-          image_url: item.image_url,
+          image_url: (() => {
+            try {
+              const parsed = typeof item.image_url === 'string' ? JSON.parse(item.image_url) : item.image_url;
+              const list = Array.isArray(parsed) ? parsed : parsed ? [parsed] : [];
+              return list.map((entry: string) => cosService.resolveStoredUrl(entry)).filter(Boolean);
+            } catch {
+              return item.image_url ? [cosService.resolveStoredUrl(item.image_url)].filter(Boolean) : [];
+            }
+          })(),
           category: item.category,
         },
         created_at: item.created_at,

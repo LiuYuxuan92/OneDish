@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ProfileStackParamList } from '../../types';
@@ -121,6 +121,13 @@ export function FeedingFeedbackScreen({ navigation }: Props) {
               </View>
               <Text style={styles.recordSummary}>{item.summary}</Text>
               {!!item.note && <Text style={styles.recordNote}>备注：{item.note}</Text>}
+              {item.feedbackImages?.length ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.feedbackImageRow}>
+                  {item.feedbackImages.map((uri) => (
+                    <Image key={uri} source={{ uri }} style={styles.feedbackThumb} />
+                  ))}
+                </ScrollView>
+              ) : null}
               <Text style={styles.recordMeta}>{item.dateText}</Text>
             </TouchableOpacity>
           )) : <Text style={styles.emptyText}>还没有喂养反馈记录。</Text>}
@@ -180,6 +187,8 @@ const styles = StyleSheet.create({
   recordBadge: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.bold },
   recordSummary: { fontSize: Typography.fontSize.sm, color: Colors.text.secondary, marginTop: Spacing.xs },
   recordNote: { fontSize: Typography.fontSize.sm, color: Colors.text.tertiary, marginTop: Spacing.xs },
+  feedbackImageRow: { gap: Spacing.sm, paddingTop: Spacing.sm },
+  feedbackThumb: { width: 72, height: 72, borderRadius: BorderRadius.md, backgroundColor: Colors.background.secondary },
   recordMeta: { fontSize: Typography.fontSize.xs, color: Colors.text.tertiary, marginTop: Spacing.sm },
   emptyText: { fontSize: Typography.fontSize.sm, color: Colors.text.tertiary, lineHeight: 20 },
   footerActions: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.md },

@@ -1,4 +1,5 @@
 import { db } from '../config/database';
+import { cosService } from './cos.service';
 
 export type FamilyAccessContext = {
   family_id: string;
@@ -124,7 +125,7 @@ export class FamilyService {
         user_id: member.user_id,
         role: (member.role || 'member') as 'owner' | 'member',
         display_name: profileMap.get(member.user_id)?.display_name,
-        avatar_url: profileMap.get(member.user_id)?.avatar_url || null,
+        avatar_url: cosService.resolveStoredUrl(profileMap.get(member.user_id)?.avatar_url || null),
       })),
     };
   }
@@ -255,7 +256,7 @@ export class FamilyService {
       return {
         user_id: userId,
         display_name: profile?.username || userId,
-        avatar_url: profile?.avatar_url || null,
+        avatar_url: cosService.resolveStoredUrl(profile?.avatar_url || null),
       };
     });
   }

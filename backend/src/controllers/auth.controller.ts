@@ -8,6 +8,7 @@ import { AccountMergeService } from '../services/account-merge.service';
 import { logger } from '../utils/logger';
 import { jwtConfig, isProduction } from '../config/jwt';
 import { tokenBlacklistService } from '../services/token-blacklist.service';
+import { cosService } from '../services/cos.service';
 
 tokenBlacklistService.startCleanupJob();
 
@@ -26,7 +27,7 @@ export class AuthController {
         id: user.id,
         username: user.username,
         email: user.email,
-        avatar_url: user.avatar_url,
+        avatar_url: cosService.resolveStoredUrl(user.avatar_url),
         is_guest: Boolean(extra.is_guest),
         role: (user as any).role || 'user',
       },

@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tail:*)",
+      "Bash(head:*)",
+      "Bash(cmd.exe:*)",
+      "Bash(sleep 2:*)",
+      "Bash(/d/Redis/Redis-x64-3.0.504/redis-cli.exe ping:*)",
+      "Bash(cd /d/claude-code/qinzicanhe/backend && npm install --registry https://registry.npmmirror.com 2>&1)",
+      "Bash(npm config:*)",
+      "Bash(cd /d/claude-code/qinzicanhe/backend && npm install --registry https://registry.npmjs.org 2>&1)",
+      "Bash(ipconfig:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(adb devices:*)",
+      "Bash(/d/AndroidStudio/jbr/bin/java.exe:*)",
+      "Bash(JAVA_HOME=\"/d/AndroidStudio/jbr\" powershell.exe:*)",
+      "Bash(/d/Android/Sdk/platform-tools/adb.exe devices:*)",
+      "Bash(jobs:*)",
+      "Bash(node:*)",
+      "Bash(git:*)",
+      "Bash(cd /d/claude-code/qinzicanhe/backend && npm run migrate 2>&1)",
+      "Bash(cd /d/claude-code/qinzicanhe/backend && npm run dev)",
+      "Bash(cd /d/claude-code/qinzicanhe/backend && npm install)",
+      "Bash(cd /d/claude-code/qinzicanhe/backend && npm install --prefer-offline 2>&1 | tail -5)",
+      "Bash(npm run:*)",
+      "Bash(timeout 5 npm run:*)",
+      "Bash(npm install:*)",
+      "Bash(yarn install:*)",
+      "Bash(rm:*)",
+      "Bash(curl:*)",
+      "Bash(sqlite3:*)",
+      "Bash(npx knex:*)",
+      "Bash(npx:*)"
+    ]
+  }
+}

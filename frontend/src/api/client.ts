@@ -41,8 +41,33 @@ const BASE_URL = getBaseUrl();
 export const API_BASE_URL = BASE_URL;
 export const API_ORIGIN = BASE_URL.replace(/\/api\/v1\/?$/, '');
 
+function tryParseMediaList(value?: string | null): string[] | null {
+  const raw = String(value || '').trim();
+  if (!raw || (!raw.startsWith('[') && !raw.startsWith('"'))) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => String(item || '').trim()).filter(Boolean);
+    }
+    if (typeof parsed === 'string' && parsed.trim()) {
+      return [parsed.trim()];
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 export function resolveMediaUrl(url?: string | null): string | undefined {
   if (!url) return undefined;
+  const parsedList = typeof url === 'string' ? tryParseMediaList(url) : null;
+  if (parsedList?.length) {
+    return resolveMediaUrl(parsedList[0]);
+  }
   const trimmed = String(url).trim();
   if (!trimmed) return undefined;
   if (/^(https?:)?\/\//.test(trimmed) || trimmed.startsWith('data:')) {
@@ -55,6 +80,10 @@ export function resolveMediaUrl(url?: string | null): string | undefined {
 export function resolveMediaUrls(value?: string[] | string | null): string[] {
   if (Array.isArray(value)) {
     return value.map((item) => resolveMediaUrl(item)).filter(Boolean) as string[];
+  }
+  const parsedList = typeof value === 'string' ? tryParseMediaList(value) : null;
+  if (parsedList?.length) {
+    return parsedList.map((item) => resolveMediaUrl(item)).filter(Boolean) as string[];
   }
   const single = resolveMediaUrl(value);
   return single ? [single] : [];

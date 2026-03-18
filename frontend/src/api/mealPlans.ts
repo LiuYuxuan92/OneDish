@@ -42,7 +42,7 @@ export interface SmartRecommendationParams {
 export interface SmartRecommendationItem {
   id: string;
   name: string;
-  image_url?: string;
+  image_url?: string[];
   time_estimate: number;
   missing_ingredients: string[];
   baby_suitable: boolean;

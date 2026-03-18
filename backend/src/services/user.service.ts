@@ -1,4 +1,5 @@
 import { db } from '../config/database';
+import { cosService } from './cos.service';
 
 export class UserService {
   private normalizePreferences(raw: any) {
@@ -34,6 +35,7 @@ export class UserService {
       .where('id', userId)
       .update({
         ...data,
+        avatar_url: data.avatar_url === undefined ? undefined : cosService.toStoredUrl(data.avatar_url),
         updated_at: new Date(),
       })
       .returning(['id', 'username', 'email', 'phone', 'avatar_url', 'family_size', 'baby_age', 'preferences']);

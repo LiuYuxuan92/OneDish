@@ -137,6 +137,6 @@ export const recipesApi = {
   suggestByInventory: () =>
     apiClient.get<{
       expiring_ingredients: Array<{ ingredient_name: string; quantity: number; unit: string; expiry_date: string }>;
-      suggestions: Array<{ id: string; name: string; type: string; prep_time: number; image_url: string; matched_ingredients: string[]; match_count: number }>;
+      suggestions: Array<{ id: string; name: string; type: string; prep_time: number; image_url: string[] | string; matched_ingredients: string[]; match_count: number }>;
     }>('/recipes/suggest-by-inventory'),
 };

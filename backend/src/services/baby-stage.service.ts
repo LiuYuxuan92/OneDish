@@ -1,4 +1,5 @@
 import { db } from '../config/database';
+import { cosService } from './cos.service';
 
 export interface BabyStage {
   stage: string;
@@ -15,13 +16,30 @@ export interface BabyStage {
 }
 
 export class BabyStageService {
+  private parseJsonArray(value: unknown): any[] {
+    if (Array.isArray(value)) return value;
+    if (typeof value !== 'string') return [];
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private resolveRecipeImageList(value: unknown): string[] {
+    return this.parseJsonArray(value)
+      .map((item) => cosService.resolveStoredUrl(typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean) as string[];
+  }
+
   private parse(row: any): BabyStage {
     return {
       ...row,
-      can_eat: typeof row.can_eat === 'string' ? JSON.parse(row.can_eat) : row.can_eat,
-      cannot_eat: typeof row.cannot_eat === 'string' ? JSON.parse(row.cannot_eat) : row.cannot_eat,
-      key_nutrients: typeof row.key_nutrients === 'string' ? JSON.parse(row.key_nutrients) : row.key_nutrients,
-      guide_tips: typeof row.guide_tips === 'string' ? JSON.parse(row.guide_tips) : row.guide_tips,
+      can_eat: this.parseJsonArray(row.can_eat),
+      cannot_eat: this.parseJsonArray(row.cannot_eat),
+      key_nutrients: this.parseJsonArray(row.key_nutrients),
+      guide_tips: this.parseJsonArray(row.guide_tips),
     };
   }
 
@@ -67,9 +85,9 @@ export class BabyStageService {
     return rows
       .map(r => ({
         ...r,
-        key_nutrients: typeof r.key_nutrients === 'string' ? JSON.parse(r.key_nutrients) : r.key_nutrients || [],
-        scene_tags: typeof r.scene_tags === 'string' ? JSON.parse(r.scene_tags) : r.scene_tags || [],
-        image_url: typeof r.image_url === 'string' ? JSON.parse(r.image_url) : r.image_url || [],
+        key_nutrients: this.parseJsonArray(r.key_nutrients),
+        scene_tags: this.parseJsonArray(r.scene_tags),
+        image_url: this.resolveRecipeImageList(r.image_url),
       }))
       .filter(r => {
         if (filters.scene_tag && !r.scene_tags.includes(filters.scene_tag)) return false;

@@ -34,7 +34,7 @@ export interface InventoryResponse {
 export interface RecommendedRecipe {
   id: string;
   name: string;
-  image_url: string;
+  image_url: string[] | string;
   prep_time: number;
   type: string;
   matched_ingredients: string[];

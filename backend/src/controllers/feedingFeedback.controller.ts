@@ -6,7 +6,7 @@ export class FeedingFeedbackController {
   createFeedback = async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.user_id;
-      const { recipe_id, meal_plan_id, baby_age_at_that_time, accepted_level, allergy_flag, note } = req.body || {};
+      const { recipe_id, meal_plan_id, baby_age_at_that_time, accepted_level, allergy_flag, note, image_urls } = req.body || {};
 
       const feedback = await feedingFeedbackService.createFeedback({
         user_id: userId,
@@ -16,11 +16,12 @@ export class FeedingFeedbackController {
         accepted_level,
         allergy_flag,
         note,
+        image_urls,
       });
 
       return res.json({ code: 200, message: '记录成功', data: feedback });
     } catch (error: any) {
-      if (['INVALID_USER_ID', 'INVALID_RECIPE_ID', 'INVALID_ACCEPTED_LEVEL', 'INVALID_BABY_AGE', 'INVALID_NOTE'].includes(error?.message)) {
+      if (['INVALID_USER_ID', 'INVALID_RECIPE_ID', 'INVALID_ACCEPTED_LEVEL', 'INVALID_BABY_AGE', 'INVALID_NOTE', 'INVALID_IMAGE_URLS'].includes(error?.message)) {
         return res.status(400).json({ code: 400, message: error.message, data: null });
       }
 

@@ -32,11 +32,6 @@ function buildGeneratedRecipeMediaPath(recipeId) {
 }
 
 function resolveMediaUrl(value) {
-  const parsedList = typeof value === 'string' ? tryParseMediaList(value) : null;
-  if (parsedList && parsedList.length) {
-    return resolveMediaUrl(parsedList[0]);
-  }
-
   const raw = String(value || '').trim();
   if (!raw) return '';
   if (/^(https?:)?\/\//.test(raw) || raw.startsWith('data:')) return raw;

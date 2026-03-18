@@ -6,6 +6,7 @@ import { AISearchAdapter } from '../adapters/ai.adapter';
 import { logger } from '../utils/logger';
 import { userPreferenceService } from './user-preference.service';
 import { familyService } from './family.service';
+import { cosService } from './cos.service';
 
 interface RecipePool {
   breakfast: any[];
@@ -49,6 +50,24 @@ interface RankingWeights {
 export class MealPlanService {
   private recipePoolCache: RecipePool | null = null;
   private inventoryService = new ShoppingListInventoryService();
+
+  private normalizeRecipeImageList(value: unknown): string[] {
+    const parsed = Array.isArray(value)
+      ? value
+      : (() => {
+          if (typeof value !== 'string') return [];
+          try {
+            const decoded = JSON.parse(value);
+            return Array.isArray(decoded) ? decoded : decoded ? [decoded] : [];
+          } catch {
+            return value.trim() ? [value.trim()] : [];
+          }
+        })();
+
+    return parsed
+      .map((item) => cosService.resolveStoredUrl(typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean) as string[];
+  }
 
   private genInviteCode(prefix = 'MP'): string {
     return `${prefix}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
@@ -112,7 +131,7 @@ export class MealPlanService {
       result[date][plan.meal_type] = {
         id: plan.id,
         name: plan.name,
-        image_url: plan.image_url,
+        image_url: this.normalizeRecipeImageList(plan.image_url),
         prep_time: plan.prep_time,
       };
     }
@@ -231,7 +250,7 @@ export class MealPlanService {
         plans[dateStr][mealType] = {
           id: recipe.id,
           name: recipe.name,
-          image_url: recipe.image_url,
+          image_url: this.normalizeRecipeImageList(recipe.image_url),
           prep_time: recipe.prep_time,
           is_baby_suitable: isBabySuitable,
           nutrition_score: nutritionScore,
@@ -864,7 +883,7 @@ export class MealPlanService {
     const base = {
       id: item.recipe.id,
       name: item.recipe.name,
-      image_url: item.recipe.image_url,
+      image_url: this.normalizeRecipeImageList(item.recipe.image_url),
       time_estimate: item.recipe.prep_time,
       missing_ingredients: item.missingIngredients,
       baby_suitable: item.babySuitable,
@@ -1128,7 +1147,7 @@ export class MealPlanService {
       return {
         user_id: userId,
         display_name: displayName,
-        avatar_url: profile?.avatar_url || null,
+        avatar_url: cosService.resolveStoredUrl(profile?.avatar_url || null),
       };
     });
   }

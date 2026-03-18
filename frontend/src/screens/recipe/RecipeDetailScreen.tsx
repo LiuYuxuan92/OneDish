@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,10 +8,12 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Image,
   Dimensions,
   Modal,
   FlatList,
   Platform,
+  TextInput,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -46,7 +48,10 @@ import { NutritionInfoCard } from "../../components/common/NutritionInfo";
 import { CookingTimerModal } from "../../components/common/CookingTimerModal";
 import { ImageCarousel } from "../../components/common/ImageCarousel";
 import { TimelineView } from "../../components/recipe/TimelineView";
+import * as ImagePicker from 'expo-image-picker';
 import { useCreateFeedingFeedback } from "../../hooks/useFeedingFeedback";
+import { useUploadImage } from '../../hooks/useUploads';
+import { API_BASE_URL } from '../../api/client';
 import {
   RecipeHeroPanel,
   RecipeVersionPanel,
@@ -94,6 +99,14 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
   const addRecipeToShoppingList = useAddRecipeToShoppingList();
   const { data: user } = useUserInfo();
   const createFeedingFeedback = useCreateFeedingFeedback();
+  const uploadImage = useUploadImage();
+  const webFeedbackInputRef = useRef<any>(null);
+  const [selectedFeedbackImages, setSelectedFeedbackImages] = useState<Array<{ uri: string; name: string; type: string; file?: File }>>([]);
+  const [feedbackAcceptedLevel, setFeedbackAcceptedLevel] = useState<"like" | "ok" | "reject" | null>(null);
+  const [feedbackNote, setFeedbackNote] = useState('');
+  const [showFeedbackComposer, setShowFeedbackComposer] = useState(false);
+  const [isUploadingFeedbackImages, setIsUploadingFeedbackImages] = useState(false);
+  const isSubmittingFeedback = createFeedingFeedback.isPending || isUploadingFeedbackImages;
 
   // AI 宝宝版本生成相关状态
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
@@ -186,29 +199,158 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
     }
   };
 
-  const handleSubmitFeedingFeedback = async (
-    acceptedLevel: "like" | "ok" | "reject",
-  ) => {
+  const buildUploadFileName = (uri: string, mimeType: string) => {
+    const normalizedUri = String(uri || '').trim();
+    const uriName = normalizedUri.split('/').pop()?.split('?')[0];
+    if (uriName) return uriName;
+    const extFromMime = mimeType.split('/')[1] || 'jpg';
+    return `feedback.${extFromMime}`;
+  };
+
+  const handleWebFeedbackFileChange = (event: any) => {
+    const input = event.target as any;
+    const files = Array.from(input.files || []).slice(0, 3) as File[];
+    const nextFiles = files
+      .filter((file) => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type || 'image/jpeg'))
+      .map((file) => ({
+        uri: URL.createObjectURL(file),
+        name: file.name,
+        type: file.type || 'image/jpeg',
+        file,
+      }));
+    setSelectedFeedbackImages(nextFiles.slice(0, 3));
+    input.value = '';
+  };
+
+  const pickFeedbackImages = async () => {
+    if (Platform.OS === 'web') {
+      webFeedbackInputRef.current?.click();
+      return;
+    }
+
     try {
-      await createFeedingFeedback.mutateAsync({
-        recipe_id: recipeId,
-        accepted_level: acceptedLevel,
-        baby_age_at_that_time: user?.baby_age || null,
-        allergy_flag: false,
-        note: acceptedLevel === "reject" ? "最小版快捷反馈：本次未接受" : "",
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: true,
+        quality: 1,
+        selectionLimit: 3,
       });
-      Alert.alert(
-        "已记录",
-        acceptedLevel === "like"
-          ? "已记录为喜欢"
-          : acceptedLevel === "ok"
-            ? "已记录为一般接受"
-            : "已记录为暂时拒绝",
-      );
-    } catch (error: any) {
-      Alert.alert("提示", error?.message || "提交反馈失败");
+
+      if (result.canceled || !result.assets?.length) {
+        return;
+      }
+
+      const nextFiles = result.assets.slice(0, 3).map((asset) => ({
+        uri: asset.uri,
+        name: asset.fileName || buildUploadFileName(asset.uri, asset.mimeType || 'image/jpeg'),
+        type: asset.mimeType || 'image/jpeg',
+      })).filter((file) => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type));
+
+      setSelectedFeedbackImages(nextFiles.slice(0, 3));
+    } catch (error) {
+      Alert.alert('提示', '选择反馈图片失败，请稍后重试');
     }
   };
+
+  const uploadFeedbackImagesOnWeb = async () => {
+    const token = (globalThis as typeof globalThis & {
+      localStorage?: { getItem(key: string): string | null };
+    }).localStorage?.getItem('access_token');
+
+    if (!token) {
+      throw new Error('当前登录状态无效，请重新登录后再试');
+    }
+
+    const urls: string[] = [];
+    for (const image of selectedFeedbackImages) {
+      if (!image.file) continue;
+      const formData = new FormData();
+      formData.append('file', image.file);
+      const response = await fetch(`${API_BASE_URL}/uploads/image`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.message || '上传反馈图片失败');
+      }
+      if (payload?.data?.url) urls.push(payload.data.url);
+    }
+    return urls;
+  };
+
+  const uploadFeedbackImages = async () => {
+    if (!selectedFeedbackImages.length) return [];
+
+    setIsUploadingFeedbackImages(true);
+    try {
+      if (Platform.OS === 'web') {
+        return await uploadFeedbackImagesOnWeb();
+      }
+      const uploads = await Promise.all(selectedFeedbackImages.map((image) => uploadImage.mutateAsync(image)));
+      return uploads.map((item: any) => item.url).filter(Boolean);
+    } finally {
+      setIsUploadingFeedbackImages(false);
+    }
+  };
+
+  const openFeedbackComposer = (acceptedLevel: "like" | "ok" | "reject") => {
+    setFeedbackAcceptedLevel(acceptedLevel);
+    setFeedbackNote(acceptedLevel === 'reject' ? '最小版快捷反馈：本次未接受' : '');
+    setShowFeedbackComposer(true);
+  };
+
+  const closeFeedbackComposer = () => {
+    if (isSubmittingFeedback) return;
+    setShowFeedbackComposer(false);
+  };
+
+  const removeFeedbackImage = (uri: string) => {
+    setSelectedFeedbackImages((current) => current.filter((item) => item.uri !== uri));
+  };
+
+  const handleSubmitFeedingFeedback = async () => {
+    if (!feedbackAcceptedLevel) {
+      Alert.alert('提示', '请先选择反馈类型');
+      return;
+    }
+
+    try {
+      const imageUrls = await uploadFeedbackImages();
+      await createFeedingFeedback.mutateAsync({
+        recipe_id: recipeId,
+        accepted_level: feedbackAcceptedLevel,
+        baby_age_at_that_time: user?.baby_age || null,
+        allergy_flag: false,
+        note: feedbackNote.trim(),
+        image_urls: imageUrls,
+      });
+      setSelectedFeedbackImages([]);
+      setFeedbackNote('');
+      setFeedbackAcceptedLevel(null);
+      setShowFeedbackComposer(false);
+      Alert.alert(
+        '已记录',
+        feedbackAcceptedLevel === 'like'
+          ? '已记录为喜欢'
+          : feedbackAcceptedLevel === 'ok'
+            ? '已记录为一般接受'
+            : '已记录为暂时拒绝',
+      );
+    } catch (error: any) {
+      Alert.alert('提示', error?.message || '提交反馈失败');
+    }
+  };
+
+  const feedbackImageUris = useMemo(() => selectedFeedbackImages.map((item) => item.uri).filter(Boolean), [selectedFeedbackImages]);
+
+  const clearFeedbackImages = () => setSelectedFeedbackImages([]);
+
+  const feedbackSubmitLabel = isUploadingFeedbackImages ? '上传图片中...' : createFeedingFeedback.isPending ? '提交反馈中...' : null;
+  const feedbackToneLabel = feedbackAcceptedLevel === 'like' ? '喜欢' : feedbackAcceptedLevel === 'ok' ? '一般' : feedbackAcceptedLevel === 'reject' ? '拒绝' : '';
+  const feedbackImageButtonLabel = selectedFeedbackImages.length ? `已选 ${selectedFeedbackImages.length} 张` : '添加反馈图片';
+
 
   const effectiveBaby = babyData?.baby_version || recipeVm.babyVersion || null;
 
@@ -815,6 +957,17 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
           </>
         )}
 
+        {Platform.OS === 'web' ? (
+          <input
+            ref={webFeedbackInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            style={{ display: 'none' }}
+            onChange={handleWebFeedbackFileChange}
+          />
+        ) : null}
+
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionIcon}>🍼</Text>
@@ -822,8 +975,7 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
           </View>
           <View style={styles.detailCard}>
             <Text style={styles.tipsText}>
-              保留真实反馈接口：这里仍然直接提交喜欢 / 一般 /
-              拒绝，并把结果回流到“喂养反馈 / 每周回顾”页面。
+              点击“喜欢 / 一般 / 拒绝”后会先进入轻量编辑态，可补备注和图片，再统一提交到反馈记录。
             </Text>
             {!!pageVm?.feedback.latestLabel && (
               <Text style={styles.feedbackRecentTitle}>{pageVm.feedback.latestLabel}</Text>
@@ -831,22 +983,22 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
             <View style={styles.feedbackActionRow}>
               <TouchableOpacity
                 style={styles.feedbackChipLike}
-                onPress={() => handleSubmitFeedingFeedback("like")}
-                disabled={createFeedingFeedback.isPending}
+                onPress={() => openFeedbackComposer("like")}
+                disabled={isSubmittingFeedback}
               >
                 <Text style={styles.feedbackChipText}>喜欢</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.feedbackChipNeutral}
-                onPress={() => handleSubmitFeedingFeedback("ok")}
-                disabled={createFeedingFeedback.isPending}
+                onPress={() => openFeedbackComposer("ok")}
+                disabled={isSubmittingFeedback}
               >
                 <Text style={styles.feedbackChipText}>一般</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.feedbackChipReject}
-                onPress={() => handleSubmitFeedingFeedback("reject")}
-                disabled={createFeedingFeedback.isPending}
+                onPress={() => openFeedbackComposer("reject")}
+                disabled={isSubmittingFeedback}
               >
                 <Text style={styles.feedbackChipText}>拒绝</Text>
               </TouchableOpacity>
@@ -861,6 +1013,9 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
                   {!!item.note && (
                     <Text style={styles.feedbackRecentNote}>{item.note}</Text>
                   )}
+                  {item.imageUrls?.[0] ? (
+                    <Image source={{ uri: item.imageUrls[0] }} style={styles.feedbackPreviewImage} />
+                  ) : null}
                 </View>
               ))
             ) : (
@@ -930,6 +1085,107 @@ export function RecipeDetailScreen({ route, navigation }: Props) {
         onClose={() => setShowTimer(false)}
         initialTimers={timerSteps}
       />
+
+      <Modal
+        visible={showFeedbackComposer}
+        transparent
+        animationType="slide"
+        onRequestClose={closeFeedbackComposer}
+      >
+        <View style={styles.aiModalOverlay}>
+          <View style={styles.aiModalContainer}>
+            <View style={styles.aiModalHeader}>
+              <Text style={styles.aiModalTitle}>记录喂养反馈</Text>
+              <TouchableOpacity onPress={closeFeedbackComposer} disabled={isSubmittingFeedback}>
+                <Text style={styles.aiModalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.aiModalContent}>
+              <View style={styles.aiModalSection}>
+                <Text style={styles.aiModalLabel}>当前反馈</Text>
+                <Text style={styles.feedbackComposerTone}>{feedbackToneLabel || '未选择'}</Text>
+              </View>
+
+              <View style={styles.aiModalSection}>
+                <Text style={styles.aiModalLabel}>备注</Text>
+                <TextInput
+                  style={styles.feedbackNoteInput}
+                  value={feedbackNote}
+                  onChangeText={setFeedbackNote}
+                  placeholder="可补充宝宝今天的接受情况"
+                  placeholderTextColor={Colors.text.disabled}
+                  multiline
+                  textAlignVertical="top"
+                  editable={!isSubmittingFeedback}
+                />
+              </View>
+
+              <View style={styles.aiModalSection}>
+                <Text style={styles.aiModalLabel}>反馈图片</Text>
+                <View style={styles.inlineActionRow}>
+                  <TouchableOpacity
+                    style={[styles.inlineActionButtonSecondary, isSubmittingFeedback && styles.inlineActionButtonDisabled]}
+                    onPress={pickFeedbackImages}
+                    disabled={isSubmittingFeedback}
+                  >
+                    <Text style={styles.inlineActionButtonSecondaryText}>{feedbackImageButtonLabel}</Text>
+                  </TouchableOpacity>
+                  {selectedFeedbackImages.length ? (
+                    <TouchableOpacity
+                      style={[styles.inlineActionButtonSecondary, isSubmittingFeedback && styles.inlineActionButtonDisabled]}
+                      onPress={clearFeedbackImages}
+                      disabled={isSubmittingFeedback}
+                    >
+                      <Text style={styles.inlineActionButtonSecondaryText}>清空图片</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+                {feedbackImageUris.length ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.feedbackImageRow}>
+                    {feedbackImageUris.map((uri) => (
+                      <View key={uri} style={styles.feedbackPreviewCard}>
+                        <Image source={{ uri }} style={styles.feedbackPreviewImage} />
+                        <TouchableOpacity
+                          style={styles.feedbackPreviewRemoveButton}
+                          onPress={() => removeFeedbackImage(uri)}
+                          disabled={isSubmittingFeedback}
+                        >
+                          <Text style={styles.feedbackPreviewRemoveText}>移除</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </ScrollView>
+                ) : (
+                  <Text style={styles.feedbackEmptyText}>本次可不传图片，也可以补 1-3 张相册图片。</Text>
+                )}
+              </View>
+
+              {!!feedbackSubmitLabel && <Text style={styles.feedbackSubmitHint}>{feedbackSubmitLabel}</Text>}
+            </View>
+
+            <View style={styles.aiModalFooter}>
+              <TouchableOpacity
+                style={styles.aiModalCancelButton}
+                onPress={closeFeedbackComposer}
+                disabled={isSubmittingFeedback}
+              >
+                <Text style={styles.aiModalCancelText}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.aiModalConfirmButton,
+                  isSubmittingFeedback && styles.aiModalConfirmButtonDisabled,
+                ]}
+                onPress={handleSubmitFeedingFeedback}
+                disabled={isSubmittingFeedback}
+              >
+                <Text style={styles.aiModalConfirmText}>提交反馈</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* AI 生成宝宝版本弹窗 */}
       <Modal
@@ -2627,6 +2883,51 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.semibold,
     color: Colors.text.secondary,
     marginBottom: Spacing.xs,
+  },
+  feedbackImageRow: {
+    gap: Spacing.sm,
+    paddingBottom: Spacing.sm,
+  },
+  feedbackPreviewCard: {
+    gap: Spacing.xs,
+    alignItems: 'center',
+  },
+  feedbackPreviewImage: {
+    width: 72,
+    height: 72,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.background.secondary,
+  },
+  feedbackPreviewRemoveButton: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.background.primary,
+  },
+  feedbackPreviewRemoveText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.secondary,
+  },
+  feedbackComposerTone: {
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.text.primary,
+  },
+  feedbackNoteInput: {
+    minHeight: 96,
+    marginTop: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.background.secondary,
+    color: Colors.text.primary,
+    fontSize: Typography.fontSize.sm,
+  },
+  feedbackSubmitHint: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.text.tertiary,
+    marginBottom: Spacing.sm,
   },
   feedbackRecentItem: {
     marginBottom: Spacing.xs,

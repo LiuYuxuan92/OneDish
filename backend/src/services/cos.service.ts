@@ -158,6 +158,10 @@ export class CosService {
     return this.normalizeStoredUrl(value);
   }
 
+  getManagedObjectKey(value?: string | null) {
+    return this.resolveKeyFromUrl(value);
+  }
+
   async uploadBuffer(options: UploadBufferOptions): Promise<UploadBufferResult> {
     const config = this.getConfig();
     const client = this.getClient();

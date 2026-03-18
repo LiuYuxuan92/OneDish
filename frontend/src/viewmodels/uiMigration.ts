@@ -231,6 +231,7 @@ export interface RecipeDetailFeedbackItemViewModel {
   label: string;
   dateText: string;
   note?: string;
+  imageUrls: string[];
 }
 
 export interface RecipeDetailFeedbackViewModel {

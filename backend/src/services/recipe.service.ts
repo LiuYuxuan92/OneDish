@@ -4,6 +4,7 @@ import { logger } from '../utils/logger';
 import { RecipeCalibrationService } from './recipe-calibration.service';
 import { userPreferenceService } from './user-preference.service';
 import { feedingFeedbackService, FeedingFeedbackRecipeSummary } from './feedingFeedback.service';
+import { cosService } from './cos.service';
 
 interface DailyRecommendationParams {
   type?: string;
@@ -23,6 +24,31 @@ interface SearchRecipesParams {
 }
 
 export class RecipeService {
+  private normalizeRecipeImageList(value: unknown): string[] {
+    const parsed = Array.isArray(value)
+      ? value
+      : (() => {
+          if (typeof value !== 'string') return [];
+          try {
+            const decoded = JSON.parse(value);
+            return Array.isArray(decoded) ? decoded : decoded ? [decoded] : [];
+          } catch {
+            return value.trim() ? [value.trim()] : [];
+          }
+        })();
+
+    return parsed
+      .map((item) => cosService.resolveStoredUrl(typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean) as string[];
+  }
+
+  private normalizeRecipeMedia<T extends { image_url?: unknown }>(recipe: T): T & { image_url: string[] } {
+    return {
+      ...recipe,
+      image_url: this.normalizeRecipeImageList(recipe?.image_url),
+    };
+  }
+
   // 获取今日推荐
   async getDailyRecommendation(params: DailyRecommendationParams) {
     const { type, max_time = 30, user_id } = params;
@@ -97,23 +123,25 @@ export class RecipeService {
           return tags.some((t: string) => profileTags.flavors.includes(t));
         });
       }
-      ugcCandidates = ugcCandidates
+      const scoredUgcCandidates = ugcCandidates
         .map((r: any) => ({ recipe: r, pref: userPreferenceService.scoreRecipeByPreferences(r, userPrefs, effectiveMaxTime) }))
-        .sort((a: any, b: any) => b.pref.score - a.pref.score || (b.recipe.quality_score || 0) - (a.recipe.quality_score || 0))
-        .map((entry: any) => entry.recipe);
+        .sort((a: any, b: any) => b.pref.score - a.pref.score || (b.recipe.quality_score || 0) - (a.recipe.quality_score || 0));
+      ugcCandidates = scoredUgcCandidates.map((entry: any) => entry.recipe);
       if (ugcCandidates.length > 0 && Math.random() < 0.3) {
-        const picked = ugcCandidates[Math.floor(Math.random() * ugcCandidates.length)];
+        const pickedEntry = scoredUgcCandidates[Math.floor(Math.random() * scoredUgcCandidates.length)];
         recipe = {
-          ...picked,
+          ...pickedEntry.recipe,
           is_ugc: true,
           recommendation_source: 'ugc_pool',
         };
       }
     }
 
-    const parsedRecipe = this.parseRecipeJsonFields(recipe as any);
+    const parsedRecipe = this.parseRecipeJsonFields(this.normalizeRecipeMedia(recipe as any));
     const selectedPrefScore = recipe
-      ? scoredRecipes.find((entry) => entry.recipe.id === recipe.id)?.pref
+      ? (recipe.is_ugc
+          ? userPreferenceService.scoreRecipeByPreferences(recipe, userPrefs, effectiveMaxTime)
+          : scoredRecipes.find((entry) => entry.recipe.id === recipe.id)?.pref) || null
       : null;
     const recommendationExplain = selectedPrefScore?.reasons?.slice(0, 3) || [];
     const rankingReasons = recommendationExplain.map((label: string, index: number) => ({
@@ -156,7 +184,7 @@ export class RecipeService {
     }
 
     // 解析 JSON 字段
-    const parsedRecipe = this.parseRecipeJsonFields(recipe);
+    const parsedRecipe = this.parseRecipeJsonFields(this.normalizeRecipeMedia(recipe));
 
     // 获取校准后的难度（如果有）
     const calibrationService = new RecipeCalibrationService();
@@ -329,7 +357,7 @@ export class RecipeService {
         name: item.name,
         type: item.type,
         prep_time: item.prep_time,
-        image_url: item.image_url,
+        image_url: this.normalizeRecipeImageList(item.image_url),
         difficulty: item.calibrated_difficulty || item.difficulty,
         preference_match_score: pref.score,
         preference_match_reasons: pref.reasons,
@@ -387,7 +415,7 @@ export class RecipeService {
           name: recipe.name,
           type: recipe.type,
           prep_time: recipe.prep_time,
-          image_url: recipe.image_url,
+          image_url: this.normalizeRecipeImageList(recipe.image_url),
           matched_ingredients: matchedIngredients,
           match_count: matchedIngredients.length,
         });

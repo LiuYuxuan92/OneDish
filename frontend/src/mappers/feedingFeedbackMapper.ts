@@ -8,6 +8,7 @@ export interface FeedingFeedbackDisplayItem {
   recipeId: string;
   recipeName: string;
   recipeImage?: string;
+  feedbackImages?: string[];
   tone: FeedbackTone;
   toneLabel: string;
   toneColor: string;
@@ -15,6 +16,10 @@ export interface FeedingFeedbackDisplayItem {
   dateText: string;
   note?: string;
   retrySuggested: boolean;
+}
+
+function normalizeFeedbackImages(value?: string[] | null) {
+  return Array.isArray(value) ? value.filter(Boolean) : [];
 }
 
 const isCautiousNote = (note?: string | null) => {
@@ -46,6 +51,7 @@ export function mapFeedingFeedbackItem(item: FeedingFeedbackItem): FeedingFeedba
     recipeId: item.recipe_id,
     recipeName: item.recipe_name || '未命名菜谱',
     recipeImage: resolveRecipeImageUrl(item.recipe_id, item.recipe_image_url),
+    feedbackImages: normalizeFeedbackImages(item.image_urls),
     tone,
     toneLabel: toneMeta.label,
     toneColor: toneMeta.color,

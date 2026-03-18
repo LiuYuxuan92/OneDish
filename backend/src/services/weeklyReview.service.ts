@@ -1,6 +1,7 @@
 import { db, generateUUID } from '../config/database';
 import { familyService } from './family.service';
 import { redisService } from './redis.service';
+import { cosService } from './cos.service';
 import type { 
   WeeklyReview, 
   WeeklyFeedingReviewRecord, 
@@ -23,6 +24,41 @@ interface FeedingFeedbackForWeek {
 }
 
 export class WeeklyReviewService {
+  private normalizeRecipeImageUrl(value: unknown): string | null {
+    const items = Array.isArray(value)
+      ? value
+      : (() => {
+          if (typeof value !== 'string') return [];
+          try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed) ? parsed : parsed ? [parsed] : [];
+          } catch {
+            return value.trim() ? [value.trim()] : [];
+          }
+        })();
+
+    const first = items.find((item) => typeof item === 'string' && item.trim());
+    return cosService.resolveStoredUrl(typeof first === 'string' ? first.trim() : null);
+  }
+
+  private normalizeReviewJson(review: WeeklyReview | null): WeeklyReview | null {
+    if (!review) return review;
+
+    const normalizeRecipes = (items?: RecipeMeta[]) =>
+      Array.isArray(items)
+        ? items.map((item) => ({
+            ...item,
+            image_url: this.normalizeRecipeImageUrl(item?.image_url),
+          }))
+        : [];
+
+    return {
+      ...review,
+      top_accepted_recipes: normalizeRecipes(review.top_accepted_recipes),
+      cautious_recipes: normalizeRecipes(review.cautious_recipes),
+    };
+  }
+
   /**
    * 获取本周回顾（带缓存）
    */
@@ -156,9 +192,11 @@ export class WeeklyReviewService {
       .where('scope_type', scopeType)
       .where('scope_id', scopeId)
       .where('week_start', weekStart)
-      .whereNull('child_id')
-      .orWhere((builder) => {
-        builder.where('child_id', childId);
+      .andWhere((builder) => {
+        builder.whereNull('child_id');
+        if (childId) {
+          builder.orWhere('child_id', childId);
+        }
       })
       .first();
 
@@ -166,9 +204,9 @@ export class WeeklyReviewService {
 
     return {
       ...record,
-      review_json: typeof record.review_json === 'string' 
-        ? JSON.parse(record.review_json) 
-        : record.review_json,
+      review_json: this.normalizeReviewJson(typeof record.review_json === 'string'
+        ? JSON.parse(record.review_json)
+        : record.review_json),
     };
   }
 
@@ -222,7 +260,7 @@ export class WeeklyReviewService {
     return rows.map((row: any) => ({
       recipe_id: row.recipe_id,
       recipe_name: row.recipe_name || null,
-      recipe_image_url: row.recipe_image_url || null,
+      recipe_image_url: this.normalizeRecipeImageUrl(row.recipe_image_url),
       accepted_level: row.accepted_level,
       allergy_flag: Boolean(row.allergy_flag),
       created_at: row.created_at,

@@ -1,5 +1,6 @@
 import { db, generateUUID } from '../config/database';
 import { familyService } from './family.service';
+import { cosService } from './cos.service';
 
 export type FeedingAcceptedLevel = 'like' | 'ok' | 'reject';
 
@@ -11,6 +12,7 @@ export interface CreateFeedingFeedbackInput {
   accepted_level: FeedingAcceptedLevel;
   allergy_flag?: boolean;
   note?: string | null;
+  image_urls?: string[] | null;
 }
 
 export interface FeedingFeedbackRecord {
@@ -24,6 +26,7 @@ export interface FeedingFeedbackRecord {
   accepted_level: FeedingAcceptedLevel;
   allergy_flag: boolean;
   note?: string | null;
+  image_urls?: string[] | null;
   created_at: string;
   updated_at: string;
   recipe_name?: string | null;
@@ -85,11 +88,13 @@ export class FeedingFeedbackService {
     this.validateInput(input);
 
     const now = new Date().toISOString();
+    const normalizedImageUrls = this.prepareStoredImageUrls(input.image_urls);
     // 获取用户所在的家庭ID，用于共享查看
     const familyId = await familyService.getFamilyIdForUser(input.user_id);
 
+    const rowId = generateUUID();
     const row = {
-      id: generateUUID(),
+      id: rowId,
       user_id: input.user_id,
       actor_user_id: input.user_id,  // 记录填写者
       family_id: familyId,           // 关联家庭
@@ -99,12 +104,14 @@ export class FeedingFeedbackService {
       accepted_level: input.accepted_level,
       allergy_flag: Boolean(input.allergy_flag),
       note: input.note?.trim() ? input.note.trim().slice(0, 500) : null,
+      image_urls: normalizedImageUrls ? JSON.stringify(normalizedImageUrls) : null,
       created_at: now,
       updated_at: now,
     };
 
     await db('feeding_feedbacks').insert(row);
-    return this.getFeedbackById(row.id) as Promise<FeedingFeedbackRecord>;
+
+    return this.getFeedbackById(rowId) as Promise<FeedingFeedbackRecord>;
   }
 
   async listRecentFeedbacks(input: ListRecentFeedingFeedbacksInput): Promise<FeedingFeedbackListResult> {
@@ -142,6 +149,7 @@ export class FeedingFeedbackService {
         'ff.accepted_level',
         'ff.allergy_flag',
         'ff.note',
+        'ff.image_urls',
         'ff.created_at',
         'ff.updated_at',
         'r.name as recipe_name',
@@ -218,7 +226,7 @@ export class FeedingFeedbackService {
         summaryMap.set(recipeId, {
           recipe_id: recipeId,
           recipe_name: row.recipe_name || null,
-          recipe_image_url: row.recipe_image_url || null,
+          recipe_image_url: this.normalizeImageUrls(row.recipe_image_url),
           feedback_count: 1,
           like_count: row.accepted_level === 'like' ? 1 : 0,
           ok_count: row.accepted_level === 'ok' ? 1 : 0,
@@ -269,10 +277,21 @@ export class FeedingFeedbackService {
       return null;
     }
 
-    const rows = await db('feeding_feedbacks as ff')
+    const family = await familyService.getFamilyByUserId(input.user_id);
+    const ownerId = family?.family?.owner_id || input.user_id;
+    const familyId = family?.family?.id || null;
+
+    let query = db('feeding_feedbacks as ff')
       .leftJoin('recipes as r', 'ff.recipe_id', 'r.id')
-      .where('ff.user_id', input.user_id)
-      .andWhere('ff.recipe_id', input.recipe_id)
+      .andWhere('ff.recipe_id', input.recipe_id);
+
+    if (familyId) {
+      query = query.where('ff.family_id', familyId);
+    } else {
+      query = query.where('ff.user_id', ownerId).whereNull('ff.family_id');
+    }
+
+    const rows = await query
       .select(
         'ff.id',
         'ff.recipe_id',
@@ -293,7 +312,7 @@ export class FeedingFeedbackService {
     let summary: FeedingFeedbackRecipeSummary = {
       recipe_id: input.recipe_id,
       recipe_name: rows[0].recipe_name || null,
-      recipe_image_url: rows[0].recipe_image_url || null,
+      recipe_image_url: this.normalizeImageUrls(rows[0].recipe_image_url),
       feedback_count: 0,
       like_count: 0,
       ok_count: 0,
@@ -354,11 +373,22 @@ export class FeedingFeedbackService {
       resultMap.set(recipeId, null);
     }
 
-    // 批量查询用户的所有 feeding feedbacks
-    const rows = await db('feeding_feedbacks as ff')
+    const family = await familyService.getFamilyByUserId(input.user_id);
+    const ownerId = family?.family?.owner_id || input.user_id;
+    const familyId = family?.family?.id || null;
+
+    let query = db('feeding_feedbacks as ff')
       .leftJoin('recipes as r', 'ff.recipe_id', 'r.id')
-      .where('ff.user_id', input.user_id)
-      .whereIn('ff.recipe_id', safeRecipeIds)
+      .whereIn('ff.recipe_id', safeRecipeIds);
+
+    if (familyId) {
+      query = query.where('ff.family_id', familyId);
+    } else {
+      query = query.where('ff.user_id', ownerId).whereNull('ff.family_id');
+    }
+
+    // 批量查询用户/家庭 scope 内的所有 feeding feedbacks
+    const rows = await query
       .select(
         'ff.id',
         'ff.recipe_id',
@@ -382,7 +412,7 @@ export class FeedingFeedbackService {
         summaryMap.set(recipeId, {
           recipe_id: recipeId,
           recipe_name: row.recipe_name || null,
-          recipe_image_url: row.recipe_image_url || null,
+          recipe_image_url: this.normalizeImageUrls(row.recipe_image_url),
           feedback_count: 1,
           like_count: row.accepted_level === 'like' ? 1 : 0,
           ok_count: row.accepted_level === 'ok' ? 1 : 0,
@@ -444,6 +474,7 @@ export class FeedingFeedbackService {
         'ff.accepted_level',
         'ff.allergy_flag',
         'ff.note',
+        'ff.image_urls',
         'ff.created_at',
         'ff.updated_at',
         'r.name as recipe_name',
@@ -458,6 +489,52 @@ export class FeedingFeedbackService {
     return this.normalizeRow(row, actorProfiles);
   }
 
+  private parseImageUrls(value: any): string[] {
+    if (!value) return [];
+
+    const parsed = typeof value === 'string'
+      ? (() => {
+          try {
+            return JSON.parse(value);
+          } catch {
+            return [value];
+          }
+        })()
+      : value;
+
+    const items = Array.isArray(parsed) ? parsed : [parsed];
+    return items
+      .map((item) => typeof item === 'string' ? item.trim() : '')
+      .filter(Boolean);
+  }
+
+  private normalizeCosUrlSafely(value: string, mode: 'stored' | 'signed'): string {
+    try {
+      return mode === 'stored'
+        ? (cosService.toStoredUrl(value) || value)
+        : (cosService.resolveStoredUrl(value) || value);
+    } catch {
+      return value;
+    }
+  }
+
+  private prepareStoredImageUrls(value: any): string[] | null {
+    const normalized = this.parseImageUrls(value)
+      .slice(0, 3)
+      .map((item) => this.normalizeCosUrlSafely(item, 'stored'))
+      .filter(Boolean) as string[];
+
+    return normalized.length ? normalized : null;
+  }
+
+  private normalizeImageUrls(value: any): string[] | null {
+    const normalized = this.parseImageUrls(value)
+      .map((item) => this.normalizeCosUrlSafely(item, 'signed'))
+      .filter(Boolean) as string[];
+
+    return normalized.length ? normalized : null;
+  }
+
   private normalizeRow(row: any, actorProfiles?: Map<string, { display_name?: string; avatar_url?: string }>): FeedingFeedbackRecord {
     const actorProfile = actorProfiles?.get(row.actor_user_id);
     return {
@@ -466,8 +543,12 @@ export class FeedingFeedbackService {
       family_id: row.family_id || null,
       allergy_flag: Boolean(row.allergy_flag),
       baby_age_at_that_time: row.baby_age_at_that_time == null ? null : Number(row.baby_age_at_that_time),
+      image_urls: this.normalizeImageUrls(row.image_urls),
       actor_display_name: actorProfile?.display_name || null,
-      actor_avatar_url: actorProfile?.avatar_url || null,
+      recipe_image_url: this.normalizeImageUrls(row.recipe_image_url),
+      actor_avatar_url: actorProfile?.avatar_url
+        ? this.normalizeCosUrlSafely(actorProfile.avatar_url, 'signed')
+        : null,
     };
   }
 
@@ -483,6 +564,15 @@ export class FeedingFeedbackService {
 
     if (input.note != null && typeof input.note !== 'string') {
       throw new Error('INVALID_NOTE');
+    }
+
+    if (input.image_urls != null) {
+      if (!Array.isArray(input.image_urls) || input.image_urls.some((item) => typeof item !== 'string' || !item.trim())) {
+        throw new Error('INVALID_IMAGE_URLS');
+      }
+      if (input.image_urls.length > 3) {
+        throw new Error('INVALID_IMAGE_URLS');
+      }
     }
   }
 }

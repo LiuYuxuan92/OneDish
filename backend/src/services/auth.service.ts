@@ -1,4 +1,5 @@
 import { db } from '../config/database';
+import { cosService } from './cos.service';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { Knex } from 'knex';
@@ -82,7 +83,7 @@ export class AuthService {
       .insert({
         username,
         wechat_openid: openid,
-        avatar_url,
+        avatar_url: cosService.toStoredUrl(avatar_url),
         password_hash,
         family_size: 2,
         preferences: {},

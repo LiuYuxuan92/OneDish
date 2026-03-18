@@ -216,6 +216,7 @@ export function mapRecipeDetailPage(params: {
         label: item.accepted_level === 'like' ? '喜欢' : item.accepted_level === 'ok' ? '一般' : '拒绝',
         dateText: formatFeedbackDate(item.created_at),
         note: item.note || undefined,
+        imageUrls: item.image_urls || [],
       })),
     },
   };

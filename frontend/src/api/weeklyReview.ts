@@ -3,7 +3,7 @@ import { apiClient } from './client';
 export interface WeeklyReviewRecipeMeta {
   recipe_id: string;
   recipe_name: string;
-  image_url?: string | null;
+  image_url?: string[] | string | null;
   feedback_count: number;
   accepted_level: 'like' | 'ok' | 'reject';
 }

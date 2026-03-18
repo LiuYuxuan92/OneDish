@@ -1,5 +1,6 @@
 import { db } from '../config/database';
 import { RiskHit, UgcRiskService } from './ugc-risk.service';
+import { cosService } from './cos.service';
 
 const JSON_FIELDS = ['original_data', 'adult_version', 'baby_version', 'cooking_tips', 'image_url', 'tags', 'category', 'allergens', 'step_branches'];
 const RECOMMEND_POOL_THRESHOLD = 75;
@@ -13,6 +14,14 @@ export class SafetyValidationError extends Error {
 
 export class UserRecipeService {
   private readonly riskService = new UgcRiskService();
+
+  private normalizeStoredImageList(value: unknown): string[] | null {
+    if (!Array.isArray(value)) return null;
+    const normalized = value
+      .map((item) => cosService.toStoredUrl(typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean) as string[];
+    return normalized.length ? normalized : null;
+  }
 
   async createDraft(userId: string, payload: any) {
     return this.upsertDraft(userId, undefined, payload);
@@ -397,7 +406,7 @@ export class UserRecipeService {
       adult_version: adultVersion ? JSON.stringify(adultVersion) : null,
       baby_version: baby_version ? JSON.stringify(baby_version) : null,
       cooking_tips: cooking_tips ? JSON.stringify(cooking_tips) : null,
-      image_url: image_url ? JSON.stringify(image_url) : null,
+      image_url: this.normalizeStoredImageList(image_url) ? JSON.stringify(this.normalizeStoredImageList(image_url)) : null,
       tags: tags ? JSON.stringify(tags) : null,
       category: category ? JSON.stringify(category) : null,
       baby_age_range: baby_age_range || null,
@@ -414,6 +423,11 @@ export class UserRecipeService {
       if (recipe[field] && typeof recipe[field] === 'string') {
         try { recipe[field] = JSON.parse(recipe[field]); } catch {}
       }
+    }
+    if (Array.isArray(recipe.image_url)) {
+      recipe.image_url = recipe.image_url
+        .map((item: unknown) => cosService.resolveStoredUrl(typeof item === 'string' ? item.trim() : ''))
+        .filter(Boolean);
     }
     if (!Array.isArray(recipe.allergens)) recipe.allergens = [];
     if (!Array.isArray(recipe.step_branches)) recipe.step_branches = [];
