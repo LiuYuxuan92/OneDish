@@ -593,6 +593,14 @@
   background: linear-gradient(135deg, #fff2df, #f7e6cb);
 }
 
+.detail-quick-card.save {
+  background: linear-gradient(135deg, #fff7eb, #f8ead3);
+}
+
+.detail-quick-card.save.disabled {
+  opacity: 0.7;
+}
+
 .detail-quick-card.soft {
   background: linear-gradient(135deg, #f3f6f4, #edf3ef);
 }
@@ -615,6 +623,10 @@
   color: #7f5725;
 }
 
+.detail-quick-card.save .detail-quick-title {
+  color: #8a602d;
+}
+
 .detail-quick-desc {
   display: block;
   margin-top: 10rpx;
@@ -628,6 +640,10 @@
 
 .detail-quick-card.warm .detail-quick-desc {
   color: #936c43;
+}
+
+.detail-quick-card.save .detail-quick-desc {
+  color: #9b7548;
 }
 
 .detail-quick-card.soft .detail-quick-title {

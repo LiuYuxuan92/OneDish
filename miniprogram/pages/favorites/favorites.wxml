@@ -47,7 +47,11 @@
           </view>
         </view>
         <view class="item-actions">
-          <text class="btn-open" bindtap="goToRecipe" data-id="{{item.id}}">继续做</text>
+          <view class="item-actions-main">
+            <text class="btn-open" bindtap="goToRecipe" data-id="{{item.id}}">继续做</text>
+            <text class="btn-secondary" bindtap="addToShoppingList" data-id="{{item.id}}">加入清单</text>
+            <text class="btn-secondary" bindtap="addToPlan" data-id="{{item.id}}">加入计划</text>
+          </view>
           <text class="btn-remove" bindtap="removeFavorite" data-id="{{item.id}}">取消收藏</text>
         </view>
       </view>

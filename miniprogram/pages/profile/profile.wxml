@@ -67,6 +67,15 @@
         <text class="hub-meta">{{babyAgeText || '先设置宝宝月龄'}}</text>
       </view>
 
+      <view class="hub-card soft-card" bindtap="goToFamily">
+        <view class="hub-icon soft">
+          <van-icon name="friends-o" size="18" color="#486154" />
+        </view>
+        <text class="hub-title">家庭入口</text>
+        <text class="hub-desc">查看家庭功能规划与占位说明</text>
+        <text class="hub-meta">创建、加入、邀请码和成员能力仍在建设中</text>
+      </view>
+
       <view class="hub-card" bindtap="goToLogin">
         <view class="hub-icon soft">
           <van-icon name="contact-o" size="18" color="#486154" />
@@ -114,6 +123,14 @@
         <text>我的收藏</text>
       </view>
       <text>查看常做菜谱</text>
+    </van-cell>
+
+    <van-cell is-link bindtap="goToFamily">
+      <view slot="title" class="cell-title">
+        <van-icon name="friends-o" size="18" color="#486154" />
+        <text>家庭入口</text>
+      </view>
+      <text>查看占位页与能力建设说明</text>
     </van-cell>
 
     <button class="contact-btn" open-type="contact">

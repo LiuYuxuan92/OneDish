@@ -1,0 +1,141 @@
+.family-page {
+  min-height: 100vh;
+  padding: 24rpx;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at top right, rgba(213, 226, 241, 0.48), transparent 32%),
+    linear-gradient(180deg, #f8f5ef 0%, #eef3f6 45%, #edf2ee 100%);
+}
+
+.family-hero,
+.family-section {
+  padding: 28rpx 26rpx;
+  border-radius: 30rpx;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 18rpx 38rpx rgba(34, 52, 43, 0.08);
+}
+
+.family-hero {
+  margin-bottom: 18rpx;
+}
+
+.family-kicker {
+  display: inline-block;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: #eef4fb;
+  color: #667f95;
+  font-size: 20rpx;
+  letter-spacing: 2rpx;
+}
+
+.family-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+  margin-top: 18rpx;
+}
+
+.family-title {
+  color: #22342b;
+  font-size: 40rpx;
+  font-weight: 700;
+}
+
+.family-status {
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  background: #f7ead9;
+  color: #8a6030;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.family-desc,
+.family-note,
+.section-desc,
+.action-desc {
+  display: block;
+  color: #6f7b75;
+  font-size: 24rpx;
+  line-height: 1.65;
+}
+
+.family-desc {
+  margin-top: 12rpx;
+}
+
+.family-note {
+  margin-top: 10rpx;
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18rpx;
+  margin-bottom: 16rpx;
+}
+
+.section-heading.stack {
+  display: block;
+}
+
+.section-title {
+  color: #22342b;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.section-desc {
+  text-align: right;
+}
+
+.section-desc.left {
+  margin-top: 12rpx;
+  text-align: left;
+}
+
+.action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+
+.action-card {
+  padding: 24rpx 22rpx;
+  border-radius: 24rpx;
+  background: #f7faf8;
+  border: 1rpx solid rgba(39, 69, 57, 0.06);
+}
+
+.action-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.action-title {
+  color: #22342b;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.action-badge {
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  background: #edf3ef;
+  color: #486154;
+  font-size: 20rpx;
+}
+
+.action-desc {
+  margin-top: 10rpx;
+}
+
+.family-section-muted {
+  margin-top: 18rpx;
+  background: rgba(255, 255, 255, 0.86);
+}

@@ -232,6 +232,15 @@ function addFavorite(recipeId) {
   });
 }
 
+function saveExternalRecipe(payload) {
+  return request({
+    url: '/user-recipes',
+    method: 'POST',
+    data: payload,
+    withAuth: true,
+  });
+}
+
 function generateMealPlanFromPrompt(prompt) {
   return request({
     url: '/meal-plans/generate-from-prompt',
@@ -380,6 +389,7 @@ module.exports = {
   normalizeUserPreferences,
   removeFavorite,
   removeShoppingListItem,
+  saveExternalRecipe,
   searchRecipes,
   swapRecommendation,
   updateShoppingListItem,

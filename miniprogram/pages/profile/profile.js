@@ -139,6 +139,10 @@ Page({
     wx.switchTab({ url: '/pages/favorites/favorites' });
   },
 
+  goToFamily() {
+    wx.navigateTo({ url: '/pages/family/family' });
+  },
+
   onShareAppMessage() {
     return {
       title: '简家厨 - 一鱼两吃',

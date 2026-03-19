@@ -1,0 +1,42 @@
+<view class="family-page">
+  <view class="family-hero">
+    <text class="family-kicker">FAMILY HUB</text>
+    <view class="family-title-row">
+      <text class="family-title">家庭入口占位页</text>
+      <text class="family-status">{{statusTag}}</text>
+    </view>
+    <text class="family-desc">后续可扩展为家庭共享计划、清单与做饭协作。</text>
+    <text class="family-note">{{supportText}}</text>
+    <text class="family-note family-note-strong">{{placeholderNotice}}</text>
+  </view>
+
+  <view class="family-section">
+    <view class="section-heading">
+      <text class="section-title">可用入口</text>
+      <text class="section-desc">先把家庭相关入口补齐，避免伪造后端流程。</text>
+    </view>
+
+    <view class="action-list">
+      <view
+        class="action-card"
+        wx:for="{{familyActions}}"
+        wx:key="key"
+        bindtap="onActionTap"
+        data-title="{{item.title}}"
+      >
+        <view class="action-top">
+          <text class="action-title">{{item.title}}</text>
+          <text class="action-badge">{{item.badge}}</text>
+        </view>
+        <text class="action-desc">{{item.description}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="family-section family-section-muted">
+    <view class="section-heading stack">
+      <text class="section-title">当前说明</text>
+      <text class="section-desc left">现在只有入口与占位说明，后续接入家庭 API 后再补真实创建、加入、邀请码和成员管理。</text>
+    </view>
+  </view>
+</view>

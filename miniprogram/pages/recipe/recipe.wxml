@@ -159,6 +159,14 @@
             <text class="detail-quick-desc">把食材先备齐，再回来照着做。</text>
           </view>
           <view
+            wx:if="{{detail.is_external_result}}"
+            class="detail-quick-card save {{isSavingExternalRecipe ? 'disabled' : ''}}"
+            bindtap="saveExternalRecipeToLocal"
+          >
+            <text class="detail-quick-title">{{isSavingExternalRecipe ? '保存中...' : '保存为本地菜谱'}}</text>
+            <text class="detail-quick-desc">保存后可继续收藏、反馈、生成宝宝版和加入计划。</text>
+          </view>
+          <view
             wx:if="{{!detail.is_external_result}}"
             class="detail-quick-card soft {{detail.is_favorited ? 'active' : ''}}"
             bindtap="onToggleFavorite"
@@ -171,7 +179,7 @@
             <text class="detail-quick-desc">按月龄生成更适合宝宝入口和处理方式的版本。</text>
           </view>
         </view>
-        <text wx:if="{{detail.is_external_result}}" class="detail-quick-tip">联网菜谱暂不支持收藏与反馈，可先加入清单后继续查看做法。</text>
+        <text wx:if="{{detail.is_external_result}}" class="detail-quick-tip">联网菜谱暂不支持收藏与反馈，可先保存为本地菜谱或加入清单后继续查看做法。</text>
 
         <view class="detail-card intro-card" wx:if="{{detail.description || (detail.baby_version && detail.baby_version.tips)}}">
           <view class="section-title-row">

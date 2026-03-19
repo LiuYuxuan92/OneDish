@@ -1,5 +1,23 @@
 const api = require('../../utils/api');
 const { openRecipeDetail } = require('../../utils/navigation');
+const { buildPendingPlanExecution } = require('../../utils/plan-pending-execution');
+
+const PENDING_PLAN_EXECUTION_KEY = 'pending_plan_execution';
+const PENDING_IMPORT_KEY = 'pending_import';
+const PENDING_PLAN_SOURCE = 'favorites';
+
+function normalizePendingImportItem(ingredient) {
+  return {
+    name: ingredient?.name || ingredient,
+    quantity: ingredient?.quantity || ingredient?.amount || '',
+    unit: ingredient?.unit || '',
+    checked: false,
+  };
+}
+
+function buildFavoritesPendingPlanExecution(recipe) {
+  return buildPendingPlanExecution(recipe, { source: PENDING_PLAN_SOURCE });
+}
 
 function adaptRecipeData(recipe) {
   if (!recipe) return null;
@@ -62,11 +80,75 @@ Page({
 
   goToRecipe(e) {
     const id = e.currentTarget.dataset.id;
-    openRecipeDetail(id);
+    const recipe = this.getFavoriteById(id);
+    openRecipeDetail(recipe || id);
   },
 
   goToRecipeList() {
     wx.switchTab({ url: '/pages/recipe/recipe' });
+  },
+
+  getActiveFavorites() {
+    return this.data.favorites.length ? this.data.favorites : this.data.localFavorites;
+  },
+
+  getFavoriteById(id) {
+    return this.getActiveFavorites().find((item) => String(item.id) === String(id));
+  },
+
+  buildPendingPlanExecution: buildFavoritesPendingPlanExecution,
+
+  addToShoppingListFallback(recipe) {
+    const ingredients = recipe?.ingredients || [];
+    if (!ingredients.length) {
+      wx.showToast({ title: '当前菜谱暂无食材信息', icon: 'none' });
+      return;
+    }
+
+    const items = ingredients.map((ingredient) => normalizePendingImportItem(ingredient));
+
+    wx.setStorageSync(PENDING_IMPORT_KEY, items);
+    wx.switchTab({ url: '/pages/plan/plan' });
+    wx.showToast({ title: '已加入待购清单', icon: 'success' });
+  },
+
+  async addToShoppingList(e) {
+    const id = e.currentTarget.dataset.id;
+    const recipe = this.getFavoriteById(id);
+    if (!recipe) return;
+
+    const token = wx.getStorageSync('token');
+    if (!token) {
+      this.addToShoppingListFallback(recipe);
+      return;
+    }
+
+    try {
+      await api.addRecipeToShoppingList({ recipeId: recipe.id });
+      wx.showToast({ title: '已加入云端清单', icon: 'success' });
+      setTimeout(() => {
+        wx.switchTab({ url: '/pages/plan/plan' });
+      }, 400);
+    } catch (err) {
+      console.error('[favorites] add recipe to shopping list failed:', err);
+      this.addToShoppingListFallback(recipe);
+    }
+  },
+
+  addToPlan(e) {
+    const id = e.currentTarget.dataset.id;
+    const recipe = this.getFavoriteById(id);
+    const payload = this.buildPendingPlanExecution(recipe);
+    if (!payload) {
+      wx.showToast({ title: '当前暂无可安排的菜谱', icon: 'none' });
+      return;
+    }
+
+    wx.setStorageSync(PENDING_PLAN_EXECUTION_KEY, payload);
+    wx.showToast({ title: '已加入今天晚餐', icon: 'success' });
+    setTimeout(() => {
+      wx.switchTab({ url: '/pages/plan/plan' });
+    }, 350);
   },
 
   removeFavorite(e) {

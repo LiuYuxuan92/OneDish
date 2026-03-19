@@ -234,6 +234,40 @@ function adaptRecipeData(recipe) {
   return adapted;
 }
 
+function buildUserRecipePayloadFromExternalDetail(detail) {
+  const ingredients = Array.isArray(detail?.ingredients) && detail.ingredients.length
+    ? detail.ingredients
+    : Array.isArray(detail?.adult_version?.ingredients)
+      ? detail.adult_version.ingredients
+      : [];
+  const adultSteps = Array.isArray(detail?.adult_version?.steps)
+    ? detail.adult_version.steps
+    : Array.isArray(detail?.steps)
+      ? detail.steps
+      : [];
+  const imageUrl = detail?.cover_url
+    ? [detail.cover_url]
+    : Array.isArray(detail?.image_url)
+      ? detail.image_url
+      : detail?.image_url
+        ? [detail.image_url]
+        : [];
+
+  return {
+    name: detail?.title || detail?.name || '',
+    source: detail?.source || 'external',
+    prep_time: detail?.cook_time || detail?.total_time || detail?.prep_time || 0,
+    difficulty: detail?.difficulty || 'medium',
+    image_url: imageUrl,
+    adult_version: {
+      description: detail?.adult_version?.description || detail?.description || '',
+      ingredients,
+      steps: adultSteps,
+    },
+    original_data: detail,
+  };
+}
+
 function adaptListData(items) {
   if (!items || !items.length) return [];
   return items.map((item) => adaptRecipeData(item));
@@ -264,6 +298,7 @@ Page({
     aiQuotaCard: null,
     recipeBanner: { title: '', subtitle: '', badgeText: '', actionText: '', footerText: '', quotaCards: [], theme: 'neutral' },
     favoriteSubmitting: false,
+    isSavingExternalRecipe: false,
   },
 
   setActionFeedback(message, tone = 'info') {
@@ -501,6 +536,37 @@ Page({
       }
     } finally {
       this.setData({ favoriteSubmitting: false });
+    }
+  },
+
+  async saveExternalRecipeToLocal() {
+    const { detail, isSavingExternalRecipe } = this.data;
+    if (!detail?.is_external_result || isSavingExternalRecipe) return;
+
+    this.setData({ isSavingExternalRecipe: true });
+
+    try {
+      const payload = buildUserRecipePayloadFromExternalDetail(detail);
+      const saved = await api.saveExternalRecipe(payload);
+      const savedRecipe = saved && saved.recipe ? saved.recipe : saved;
+      const adaptedDetail = adaptRecipeData(savedRecipe);
+      const nextDetail = await this.applyDetailState({
+        ...adaptedDetail,
+        is_external_result: false,
+      }, { keepScrollTarget: true });
+
+      if (nextDetail?.id) {
+        cache.setCache(`recipe_${nextDetail.id}`, nextDetail);
+        this.loadRecentFeedingFeedbacks(nextDetail.id);
+      }
+
+      this.setActionFeedback('已保存为本地菜谱，下面可以继续收藏、反馈或生成宝宝版。', 'success');
+      wx.showToast({ title: '已保存为本地菜谱', icon: 'success' });
+    } catch (err) {
+      console.error('[recipe] save external recipe failed:', err);
+      wx.showToast({ title: err.message || '保存失败，请稍后重试', icon: 'none' });
+    } finally {
+      this.setData({ isSavingExternalRecipe: false });
     }
   },
 
@@ -805,6 +871,7 @@ if (typeof module !== 'undefined') {
   module.exports = {
     adaptRecipeData,
     normalizeFeedbackItems,
+    buildUserRecipePayloadFromExternalDetail,
   };
 }
 
