@@ -158,11 +158,20 @@
             <text class="detail-quick-title">先加入清单</text>
             <text class="detail-quick-desc">把食材先备齐，再回来照着做。</text>
           </view>
-          <view class="detail-quick-card warm" bindtap="openAIGenerateModal">
+          <view
+            wx:if="{{!detail.is_external_result}}"
+            class="detail-quick-card soft {{detail.is_favorited ? 'active' : ''}}"
+            bindtap="onToggleFavorite"
+          >
+            <text class="detail-quick-title">{{detail.is_favorited ? '取消收藏' : '收藏'}}</text>
+            <text class="detail-quick-desc">{{detail.is_favorited ? '这道常做菜可从收藏页移除。' : '先收起来，后续可在收藏页快速找回。'}}</text>
+          </view>
+          <view wx:if="{{!detail.is_external_result}}" class="detail-quick-card warm" bindtap="openAIGenerateModal">
             <text class="detail-quick-title">生成宝宝版</text>
             <text class="detail-quick-desc">按月龄生成更适合宝宝入口和处理方式的版本。</text>
           </view>
         </view>
+        <text wx:if="{{detail.is_external_result}}" class="detail-quick-tip">联网菜谱暂不支持收藏与反馈，可先加入清单后继续查看做法。</text>
 
         <view class="detail-card intro-card" wx:if="{{detail.description || (detail.baby_version && detail.baby_version.tips)}}">
           <view class="section-title-row">
@@ -215,7 +224,7 @@
           </view>
         </view>
 
-        <view id="baby-version-card" class="detail-card detail-card-warm {{babyVersionFlash ? 'detail-card-focus' : ''}}">
+        <view id="baby-version-card" wx:if="{{!detail.is_external_result}}" class="detail-card detail-card-warm {{babyVersionFlash ? 'detail-card-focus' : ''}}">
           <view class="section-title-row">
             <text class="detail-section-title">宝宝版处理</text>
             <text class="section-badge warm" wx:if="{{detail.baby_version && detail.baby_version.age_range}}">
@@ -285,7 +294,7 @@
           </view>
         </view>
 
-        <view class="detail-card feedback-card">
+        <view class="detail-card feedback-card" wx:if="{{!detail.is_external_result}}">
           <view class="section-title-row">
             <text class="detail-section-title">用餐反馈</text>
             <text class="section-badge subtle">帮助后续推荐更准</text>
@@ -328,7 +337,7 @@
           </view>
         </view>
 
-        <view class="detail-card ai-card">
+        <view class="detail-card ai-card" wx:if="{{!detail.is_external_result}}">
           <view class="section-title-row">
             <text class="detail-section-title">宝宝版生成</text>
             <text class="section-badge subtle">AI / 规则引擎</text>

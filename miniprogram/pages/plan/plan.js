@@ -2,6 +2,13 @@ const api = require('../../utils/api');
 const { getBaseURL, getToken, setBaseURL, setToken } = require('../../utils/config');
 const { trackEvent } = require('../../utils/analytics');
 const { buildQuotaCard, buildBannerModel, handleQuotaUpgradeError } = require('../../utils/entitlements');
+const { openRecipeDetail } = require('../../utils/navigation');
+const {
+  buildExecutionSeedFromPlan,
+  buildTodayExecutionState,
+  countExecutionDone,
+  normalizeExecutionEntry,
+} = require('./plan-execution-state');
 
 const LOCAL_KEY = 'plan_local_items';
 const HISTORY_KEY = 'plan_history';
@@ -39,6 +46,7 @@ function normalizeImportedItems(items = []) {
       unit: item.unit || '',
       checked: Boolean(item.checked),
       source: 'local',
+      sourceMealType: item.sourceMealType || item.mealType || '',
     }))
   ).filter((item) => item.name);
 }
@@ -68,6 +76,27 @@ function buildLocalShareCode() {
   return `LOCAL-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
+
+const EXECUTION_STATE_KEY = 'plan_execution_state';
+
+function formatDateKey(date = new Date()) {
+  const current = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(current.getTime())) return '';
+  const month = `${current.getMonth() + 1}`.padStart(2, '0');
+  const day = `${current.getDate()}`.padStart(2, '0');
+  return `${current.getFullYear()}-${month}-${day}`;
+}
+
+function getTodayDateKey() {
+  return formatDateKey(new Date());
+}
+
+function shouldPersistExecutionSeed(currentEntries = [], seedEntries = []) {
+  if (!Array.isArray(seedEntries) || !seedEntries.length) return false;
+  if (!Array.isArray(currentEntries) || !currentEntries.length) return true;
+  return false;
+}
+
 const MEAL_LABELS = {
   breakfast: '早餐',
   lunch: '午餐',
@@ -89,14 +118,21 @@ function buildGeneratedPlanPreview(result) {
     .map((date) => ({
       date,
       label: formatWeekday(date),
-      meals: Object.keys(plans[date] || {}).map((mealType) => ({
-        mealType,
-        mealLabel: MEAL_LABELS[mealType] || mealType,
-        name: plans[date]?.[mealType]?.name || '待补充',
-        prepTime: plans[date]?.[mealType]?.prep_time || null,
-      })),
+      meals: Object.keys(plans[date] || {}).map((mealType) => {
+        const recipe = plans[date]?.[mealType] || null;
+        return {
+          mealType,
+          mealLabel: MEAL_LABELS[mealType] || mealType,
+          name: (recipe && (recipe.name || recipe.title)) || '待补充',
+          prepTime: recipe?.prep_time || null,
+        };
+      }),
     }))
     .filter((item) => item.meals.length);
+}
+
+function hasMeaningfulExecutionEntries(entries = []) {
+  return Array.isArray(entries) && entries.some((entry) => entry && (entry.recipeId || entry.title !== '待安排' || (Array.isArray(entry.ingredients) && entry.ingredients.length)));
 }
 
 function buildGeneratedPlanTags(result) {
@@ -115,6 +151,59 @@ function buildGeneratedPlanTags(result) {
     tags.push(`风格 ${constraints.mood}`);
   }
   return tags;
+}
+
+function loadExecutionStateFromStorage() {
+  return wx.getStorageSync(EXECUTION_STATE_KEY) || {};
+}
+
+function saveExecutionStateToStorage(state) {
+  wx.setStorageSync(EXECUTION_STATE_KEY, state || {});
+}
+
+function mergePendingExecutionIntoEntries(entries = [], pending, dateKey = getTodayDateKey()) {
+  if (!pending || !pending.slot || !pending.recipe?.id) return Array.isArray(entries) ? entries : [];
+
+  const slot = pending.slot.mealType || pending.slot.slot || '';
+  if (!slot) return Array.isArray(entries) ? entries : [];
+
+  const nextEntry = normalizeExecutionEntry({
+    date: pending.slot.date || dateKey,
+    slot,
+    slotLabel: pending.slot.mealLabel || MEAL_LABELS[slot] || slot,
+    title: pending.recipe.title || pending.recipe.name || '待安排',
+    recipeId: pending.recipe.id,
+    recipe: {
+      id: pending.recipe.id,
+      title: pending.recipe.title || pending.recipe.name || '',
+      name: pending.recipe.title || pending.recipe.name || '',
+      cover_url: pending.recipe.coverUrl || '',
+      description: pending.recipe.description || '',
+      difficulty: pending.recipe.difficulty || '',
+      ingredients: Array.isArray(pending.recipe.ingredients) ? pending.recipe.ingredients : [],
+    },
+    ingredients: Array.isArray(pending.recipe.ingredients) ? pending.recipe.ingredients : [],
+    done: false,
+    source: pending.source || 'home_recommendation',
+  }, dateKey);
+
+  const baseEntries = Array.isArray(entries) ? entries.slice() : [];
+  const existingIndex = baseEntries.findIndex((entry) => (entry.slot || entry.mealType) === slot);
+  if (existingIndex >= 0) {
+    baseEntries[existingIndex] = nextEntry;
+    return baseEntries;
+  }
+
+  return [...baseEntries, nextEntry];
+}
+
+function consumePendingPlanExecutionIntoState(state = {}, pending) {
+  if (!pending || !pending.slot || !pending.recipe?.id) return state;
+
+  const dateKey = pending.slot.date || getTodayDateKey();
+  const nextState = { ...state };
+  nextState[dateKey] = mergePendingExecutionIntoEntries(nextState[dateKey] || [], pending, dateKey);
+  return nextState;
 }
 
 Page({
@@ -149,6 +238,10 @@ Page({
     generatedMealPlan: null,
     generatedPlanPreviewDays: [],
     generatedPlanSummaryTags: [],
+    todayExecutionEntries: [],
+    todayExecutionDate: '',
+    todayExecutionDoneCount: 0,
+    hasMeaningfulTodayExecution: false,
     actionFeedback: null,
     weeklyPlanQuotaCard: null,
     smartRecommendationQuotaCard: null,
@@ -177,7 +270,9 @@ Page({
   },
 
   onShow() {
+    this.consumePendingPlanExecution();
     this.consumePendingImport();
+    this.restoreTodayExecutionState();
 
     const token = wx.getStorageSync('token') || getToken();
     const baseURL = wx.getStorageSync('baseURL') || getBaseURL();
@@ -204,6 +299,114 @@ Page({
 
   onUnload() {
     this.clearFeedbackTimer();
+  },
+
+  buildTodayExecutionSeed() {
+    return buildExecutionSeedFromPlan(this.data.generatedMealPlan, getTodayDateKey());
+  },
+
+  persistTodayExecutionEntries(entries) {
+    const dateKey = getTodayDateKey();
+    const state = loadExecutionStateFromStorage();
+    state[dateKey] = (entries || []).map((entry) => normalizeExecutionEntry(entry, dateKey));
+    saveExecutionStateToStorage(state);
+    this.setData({
+      todayExecutionEntries: state[dateKey],
+      todayExecutionDate: dateKey,
+      todayExecutionDoneCount: countExecutionDone(state[dateKey]),
+      hasMeaningfulTodayExecution: hasMeaningfulExecutionEntries(state[dateKey]),
+    });
+  },
+
+  restoreTodayExecutionState(seedEntries) {
+    const dateKey = getTodayDateKey();
+    const state = loadExecutionStateFromStorage();
+    const entries = buildTodayExecutionState(state, seedEntries || this.buildTodayExecutionSeed(), dateKey);
+    if (!Array.isArray(state[dateKey]) || !state[dateKey].length || (seedEntries && shouldPersistExecutionSeed(state[dateKey], seedEntries))) {
+      state[dateKey] = entries;
+      saveExecutionStateToStorage(state);
+    }
+
+    this.setData({
+      todayExecutionEntries: entries,
+      todayExecutionDate: dateKey,
+      todayExecutionDoneCount: countExecutionDone(entries),
+      hasMeaningfulTodayExecution: hasMeaningfulExecutionEntries(entries),
+    });
+  },
+
+  onExecutionRecipeTap(e) {
+    const index = e.currentTarget.dataset.index;
+    const entry = this.data.todayExecutionEntries[index];
+    if (!entry || !entry.recipeId) {
+      wx.showToast({ title: '当前餐次还没有可查看的菜谱', icon: 'none' });
+      return;
+    }
+
+    trackEvent('mp_plan_execution_recipe_tap', { slot: entry.slot, recipe_id: entry.recipeId });
+    openRecipeDetail(entry.recipe || entry.recipeId);
+  },
+
+  async onExecutionAddToShopping(e) {
+    const index = e.currentTarget.dataset.index;
+    const entry = this.data.todayExecutionEntries[index];
+    if (!entry) return;
+
+    const names = Array.isArray(entry.ingredients) ? entry.ingredients.filter(Boolean) : [];
+    if (!names.length) {
+      wx.showToast({ title: '当前餐次暂无可加入的食材', icon: 'none' });
+      return;
+    }
+
+    if (this.data.listMode === 'server' && this.data.activeListId) {
+      try {
+        await Promise.all(
+          names.map((name) => api.addShoppingListItem(this.data.activeListId, {
+            item_name: name,
+            amount: '',
+            area: 'other',
+            source_meal_type: entry.slotLabel,
+          }))
+        );
+        await this.loadData();
+        trackEvent('mp_plan_execution_add_shopping', { slot: entry.slot, ingredient_count: names.length, mode: 'server' });
+        wx.showToast({ title: '已加入云端清单', icon: 'success' });
+        this.setActionFeedback(`已将${entry.slotLabel}所需食材加入云端采购清单。`, 'success');
+        return;
+      } catch (err) {
+        console.error('[plan] add execution ingredients to server list failed:', err);
+        wx.showToast({ title: '加入云端清单失败，请稍后重试', icon: 'none' });
+        return;
+      }
+    }
+
+    this.importItems(names.map((name) => ({ name, checked: false, sourceMealType: entry.slotLabel })));
+    this.loadLocalData();
+    trackEvent('mp_plan_execution_add_shopping', { slot: entry.slot, ingredient_count: names.length, mode: 'local' });
+    this.setActionFeedback(`已将${entry.slotLabel}所需食材加入采购清单。`, 'success');
+  },
+
+  onExecutionDoneTap(e) {
+    const index = e.currentTarget.dataset.index;
+    const entries = (this.data.todayExecutionEntries || []).slice();
+    const entry = entries[index];
+    if (!entry) return;
+
+    entries[index] = { ...entry, done: !entry.done };
+    this.persistTodayExecutionEntries(entries);
+    trackEvent('mp_plan_execution_done_toggle', { slot: entry.slot, done: entries[index].done });
+  },
+
+  consumePendingPlanExecution() {
+    const pending = wx.getStorageSync('pending_plan_execution');
+    if (!pending || !pending.slot || !pending.recipe?.id) return;
+
+    wx.removeStorageSync('pending_plan_execution');
+    const state = loadExecutionStateFromStorage();
+    const nextState = consumePendingPlanExecutionIntoState(state, pending);
+    saveExecutionStateToStorage(nextState);
+    this.setActionFeedback(`${pending.slot.label || '今天晚餐'}已安排：${pending.recipe.title || pending.recipe.name || '这道菜'}`, 'success');
+    wx.showToast({ title: '已加入今天晚餐', icon: 'success' });
   },
 
   consumePendingImport() {
@@ -287,7 +490,10 @@ Page({
   },
 
   importItems(items) {
-    const imported = normalizeImportedItems(items);
+    const imported = normalizeImportedItems(items).map((item) => ({
+      ...item,
+      sourceMealType: item.sourceMealType || item.mealType || '',
+    }));
     if (!imported.length) return;
 
     const local = normalizeImportedItems(wx.getStorageSync(LOCAL_KEY) || []);
@@ -688,30 +894,53 @@ Page({
       const result = await api.generateMealPlanFromPrompt(prompt);
       const previewDays = buildGeneratedPlanPreview(result);
       const summaryTags = buildGeneratedPlanTags(result);
+      const executionSeed = buildExecutionSeedFromPlan(result, getTodayDateKey());
       this.setData({
         generatedMealPlan: result,
         generatedPlanPreviewDays: previewDays,
         generatedPlanSummaryTags: summaryTags,
         isGenerating: false,
       });
-      this.loadBillingSnapshot();
+      this.restoreTodayExecutionState(executionSeed);
 
-      wx.showToast({ title: '周计划已生成', icon: 'success' });
+      this.loadBillingSnapshot();
 
       const importedCount = Array.isArray(result?.ingredients) ? result.ingredients.length : 0;
 
       if (importedCount) {
-        this.importItems(
-          result.ingredients.map((item) => ({
-            name: item,
-            checked: false,
-          }))
-        );
-        this.loadLocalData();
+        const importedItems = result.ingredients.map((item) => ({
+          name: item,
+          checked: false,
+        }));
+
+        if (this.data.listMode === 'server' && this.data.activeListId) {
+          try {
+            await Promise.all(
+              importedItems.map((item) => api.addShoppingListItem(this.data.activeListId, {
+                item_name: item.name,
+                amount: item.quantity || '',
+                area: item.area || 'other',
+              }))
+            );
+            await this.loadData();
+            wx.showToast({ title: '周计划已生成并同步清单', icon: 'success' });
+          } catch (err) {
+            console.error('[plan] import generated ingredients to server list failed:', err);
+            wx.showToast({ title: '周计划已生成，但同步清单失败', icon: 'none' });
+            this.setActionFeedback('周计划已生成，但追加到云端采购清单失败。', 'error');
+            return;
+          }
+        } else {
+          this.importItems(importedItems);
+          this.loadLocalData();
+          wx.showToast({ title: '周计划已生成', icon: 'success' });
+        }
+
         this.setActionFeedback(`周计划已生成，并已追加 ${importedCount} 项食材到当前采购清单。`, 'success');
         return;
       }
 
+      wx.showToast({ title: '周计划已生成', icon: 'success' });
       this.setActionFeedback('周计划已生成，可直接点“查看概览”确认本周安排。', 'success');
     } catch (err) {
       console.error('[plan] generate meal plan failed:', err);

@@ -182,6 +182,10 @@
       </view>
 
       <view class="secondary-actions">
+        <view class="action-card plan" bindtap="addToPlan">
+          <text class="action-card-title">加入计划</text>
+          <text class="action-card-desc">默认安排到今天晚餐，并带你查看计划页。</text>
+        </view>
         <view class="action-card fresh" bindtap="addToShoppingList">
           <text class="action-card-title">加入清单</text>
           <text class="action-card-desc">登录后写入云端采购单，未登录先放本地。</text>

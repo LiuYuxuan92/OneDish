@@ -7,6 +7,114 @@ const { normalizeRecipeImageList, pickImage, pickRecipeImage } = require('../../
 const CACHE_KEY_RECIPES = 'recipes_list';
 const RECIPE_DETAIL_PENDING_KEY = 'pending_recipe_detail_id';
 const RECIPE_DETAIL_PENDING_PAYLOAD_KEY = 'pending_recipe_detail_payload';
+const LOCAL_FAVORITES_KEY = 'local_favorites';
+
+function getLocalFavorites() {
+  const favorites = wx.getStorageSync(LOCAL_FAVORITES_KEY);
+  return Array.isArray(favorites) ? favorites : [];
+}
+
+function isLocallyFavorited(recipeId) {
+  return getLocalFavorites().some((item) => item.id === recipeId);
+}
+
+function persistLocalFavorite(recipe, nextFavorited) {
+  const favorites = getLocalFavorites();
+
+  if (nextFavorited) {
+    const nextFavorites = [recipe, ...favorites.filter((item) => item.id !== recipe.id)].slice(0, 50);
+    wx.setStorageSync(LOCAL_FAVORITES_KEY, nextFavorites);
+    return;
+  }
+
+  wx.setStorageSync(
+    LOCAL_FAVORITES_KEY,
+    favorites.filter((item) => item.id !== recipe.id)
+  );
+}
+
+async function resolveFavoriteState(recipe) {
+  if (!isFavoriteSupported(recipe)) {
+    return false;
+  }
+
+  const token = wx.getStorageSync('token');
+  if (!token) {
+    return isLocallyFavorited(recipe.id);
+  }
+
+  const result = await api.checkFavorite(recipe.id);
+  return Boolean(result?.is_favorited);
+}
+
+function isFavoriteSupported(recipe) {
+  return Boolean(recipe?.id) && !recipe?.is_external_result;
+}
+
+function applyFavoriteMutation(page, recipe, nextFavorited) {
+  const nextDetail = {
+    ...recipe,
+    is_favorited: nextFavorited,
+  };
+
+  page.setData({
+    detail: nextDetail,
+  });
+  page.updateRecipeInList(recipe.id, { is_favorited: nextFavorited });
+  cache.setCache(`recipe_${recipe.id}`, nextDetail);
+  return nextDetail;
+}
+
+function getFavoriteFeedbackCopy(nextFavorited) {
+  return nextFavorited
+    ? {
+        feedback: '这道菜已加入收藏，后续可在收藏页快速找回。',
+        toast: '已加入收藏',
+      }
+    : {
+        feedback: '已从收藏中移除，不会再保留在收藏页。',
+        toast: '已取消收藏',
+      };
+}
+
+function getFavoriteFailureToast(nextFavorited) {
+  return nextFavorited ? '收藏失败' : '取消收藏失败';
+}
+
+async function runShowRefresh(page) {
+  page.checkNetworkStatus();
+  page.loadBillingSnapshot();
+  page.loadRecipes();
+  page.consumePendingRecipeDetail();
+
+  if (page.pendingDetailId) {
+    const pendingId = page.pendingDetailId;
+    page.pendingDetailId = '';
+    await page.openRecipeDetail(pendingId);
+    return;
+  }
+
+  if (page.data.detail?.id) {
+    await page.refreshOpenDetailFavoriteState();
+  }
+}
+
+async function applyFavoriteFailure(page, nextFavorited) {
+  wx.showToast({
+    title: getFavoriteFailureToast(nextFavorited),
+    icon: 'none',
+  });
+  await page.refreshOpenDetailFavoriteState();
+}
+
+function setFavoriteSuccessFeedback(page, nextFavorited) {
+  const copy = getFavoriteFeedbackCopy(nextFavorited);
+  page.setActionFeedback(copy.feedback, 'success');
+  wx.showToast({
+    title: copy.toast,
+    icon: 'success',
+  });
+}
 
 function parsePossibleJson(data) {
   if (!data) return null;
@@ -155,6 +263,7 @@ Page({
     detailScrollTarget: '',
     aiQuotaCard: null,
     recipeBanner: { title: '', subtitle: '', badgeText: '', actionText: '', footerText: '', quotaCards: [], theme: 'neutral' },
+    favoriteSubmitting: false,
   },
 
   setActionFeedback(message, tone = 'info') {
@@ -194,17 +303,6 @@ Page({
     }
   },
 
-  onShow() {
-    this.checkNetworkStatus();
-    this.loadBillingSnapshot();
-    this.loadRecipes();
-    this.consumePendingRecipeDetail();
-
-    if (this.pendingDetailId) {
-      this.openRecipeDetail(this.pendingDetailId);
-      this.pendingDetailId = '';
-    }
-  },
 
   onHide() {
     this.clearFeedbackTimer();
@@ -283,10 +381,9 @@ Page({
 
     if (pendingPayload && pendingPayload.source && pendingPayload.source !== 'local') {
       const adaptedDetail = adaptRecipeData(pendingPayload);
+      this.applyDetailState(adaptedDetail);
       this.setData({
-        detail: adaptedDetail,
         recentFeedingFeedbacks: [],
-        detailScrollTarget: '',
       });
       return;
     }
@@ -296,22 +393,68 @@ Page({
     }
   },
 
+  async syncDetailFavoriteState(recipe) {
+    try {
+      return await resolveFavoriteState(recipe);
+    } catch (_err) {
+      return false;
+    }
+  },
+
+  async refreshOpenDetailFavoriteState() {
+    if (!this.data.detail?.id) return;
+    const nextDetail = await this.applyDetailState(this.data.detail, { keepScrollTarget: true });
+    return nextDetail;
+  },
+
+  handleFavoriteToggleSuccess(recipe, nextFavorited) {
+    const nextDetail = applyFavoriteMutation(this, recipe, nextFavorited);
+    setFavoriteSuccessFeedback(this, nextFavorited);
+    return nextDetail;
+  },
+
+  updateRecipeInList(recipeId, changes) {
+    if (!recipeId) return;
+    const recipes = Array.isArray(this.data.recipes) ? this.data.recipes : [];
+    const nextRecipes = recipes.map((item) => (
+      item.id === recipeId ? { ...item, ...changes } : item
+    ));
+    this.setData({ recipes: nextRecipes });
+  },
+
+  async applyDetailState(detail, options = {}) {
+    if (!detail) {
+      this.setData({ detail: null, detailScrollTarget: '' });
+      return;
+    }
+
+    const isFavorited = await this.syncDetailFavoriteState(detail);
+    const nextDetail = {
+      ...detail,
+      is_favorited: isFavorited,
+    };
+
+    this.setData({
+      detail: nextDetail,
+      detailScrollTarget: options.keepScrollTarget ? this.data.detailScrollTarget : '',
+    });
+    this.updateRecipeInList(nextDetail.id, { is_favorited: isFavorited });
+    return nextDetail;
+  },
+
   async openRecipeDetail(id) {
     if (!id) return;
 
     try {
       const detail = await api.getRecipeDetail(id);
       const adaptedDetail = adaptRecipeData(detail);
-      this.setData({
-        detail: adaptedDetail,
-        detailScrollTarget: '',
-      });
+      const nextDetail = await this.applyDetailState(adaptedDetail);
       this.loadRecentFeedingFeedbacks(id);
-      cache.setCache(`recipe_${id}`, adaptedDetail);
+      cache.setCache(`recipe_${id}`, nextDetail || adaptedDetail);
     } catch (err) {
       const cached = cache.getCache(`recipe_${id}`);
       if (cached) {
-        this.setData({ detail: cached });
+        await this.applyDetailState(cached);
         wx.showToast({ title: '网络不可用，已显示缓存', icon: 'none' });
       } else {
         console.error('[recipe] open detail failed:', err);
@@ -319,6 +462,56 @@ Page({
       }
     }
   },
+
+  async onToggleFavorite() {
+    const { detail, favoriteSubmitting } = this.data;
+    if (!detail?.id || favoriteSubmitting) return;
+
+    if (!isFavoriteSupported(detail)) {
+      wx.showToast({ title: '联网菜谱暂不支持收藏', icon: 'none' });
+      return;
+    }
+
+    const token = wx.getStorageSync('token');
+    const nextFavorited = !detail.is_favorited;
+
+    this.setData({ favoriteSubmitting: true });
+
+    try {
+      if (token) {
+        if (nextFavorited) {
+          await api.addFavorite(detail.id);
+        } else {
+          await api.removeFavorite(detail.id);
+        }
+        this.handleFavoriteToggleSuccess(detail, nextFavorited);
+      } else {
+        persistLocalFavorite(detail, nextFavorited);
+        this.handleFavoriteToggleSuccess(detail, nextFavorited);
+      }
+    } catch (err) {
+      console.error('[recipe] favorite failed:', err);
+      if (token) {
+        await applyFavoriteFailure(this, nextFavorited);
+      } else {
+        wx.showToast({
+          title: getFavoriteFailureToast(nextFavorited),
+          icon: 'none',
+        });
+      }
+    } finally {
+      this.setData({ favoriteSubmitting: false });
+    }
+  },
+
+  async onFavoriteStorageChange() {
+    await this.refreshOpenDetailFavoriteState();
+  },
+
+  async onShow() {
+    await runShowRefresh(this);
+  },
+
 
   async loadRecipes(refresh = false) {
     const page = refresh ? 1 : this.data.page;
@@ -562,16 +755,17 @@ Page({
         adult_version: result?.adult_version?.adult_version || result?.adult_version || detail.adult_version,
         baby_version: result?.baby_version || detail.baby_version,
         nutrition_info: result?.nutrition_info || detail.nutrition_info,
+        is_favorited: detail.is_favorited,
       });
 
       this.setData({
-        detail: nextDetail,
         aiResult: result || null,
         isGenerating: false,
         showAIGenerateModal: false,
         showAIResultModal: false,
         detailScrollTarget: 'baby-version-card',
       });
+      await this.applyDetailState(nextDetail, { keepScrollTarget: true });
 
       wx.showToast({ title: '生成成功', icon: 'success' });
       this.loadBillingSnapshot();
@@ -606,3 +800,12 @@ Page({
     this.setData({ showAIResultModal: false, aiResult: null });
   },
 });
+
+if (typeof module !== 'undefined') {
+  module.exports = {
+    adaptRecipeData,
+    normalizeFeedbackItems,
+  };
+}
+
+

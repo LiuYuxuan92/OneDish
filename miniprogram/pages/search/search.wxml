@@ -61,7 +61,7 @@
     </scroll-view>
   </view>
 
-  <view class="feedback-banner feedback-banner-{{actionFeedback.tone}}" wx:if="{{actionFeedback}}">
+  <view class="feedback-banner {{actionFeedback && actionFeedback.tone === 'success' ? 'feedback-banner-success' : 'feedback-banner-info'}}" wx:if="{{actionFeedback}}">
     <text>{{actionFeedback.message}}</text>
   </view>
 
@@ -115,6 +115,28 @@
           <text class="result-source-hint">{{item.source_hint}}</text>
           <view class="result-hint" wx:if="{{item.preference_hint}}">
             <text>{{item.preference_hint}}</text>
+          </view>
+          <view class="result-actions" catchtap="noop">
+            <button
+              wx:if="{{!item.is_external_result}}"
+              class="result-action-button secondary"
+              size="mini"
+              plain="true"
+              loading="{{item.favorite_loading}}"
+              data-index="{{index}}"
+              catchtap="onToggleFavorite"
+            >
+              {{item.is_favorite ? '取消收藏' : '收藏'}}
+            </button>
+            <button
+              class="result-action-button primary"
+              size="mini"
+              loading="{{item.shopping_loading}}"
+              data-index="{{index}}"
+              catchtap="onAddToShoppingList"
+            >
+              加入清单
+            </button>
           </view>
         </view>
       </view>

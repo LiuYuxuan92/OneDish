@@ -593,6 +593,14 @@
   background: linear-gradient(135deg, #fff2df, #f7e6cb);
 }
 
+.detail-quick-card.soft {
+  background: linear-gradient(135deg, #f3f6f4, #edf3ef);
+}
+
+.detail-quick-card.soft.active {
+  background: linear-gradient(135deg, #e7f7ed, #eff9f2);
+}
+
 .detail-quick-title {
   display: block;
   font-size: 27rpx;
@@ -620,6 +628,30 @@
 
 .detail-quick-card.warm .detail-quick-desc {
   color: #936c43;
+}
+
+.detail-quick-card.soft .detail-quick-title {
+  color: #294136;
+}
+
+.detail-quick-card.soft .detail-quick-desc {
+  color: #627068;
+}
+
+.detail-quick-card.soft.active .detail-quick-title {
+  color: #23784a;
+}
+
+.detail-quick-card.soft.active .detail-quick-desc {
+  color: #3f6a4f;
+}
+
+.detail-quick-tip {
+  display: block;
+  margin: 14rpx 24rpx 0;
+  color: #8a775d;
+  font-size: 22rpx;
+  line-height: 1.6;
 }
 
 .detail-card {

@@ -2,6 +2,7 @@ const api = require('../../utils/api');
 const request = require('../../utils/request');
 const { openRecipeDetail } = require('../../utils/navigation');
 const { pickImage, pickRecipeImage } = require('../../utils/media');
+const { STORAGE } = require('../../utils/constants');
 
 const SCENARIOS = [
   { key: 'quick', label: '赶时间', query: '快手 简单 少步骤' },
@@ -51,6 +52,10 @@ function adaptRecipeData(recipe) {
     source_hint: isExternal
       ? '可查看详情和加入清单，暂不支持反馈与生成宝宝版。'
       : '支持收藏、反馈和宝宝版生成。',
+    is_external_result: isExternal,
+    is_favorite: false,
+    favorite_loading: false,
+    shopping_loading: false,
   };
 }
 
@@ -70,21 +75,77 @@ Page({
     actionFeedback: null,
   },
 
-  setActionFeedback(message, tone = 'info') {
+  updateResultAt(index, updater) {
+    if (index < 0) return null;
+
+    const results = Array.isArray(this.data.results) ? this.data.results.slice() : [];
+    const current = results[index];
+    if (!current) return null;
+
+    const next = typeof updater === 'function' ? updater(current) : updater;
+    if (!next) return current;
+
+    results[index] = next;
+    this.setData({ results });
+    return next;
+  },
+
+  syncFavoriteState(results) {
+    const favoriteIds = (wx.getStorageSync(STORAGE.LOCAL_FAVORITES) || [])
+      .map((item) => String(item && item.id ? item.id : ''))
+      .filter(Boolean);
+    const favoriteIdSet = new Set(favoriteIds);
+
+    return (Array.isArray(results) ? results : []).map((item) => ({
+      ...item,
+      is_favorite: !item.is_external_result && favoriteIdSet.has(String(item.id || '')),
+      favorite_loading: false,
+      shopping_loading: false,
+    }));
+  },
+
+  persistLocalFavorite(recipe) {
+    if (!recipe?.id || recipe.is_external_result) return;
+
+    const localFavorites = wx.getStorageSync(STORAGE.LOCAL_FAVORITES) || [];
+    const nextFavorites = localFavorites.filter((item) => String(item?.id || '') !== String(recipe.id));
+    nextFavorites.unshift(recipe);
+    wx.setStorageSync(STORAGE.LOCAL_FAVORITES, nextFavorites);
+  },
+
+  removeLocalFavoriteById(recipeId) {
+    const nextFavorites = (wx.getStorageSync(STORAGE.LOCAL_FAVORITES) || []).filter(
+      (item) => String(item?.id || '') !== String(recipeId || '')
+    );
+    wx.setStorageSync(STORAGE.LOCAL_FAVORITES, nextFavorites);
+  },
+
+  clearActionFeedback() {
     if (this.feedbackTimer) {
       clearTimeout(this.feedbackTimer);
+      this.feedbackTimer = null;
     }
+
+    if (this.data.actionFeedback) {
+      this.setData({ actionFeedback: null });
+    }
+  },
+
+  setActionFeedback(message, tone = 'info') {
+    this.clearActionFeedback();
 
     this.setData({
       actionFeedback: { message, tone },
     });
 
     this.feedbackTimer = setTimeout(() => {
+      this.feedbackTimer = null;
       this.setData({ actionFeedback: null });
     }, 3200);
   },
 
   async onLoad() {
+    this.searchRequestSeq = 0;
     const preferenceConfig = wx.getStorageSync('user_preferences') || null;
     const history = wx.getStorageSync('search_history') || [];
 
@@ -113,6 +174,10 @@ Page({
     }
   },
 
+  onUnload() {
+    this.clearActionFeedback();
+  },
+
   onInput(e) {
     this.setData({
       keyword: e.detail.value,
@@ -121,12 +186,15 @@ Page({
   },
 
   onClear() {
+    this.searchRequestSeq = (this.searchRequestSeq || 0) + 1;
+    this.clearActionFeedback();
     this.setData({
       keyword: '',
       results: [],
       hasSearched: false,
       showHistory: true,
       selectedScenario: '',
+      loading: false,
     });
   },
 
@@ -139,6 +207,9 @@ Page({
   },
 
   async doSearch(keyword) {
+    const requestSeq = (this.searchRequestSeq || 0) + 1;
+    this.searchRequestSeq = requestSeq;
+
     this.setData({
       loading: true,
       hasSearched: true,
@@ -151,25 +222,31 @@ Page({
         scenario: this.data.selectedScenario || undefined,
       });
 
+      if (requestSeq !== this.searchRequestSeq) return;
+
       const rawItems = Array.isArray(result?.results)
         ? result.results
         : Array.isArray(result?.items)
           ? result.items
           : [];
 
-      const adaptedResults = rawItems
-        .map((item) => adaptRecipeData(item))
-        .filter(Boolean)
-        .map((item) => ({
-          ...item,
-          preference_hint: buildPreferenceHint(item, this.data.preferenceSummaryText),
-        }));
+      const adaptedResults = this.syncFavoriteState(
+        rawItems
+          .map((item) => adaptRecipeData(item))
+          .filter(Boolean)
+          .map((item) => ({
+            ...item,
+            preference_hint: buildPreferenceHint(item, this.data.preferenceSummaryText),
+          }))
+      );
 
       this.setData({
         results: adaptedResults,
         loading: false,
       });
     } catch (err) {
+      if (requestSeq !== this.searchRequestSeq) return;
+
       console.error('[search] search failed:', err);
       this.setData({ loading: false });
       wx.showToast({ title: '搜索失败，请稍后重试', icon: 'none' });
@@ -246,6 +323,152 @@ Page({
       showHistory: false,
     });
     this.doSearch(keyword);
+  },
+
+  noop() {},
+
+  addToShoppingListFallback(recipe) {
+    const ingredients = recipe?.ingredients || [];
+    if (!ingredients.length) {
+      wx.showToast({ title: '暂无食材信息', icon: 'none' });
+      return;
+    }
+
+    const items = ingredients.map((ingredient) => ({
+      name: ingredient.name || ingredient,
+      quantity: ingredient.quantity || ingredient.amount || '',
+      unit: ingredient.unit || '',
+      checked: false,
+    }));
+
+    wx.setStorageSync(STORAGE.PENDING_IMPORT, items);
+    wx.switchTab({ url: '/pages/plan/plan' });
+    this.setActionFeedback('已转到采购清单页，并把当前菜谱食材作为待购项带过去。', 'success');
+    wx.showToast({ title: '已加入待购清单', icon: 'success' });
+  },
+
+  onToggleFavorite(e) {
+    if (e?.stopPropagation) e.stopPropagation();
+
+    const index = Number(e.currentTarget.dataset.index);
+    const recipe = this.data.results[index];
+    if (!recipe || recipe.is_external_result || recipe.favorite_loading) return;
+
+    const token = wx.getStorageSync(STORAGE.TOKEN);
+    const nextFavoriteState = !recipe.is_favorite;
+
+    this.updateResultAt(index, (item) => ({
+      ...item,
+      favorite_loading: true,
+    }));
+
+    if (token) {
+      const action = nextFavoriteState ? api.addFavorite(recipe.id) : api.removeFavorite(recipe.id);
+      action.then(() => {
+        if (nextFavoriteState) {
+          this.persistLocalFavorite(recipe);
+        } else {
+          this.removeLocalFavoriteById(recipe.id);
+        }
+
+        this.updateResultAt(index, (item) => ({
+          ...item,
+          is_favorite: nextFavoriteState,
+          favorite_loading: false,
+        }));
+        this.setActionFeedback(
+          nextFavoriteState ? '已收藏这道菜，稍后可在收藏页继续查看。' : '已取消收藏，可继续浏览其它菜谱。',
+          'success'
+        );
+        wx.showToast({ title: nextFavoriteState ? '已收藏' : '已取消收藏', icon: 'success' });
+      }).catch((err) => {
+        console.error('[search] toggle favorite failed:', err);
+        if (nextFavoriteState) {
+          this.persistLocalFavorite(recipe);
+        } else {
+          this.removeLocalFavoriteById(recipe.id);
+        }
+        this.updateResultAt(index, (item) => ({
+          ...item,
+          is_favorite: nextFavoriteState,
+          favorite_loading: false,
+        }));
+        this.setActionFeedback(
+          nextFavoriteState ? '当前网络或登录状态不可用，已先保存在本地收藏。' : '已从本地收藏移除这道菜。',
+          'success'
+        );
+        wx.showToast({ title: nextFavoriteState ? '已本地收藏' : '已取消收藏', icon: 'success' });
+      });
+      return;
+    }
+
+    if (nextFavoriteState) {
+      this.persistLocalFavorite(recipe);
+    } else {
+      this.removeLocalFavoriteById(recipe.id);
+    }
+
+    this.updateResultAt(index, (item) => ({
+      ...item,
+      is_favorite: nextFavoriteState,
+      favorite_loading: false,
+    }));
+    this.setActionFeedback(
+      nextFavoriteState ? '已加入本地收藏，登录后也可继续同步管理。' : '已从本地收藏移除。',
+      'success'
+    );
+    wx.showToast({ title: nextFavoriteState ? '已收藏' : '已取消收藏', icon: 'success' });
+  },
+
+  onAddToShoppingList(e) {
+    if (e?.stopPropagation) e.stopPropagation();
+
+    const index = Number(e.currentTarget.dataset.index);
+    const recipe = this.data.results[index];
+    if (!recipe || recipe.shopping_loading) return;
+
+    this.updateResultAt(index, (item) => ({
+      ...item,
+      shopping_loading: true,
+    }));
+
+    if (recipe.is_external_result) {
+      this.updateResultAt(index, (item) => ({
+        ...item,
+        shopping_loading: false,
+      }));
+      this.addToShoppingListFallback(recipe);
+      return;
+    }
+
+    const token = wx.getStorageSync(STORAGE.TOKEN);
+    if (token && recipe.id) {
+      api.addRecipeToShoppingList({ recipeId: recipe.id }).then(() => {
+        this.updateResultAt(index, (item) => ({
+          ...item,
+          shopping_loading: false,
+        }));
+        this.setActionFeedback('已加入云端采购清单，进入采购页后可继续勾选、分享和同步。', 'success');
+        wx.showToast({ title: '已加入云端清单', icon: 'success' });
+        setTimeout(() => {
+          wx.switchTab({ url: '/pages/plan/plan' });
+        }, 400);
+      }).catch((err) => {
+        console.error('[search] add recipe to shopping list failed:', err);
+        this.updateResultAt(index, (item) => ({
+          ...item,
+          shopping_loading: false,
+        }));
+        this.addToShoppingListFallback(recipe);
+      });
+      return;
+    }
+
+    this.updateResultAt(index, (item) => ({
+      ...item,
+      shopping_loading: false,
+    }));
+    this.addToShoppingListFallback(recipe);
   },
 
   goToRecipe(e) {

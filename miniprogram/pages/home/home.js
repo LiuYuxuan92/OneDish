@@ -5,6 +5,43 @@ const { buildBannerModel, buildQuotaCards } = require('../../utils/entitlements'
 const { pickImage, pickRecipeImage, resolveMediaUrl } = require('../../utils/media');
 
 const LOCAL_FAVORITES_KEY = 'local_favorites';
+const PENDING_PLAN_EXECUTION_KEY = 'pending_plan_execution';
+const DEFAULT_PLAN_MEAL = {
+  mealType: 'dinner',
+  mealLabel: '晚餐',
+  label: '今天晚餐',
+};
+
+function formatDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function buildPendingPlanExecution(recipe) {
+  if (!recipe?.id) return null;
+
+  return {
+    source: 'home_recommendation',
+    slot: {
+      date: formatDateKey(),
+      mealType: DEFAULT_PLAN_MEAL.mealType,
+      mealLabel: DEFAULT_PLAN_MEAL.mealLabel,
+      label: DEFAULT_PLAN_MEAL.label,
+    },
+    recipe: {
+      id: recipe.id,
+      title: recipe.title || recipe.name || '',
+      cookTime: recipe.cook_time || recipe.total_time || recipe.prep_time || 0,
+      coverUrl: recipe.cover_url || '',
+      description: recipe.description || '',
+      difficulty: recipe.difficulty || '',
+      ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
+    },
+    createdAt: new Date().toISOString(),
+  };
+}
 
 function parseMaybeJson(value, fallback) {
   if (!value) return fallback;
@@ -473,6 +510,28 @@ Page({
     }
 
     wx.switchTab({ url: '/pages/recipe/recipe' });
+  },
+
+  buildPendingPlanExecution,
+
+  addToPlan() {
+    const payload = this.buildPendingPlanExecution(this.data.recommendation);
+    if (!payload) {
+      wx.showToast({ title: '当前暂无可安排的推荐', icon: 'none' });
+      return;
+    }
+
+    wx.setStorageSync(PENDING_PLAN_EXECUTION_KEY, payload);
+    trackEvent('mp_home_add_to_plan_tap', {
+      source: payload.source,
+      meal_type: payload.slot.mealType,
+      recipe_id: payload.recipe.id,
+    });
+    this.setActionFeedback('已安排到今天晚餐，正在带你查看计划。', 'success');
+    wx.showToast({ title: '已加入今天晚餐', icon: 'success' });
+    setTimeout(() => {
+      wx.switchTab({ url: '/pages/plan/plan' });
+    }, 350);
   },
 
   addToShoppingListFallback() {

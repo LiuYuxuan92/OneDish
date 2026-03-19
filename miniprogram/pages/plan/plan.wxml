@@ -86,6 +86,41 @@
       </view>
     </view>
 
+    <view class="summary-card execution-card">
+      <view class="section-head">
+        <view>
+          <text class="section-title">今日执行</text>
+          <text class="section-subtitle" wx:if="{{hasMeaningfulTodayExecution}}">{{todayExecutionDate || '今天'}} 已完成 {{todayExecutionDoneCount}} / {{todayExecutionEntries.length}} 餐，可继续查看菜谱、补采购和打卡。</text>
+          <text class="section-subtitle" wx:else>今天还没有可执行的餐次，生成周计划后会自动同步到这里。</text>
+        </view>
+      </view>
+      <view class="execution-list" wx:if="{{hasMeaningfulTodayExecution}}">
+        <block wx:for="{{todayExecutionEntries}}" wx:key="slot">
+          <view class="execution-item {{item.done ? 'done' : ''}}">
+            <view class="execution-main">
+              <view class="execution-slot-row">
+                <text class="execution-slot">{{item.slotLabel}}</text>
+                <text class="execution-status">{{item.done ? '已完成' : '待执行'}}</text>
+              </view>
+              <text class="execution-title">{{item.title}}</text>
+              <view class="execution-ingredients" wx:if="{{item.ingredients.length}}">
+                <text class="execution-ingredients-label">所需食材</text>
+                <text class="execution-ingredients-text">{{item.ingredients.join('、')}}</text>
+              </view>
+            </view>
+            <view class="execution-actions">
+              <view class="execution-btn" bindtap="onExecutionRecipeTap" data-index="{{index}}">看菜谱</view>
+              <view class="execution-btn light" bindtap="onExecutionAddToShopping" data-index="{{index}}">加采购</view>
+              <view class="execution-btn primary" bindtap="onExecutionDoneTap" data-index="{{index}}">{{item.done ? '撤销完成' : '标记完成'}}</view>
+            </view>
+          </view>
+        </block>
+      </view>
+      <view class="execution-empty" wx:else>
+        <text class="execution-empty-text">先生成一份周计划，今天的早餐、午餐、晚餐会在这里集中展示，方便查看菜谱、补采购和打卡。</text>
+      </view>
+    </view>
+
     <view class="add-card">
       <view class="section-head">
         <view>
@@ -177,7 +212,7 @@
     <view class="section-head">
       <view>
         <text class="section-title">让 AI 先出一版周计划</text>
-        <text class="section-subtitle">生成结果会自动把食材追加到当前本地清单。</text>
+        <text class="section-subtitle">生成结果会自动把食材追加到当前采购清单；登录后会优先同步到云端清单。</text>
       </view>
     </view>
 

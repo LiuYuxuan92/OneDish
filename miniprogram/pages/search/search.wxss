@@ -136,9 +136,17 @@
   margin-top: 18rpx;
   padding: 18rpx 20rpx;
   border-radius: 24rpx;
+  box-shadow: 0 14rpx 30rpx rgba(35, 64, 51, 0.08);
+}
+
+.feedback-banner-info {
   background: linear-gradient(135deg, #eef4ff, #fbfdff);
   color: #335d9b;
-  box-shadow: 0 14rpx 30rpx rgba(35, 64, 51, 0.08);
+}
+
+.feedback-banner-success {
+  background: linear-gradient(135deg, #edf8f0, #fbfffc);
+  color: #2d6b43;
 }
 
 .feedback-banner text {
@@ -434,4 +442,36 @@
   color: #8b6331;
   font-size: 22rpx;
   line-height: 1.6;
+}
+
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+  margin-top: 18rpx;
+}
+
+.result-action-button {
+  margin: 0;
+  padding: 0 24rpx;
+  min-width: 0;
+  height: 58rpx;
+  line-height: 58rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+}
+
+.result-action-button::after {
+  border-radius: 999rpx;
+}
+
+.result-action-button.primary {
+  background: linear-gradient(135deg, #2c4a3d, #3f6855);
+  color: #ffffff;
+}
+
+.result-action-button.secondary {
+  background: #ffffff;
+  color: #355f4e;
+  border-color: rgba(53, 95, 78, 0.2);
 }

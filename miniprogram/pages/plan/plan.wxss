@@ -99,6 +99,11 @@
   color: #486154;
 }
 
+.feedback-banner-error {
+  background: linear-gradient(135deg, #fdecec, #fff7f7);
+  color: #8f3d3d;
+}
+
 .hero-stats {
   display: flex;
   gap: 12rpx;
@@ -156,6 +161,129 @@
   margin-top: 18rpx;
   padding: 24rpx;
 }
+
+.execution-card {
+  background: linear-gradient(180deg, rgba(250, 248, 243, 0.98), rgba(255, 255, 255, 0.96));
+}
+
+.execution-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+.execution-empty {
+  margin-top: 20rpx;
+  padding: 24rpx;
+  border-radius: 24rpx;
+  background: #f5f7f4;
+}
+
+.execution-empty-text {
+  display: block;
+  font-size: 23rpx;
+  line-height: 1.7;
+  color: #6f7b75;
+}
+
+.execution-item {
+  padding: 20rpx;
+  border-radius: 24rpx;
+  background: #f5f7f4;
+}
+
+.execution-item.done {
+  background: #ecf5ef;
+}
+
+.execution-main {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.execution-slot-row,
+.execution-actions,
+.execution-ingredients {
+  display: flex;
+}
+
+.execution-slot-row {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.execution-slot {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #274539;
+}
+
+.execution-status {
+  font-size: 22rpx;
+  color: #7a847d;
+}
+
+.execution-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #22342b;
+}
+
+.execution-ingredients {
+  gap: 10rpx;
+  align-items: flex-start;
+}
+
+.execution-ingredients-label,
+.execution-ingredients-text {
+  font-size: 22rpx;
+  line-height: 1.6;
+}
+
+.execution-ingredients-label {
+  color: #6f7b75;
+  flex-shrink: 0;
+}
+
+.execution-ingredients-text {
+  color: #486154;
+}
+
+.execution-actions {
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 18rpx;
+}
+
+.execution-btn {
+  padding: 14rpx 20rpx;
+  border-radius: 999rpx;
+  background: #eef2ee;
+  color: #274539;
+  font-size: 23rpx;
+}
+
+.execution-btn.light {
+  background: #f6efe4;
+  color: #8d6a40;
+}
+
+.execution-btn.primary {
+  background: #274539;
+  color: #ffffff;
+}
+
+.execution-item.done .execution-status,
+.execution-item.done .execution-title {
+  color: #2f6246;
+}
+
+.execution-item.done .execution-title {
+  text-decoration: line-through;
+}
+
 
 .summary-top,
 .section-head,
