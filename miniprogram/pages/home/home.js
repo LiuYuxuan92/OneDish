@@ -3,6 +3,7 @@ const { openRecipeDetail } = require('../../utils/navigation');
 const { trackEvent } = require('../../utils/analytics');
 const { buildBannerModel, buildQuotaCards } = require('../../utils/entitlements');
 const { pickImage, pickRecipeImage, resolveMediaUrl } = require('../../utils/media');
+const { summarizeFeedbackState } = require('../../utils/feedbackSummary');
 
 const LOCAL_FAVORITES_KEY = 'local_favorites';
 
@@ -161,6 +162,7 @@ Page({
     isFavorited: false,
     recentRecommendationIds: [],
     actionFeedback: null,
+    recommendationFeedbackSummary: null,
     previousRecommendation: null,
     swapExplanation: '',
     canUndoSwap: false,
@@ -340,6 +342,7 @@ Page({
         recommendation: null,
         recommendationReasons: [],
         isFavorited: false,
+        recommendationFeedbackSummary: null,
       });
       if (options.resetHistory) {
         this.setData({ recentRecommendationIds: [] });
@@ -348,6 +351,7 @@ Page({
     }
 
     const isFavorited = await this.syncFavoriteState(adaptedRecipe);
+
     if (options.restoreHistory) {
       this.restoreRecentRecommendationIds(options.restoreHistory);
     } else {
@@ -361,6 +365,7 @@ Page({
       },
       currentVersion: adaptedRecipe?.baby_version ? 'adult' : 'adult',
       recommendationReasons: buildProductizedReasons(adaptedRecipe, this.data.preferenceSummaryText),
+      recommendationFeedbackSummary: null,
       isFavorited,
       previousRecommendation: options.previousRecommendation !== undefined ? options.previousRecommendation : this.data.previousRecommendation,
       previousRecommendationHistory: options.previousRecommendationHistory !== undefined ? options.previousRecommendationHistory : this.data.previousRecommendationHistory,
@@ -368,6 +373,15 @@ Page({
       canUndoSwap: options.canUndoSwap !== undefined ? options.canUndoSwap : this.data.canUndoSwap,
       isUndoingSwap: options.isUndoingSwap !== undefined ? options.isUndoingSwap : this.data.isUndoingSwap,
     });
+
+    try {
+      const recentFeedback = await api.getRecentFeedingFeedback({ recipe_id: adaptedRecipe.id, limit: 3 });
+      this.setData({
+        recommendationFeedbackSummary: summarizeFeedbackState(recentFeedback),
+      });
+    } catch (_err) {
+      this.setData({ recommendationFeedbackSummary: null });
+    }
   },
 
   async loadTodayRecommendation() {

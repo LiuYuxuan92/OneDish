@@ -108,6 +108,7 @@
           <text class="result-title">{{item.title || item.name}}</text>
           <view class="result-meta">
             <text class="result-tag source-tag {{item.source_label === '联网菜谱' ? 'external' : 'local'}}">{{item.source_label}}</text>
+            <text class="result-tag feedback-tag feedback-tag-{{item.feedback_summary.state}}" wx:if="{{item.feedback_summary}}">{{item.feedback_summary.label}}</text>
             <text class="result-tag" wx:if="{{item.difficulty}}">{{item.difficulty}}</text>
             <text class="result-tag" wx:if="{{item.cook_time}}">{{item.cook_time}} 分钟</text>
           </view>

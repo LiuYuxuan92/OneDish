@@ -2,6 +2,7 @@ const api = require('../../utils/api');
 const request = require('../../utils/request');
 const { openRecipeDetail } = require('../../utils/navigation');
 const { pickImage, pickRecipeImage } = require('../../utils/media');
+const { summarizeFeedbackState } = require('../../utils/feedbackSummary');
 
 const SCENARIOS = [
   { key: 'quick', label: '赶时间', query: '快手 简单 少步骤' },
@@ -51,7 +52,30 @@ function adaptRecipeData(recipe) {
     source_hint: isExternal
       ? '可查看详情和加入清单，暂不支持反馈与生成宝宝版。'
       : '支持收藏、反馈和宝宝版生成。',
+    is_external_result: isExternal,
   };
+}
+
+async function attachFeedbackSummary(item) {
+  if (!item || item.is_external_result || !item.id) {
+    return item;
+  }
+
+  try {
+    const recentFeedback = await api.getRecentFeedingFeedback({ recipe_id: item.id, limit: 3 });
+    const feedbackItems = Array.isArray(recentFeedback)
+      ? recentFeedback
+      : Array.isArray(recentFeedback?.items)
+        ? recentFeedback.items
+        : [];
+
+    return {
+      ...item,
+      feedback_summary: summarizeFeedbackState(feedbackItems),
+    };
+  } catch (_err) {
+    return item;
+  }
 }
 
 Page({
@@ -157,13 +181,18 @@ Page({
           ? result.items
           : [];
 
-      const adaptedResults = rawItems
-        .map((item) => adaptRecipeData(item))
-        .filter(Boolean)
-        .map((item) => ({
-          ...item,
-          preference_hint: buildPreferenceHint(item, this.data.preferenceSummaryText),
-        }));
+      const adaptedResults = await Promise.all(
+        rawItems
+          .map((item) => adaptRecipeData(item))
+          .filter(Boolean)
+          .map(async (item) => {
+            const itemWithFeedback = await attachFeedbackSummary(item);
+            return {
+              ...itemWithFeedback,
+              preference_hint: buildPreferenceHint(itemWithFeedback, this.data.preferenceSummaryText),
+            };
+          })
+      );
 
       this.setData({
         results: adaptedResults,
@@ -218,11 +247,10 @@ Page({
     const query = e.currentTarget.dataset.query;
     const label = e.currentTarget.dataset.label;
     const nextScenario = this.data.selectedScenario === query ? '' : query;
-    const nextKeyword = String(this.data.keyword || '').trim() || nextScenario;
+    const currentKeyword = String(this.data.keyword || '').trim();
 
     this.setData({
       selectedScenario: nextScenario,
-      keyword: nextKeyword,
       showHistory: false,
     });
 
@@ -233,9 +261,8 @@ Page({
       'info'
     );
 
-    if (nextKeyword) {
-      this.saveHistory(nextKeyword);
-      this.doSearch(nextKeyword);
+    if (currentKeyword) {
+      this.doSearch(currentKeyword);
     }
   },
 

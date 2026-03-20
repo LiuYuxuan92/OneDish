@@ -160,6 +160,10 @@
           {{currentVersion === 'baby' && recommendation.baby_version ? recommendation.baby_version.description : recommendation.description}}
         </text>
 
+        <view class="feedback-recap feedback-recap-{{recommendationFeedbackSummary.state}}" wx:if="{{recommendationFeedbackSummary}}">
+          <text class="feedback-recap-label">{{recommendationFeedbackSummary.label}}</text>
+        </view>
+
         <view class="reason-card" wx:if="{{recommendationReasons.length}}">
           <text class="reason-title">为什么今天推荐这道菜</text>
           <block wx:for="{{recommendationReasons}}" wx:key="*this">

@@ -410,6 +410,26 @@
   color: #a0611e;
 }
 
+.feedback-tag {
+  background: #eef4ef;
+  color: #4f6d5d;
+}
+
+.feedback-tag-accepted {
+  background: #edf6ee;
+  color: #2e5a49;
+}
+
+.feedback-tag-rejected {
+  background: #fff1f1;
+  color: #9a4b4b;
+}
+
+.feedback-tag-retry {
+  background: #fff6ea;
+  color: #8b6331;
+}
+
 .result-desc {
   display: block;
   margin-top: 14rpx;
