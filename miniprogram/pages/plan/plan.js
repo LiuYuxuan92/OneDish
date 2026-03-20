@@ -2,9 +2,14 @@ const api = require('../../utils/api');
 const { getBaseURL, getToken, setBaseURL, setToken } = require('../../utils/config');
 const { trackEvent } = require('../../utils/analytics');
 const { buildQuotaCard, buildBannerModel, handleQuotaUpgradeError } = require('../../utils/entitlements');
+const {
+  buildWeeklyPlanStateFromResult,
+  deriveTodayExecutionFromWeeklyState,
+} = require('./plan-execution-state');
 
 const LOCAL_KEY = 'plan_local_items';
 const HISTORY_KEY = 'plan_history';
+const WEEKLY_PLAN_STATE_KEY = 'plan_weekly_state';
 
 function getPreferenceSummary() {
   const config = wx.getStorageSync('user_preferences') || null;
@@ -117,6 +122,64 @@ function buildGeneratedPlanTags(result) {
   return tags;
 }
 
+function buildWeeklyPlanDays(weeklyPlanState = {}) {
+  return Object.keys(weeklyPlanState)
+    .sort()
+    .map((date) => {
+      const mealsByType = weeklyPlanState[date] || {};
+      return {
+        date,
+        label: formatWeekday(date),
+        meals: ['breakfast', 'lunch', 'dinner'].map((mealType) => {
+          const meal = mealsByType[mealType] || null;
+          return {
+            mealType,
+            mealLabel: MEAL_LABELS[mealType] || mealType,
+            title: meal?.title || meal?.recipe?.title || '',
+            recipeId: meal?.recipeId || meal?.recipe?.id || '',
+            done: Boolean(meal?.done),
+          };
+        }),
+      };
+    });
+}
+
+function padDatePart(value) {
+  return String(value).padStart(2, '0');
+}
+
+function getTodayDateKey() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = padDatePart(now.getMonth() + 1);
+  const day = padDatePart(now.getDate());
+  return `${year}-${month}-${day}`;
+}
+
+function mergeWeeklyPlanState(currentState = {}, generatedState = {}) {
+  const mergedState = { ...currentState };
+  const allDates = new Set([
+    ...Object.keys(currentState || {}),
+    ...Object.keys(generatedState || {}),
+  ]);
+
+  allDates.forEach((date) => {
+    const currentDay = currentState[date] || {};
+    const generatedDay = generatedState[date] || {};
+
+    mergedState[date] = ['breakfast', 'lunch', 'dinner'].reduce((dayState, mealType) => {
+      const existingMeal = currentDay[mealType] || null;
+      const generatedMeal = generatedDay[mealType] || null;
+      const shouldPreserveExisting = existingMeal && (existingMeal.source === 'manual' || existingMeal.done);
+
+      dayState[mealType] = shouldPreserveExisting ? existingMeal : generatedMeal;
+      return dayState;
+    }, {});
+  });
+
+  return mergedState;
+}
+
 Page({
   data: {
     loading: false,
@@ -147,6 +210,9 @@ Page({
     excludeIngredients: '',
     isGenerating: false,
     generatedMealPlan: null,
+    weeklyPlanState: {},
+    weeklyPlanDays: [],
+    todayExecutionEntries: [],
     generatedPlanPreviewDays: [],
     generatedPlanSummaryTags: [],
     actionFeedback: null,
@@ -181,16 +247,29 @@ Page({
 
     const token = wx.getStorageSync('token') || getToken();
     const baseURL = wx.getStorageSync('baseURL') || getBaseURL();
+    const weeklyPlanState = wx.getStorageSync(WEEKLY_PLAN_STATE_KEY) || {};
 
     this.setData({
       token,
       baseURL,
       planPreferenceSummary: getPreferenceSummary(),
+      weeklyPlanState,
+      weeklyPlanDays: buildWeeklyPlanDays(weeklyPlanState),
+      todayExecutionEntries: deriveTodayExecutionFromWeeklyState(weeklyPlanState, getTodayDateKey()),
     });
 
     this.loadHistory();
     this.loadData();
     this.loadBillingSnapshot();
+  },
+
+  restoreWeeklyPlanState() {
+    const weeklyPlanState = wx.getStorageSync(WEEKLY_PLAN_STATE_KEY) || {};
+    this.setData({
+      weeklyPlanState,
+      weeklyPlanDays: buildWeeklyPlanDays(weeklyPlanState),
+      todayExecutionEntries: deriveTodayExecutionFromWeeklyState(weeklyPlanState, getTodayDateKey()),
+    });
   },
 
   onHide() {
@@ -268,8 +347,66 @@ Page({
     wx.navigateTo({ url: '/pages/membership/membership' });
   },
 
-  goToRecipe() {
-    trackEvent('mp_weekly_plan_recipe_tap', { source: 'plan_generate' });
+  syncWeeklyPlanState(weeklyPlanState) {
+    wx.setStorageSync(WEEKLY_PLAN_STATE_KEY, weeklyPlanState);
+    this.setData({
+      weeklyPlanState,
+      weeklyPlanDays: buildWeeklyPlanDays(weeklyPlanState),
+      todayExecutionEntries: deriveTodayExecutionFromWeeklyState(weeklyPlanState, getTodayDateKey()),
+    });
+  },
+
+  toggleWeeklyMealDone(e) {
+    const { date, mealType } = e.currentTarget.dataset || {};
+    if (!date || !mealType) return;
+
+    const currentMeal = this.data.weeklyPlanState?.[date]?.[mealType];
+    if (!currentMeal) return;
+
+    const weeklyPlanState = {
+      ...this.data.weeklyPlanState,
+      [date]: {
+        ...(this.data.weeklyPlanState[date] || {}),
+        [mealType]: {
+          ...currentMeal,
+          done: !currentMeal.done,
+        },
+      },
+    };
+
+    this.syncWeeklyPlanState(weeklyPlanState);
+  },
+
+  addWeeklyMealToShopping(e) {
+    const { date, mealType } = e.currentTarget.dataset || {};
+    const meal = this.data.weeklyPlanState?.[date]?.[mealType];
+    if (!meal || !Array.isArray(meal.ingredients) || !meal.ingredients.length) return;
+
+    this.importItems(meal.ingredients.map((item) => {
+      if (typeof item === 'string') {
+        return { name: item, checked: false, sourceMealType: meal.mealLabel || MEAL_LABELS[mealType] || mealType };
+      }
+
+      return {
+        name: item.name || item.item_name || '',
+        quantity: item.quantity || item.amount || '',
+        unit: item.unit || '',
+        checked: false,
+        sourceMealType: meal.mealLabel || MEAL_LABELS[mealType] || mealType,
+      };
+    }).filter((item) => item.name));
+
+    this.loadData();
+  },
+
+  goToRecipe(e) {
+    const { date, mealType } = (e && e.currentTarget && e.currentTarget.dataset) || {};
+    const meal = date && mealType ? this.data.weeklyPlanState?.[date]?.[mealType] : null;
+    trackEvent('mp_weekly_plan_recipe_tap', {
+      source: date && mealType ? 'weekly_plan_meal' : 'plan_generate',
+      recipe_id: meal?.recipeId || '',
+      meal_type: mealType || '',
+    });
     wx.switchTab({ url: '/pages/recipe/recipe' });
   },
 
@@ -688,6 +825,9 @@ Page({
       const result = await api.generateMealPlanFromPrompt(prompt);
       const previewDays = buildGeneratedPlanPreview(result);
       const summaryTags = buildGeneratedPlanTags(result);
+      const generatedWeeklyPlanState = buildWeeklyPlanStateFromResult(result);
+      const weeklyPlanState = mergeWeeklyPlanState(this.data.weeklyPlanState, generatedWeeklyPlanState);
+      this.syncWeeklyPlanState(weeklyPlanState);
       this.setData({
         generatedMealPlan: result,
         generatedPlanPreviewDays: previewDays,
@@ -707,7 +847,7 @@ Page({
             checked: false,
           }))
         );
-        this.loadLocalData();
+        await this.loadData();
         this.setActionFeedback(`周计划已生成，并已追加 ${importedCount} 项食材到当前采购清单。`, 'success');
         return;
       }

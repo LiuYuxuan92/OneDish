@@ -176,8 +176,8 @@
   <view wx:if="{{activeTab === 'generate'}}" class="generate-card">
     <view class="section-head">
       <view>
-        <text class="section-title">让 AI 先出一版周计划</text>
-        <text class="section-subtitle">生成结果会自动把食材追加到当前本地清单。</text>
+        <text class="section-title">本周计划面板</text>
+        <text class="section-subtitle">生成后会稳定展示整周安排，并保留到下次进入页面。</text>
       </view>
     </view>
 
@@ -241,28 +241,61 @@
       {{isGenerating ? '正在生成周计划...' : '生成一版周计划'}}
     </view>
 
-    <view class="generated-card" wx:if="{{generatedMealPlan}}">
-      <text class="generated-title">{{generatedMealPlan.title || '本周计划已生成'}}</text>
-      <text class="generated-desc">先浏览每天安排，再决定是否继续微调需求。</text>
+    <view class="list-card" wx:if="{{todayExecutionEntries.length}}">
+      <view class="section-head">
+        <view>
+          <text class="section-title">今天执行</text>
+          <text class="section-subtitle">与本周计划共用同一份状态，完成情况会同步更新。</text>
+        </view>
+      </view>
+      <block wx:for="{{todayExecutionEntries}}" wx:key="mealType">
+        <view class="shopping-item {{item.done ? 'checked' : ''}}">
+          <view class="check-indicator {{item.done ? 'active' : ''}}" bindtap="toggleWeeklyMealDone" data-date="{{item.date}}" data-meal-type="{{item.mealType}}">
+            <van-icon wx:if="{{item.done}}" name="success" size="16" color="#ffffff" />
+          </view>
+          <view class="shopping-body">
+            <text class="shopping-name">{{item.mealLabel}} · {{item.title}}</text>
+            <view class="shopping-meta">
+              <text wx:if="{{item.recipeId}}">菜谱已关联</text>
+              <text class="mode-tag">{{item.done ? '已完成' : '待执行'}}</text>
+            </view>
+          </view>
+        </view>
+      </block>
+    </view>
+
+    <view class="weekly-panel-empty empty-card" wx:if="{{!weeklyPlanDays.length}}">
+      <text class="empty-title">还没有本周计划</text>
+      <text class="empty-desc">先生成一版周计划，早餐、午餐、晚餐会稳定显示在这里。</text>
+    </view>
+
+    <view class="weekly-panel" wx:if="{{weeklyPlanDays.length}}">
       <view class="generated-tags" wx:if="{{generatedPlanSummaryTags.length}}">
         <block wx:for="{{generatedPlanSummaryTags}}" wx:key="*this">
           <text class="generated-tag">{{item}}</text>
         </block>
       </view>
-      <view class="generated-day-list" wx:if="{{generatedPlanPreviewDays.length}}">
-        <block wx:for="{{generatedPlanPreviewDays}}" wx:key="date" wx:for-item="dayItem">
-          <view class="generated-day-card">
-            <text class="generated-day-title">{{dayItem.label}}</text>
+      <view class="weekly-day-list">
+        <block wx:for="{{weeklyPlanDays}}" wx:key="date" wx:for-item="dayItem">
+          <view class="weekly-day-card">
+            <text class="weekly-day-title">{{dayItem.label}}</text>
             <block wx:for="{{dayItem.meals}}" wx:key="mealType" wx:for-item="mealItem">
-              <view class="generated-meal-row">
-                <text class="generated-meal-type">{{mealItem.mealLabel}}</text>
-                <text class="generated-meal-name">{{mealItem.name}}</text>
+              <view class="weekly-meal-row">
+                <view class="weekly-meal-main">
+                  <text class="weekly-meal-type">{{mealItem.mealLabel}}</text>
+                  <text class="weekly-meal-name {{mealItem.title ? '' : 'is-empty'}}">{{mealItem.title || '暂未安排'}}</text>
+                </view>
+                <view class="weekly-meal-actions" wx:if="{{mealItem.title}}">
+                  <text class="weekly-action" bindtap="goToRecipe" data-date="{{dayItem.date}}" data-meal-type="{{mealItem.mealType}}">看菜谱</text>
+                  <text class="weekly-action" bindtap="addWeeklyMealToShopping" data-date="{{dayItem.date}}" data-meal-type="{{mealItem.mealType}}">加采购</text>
+                  <text class="weekly-action" bindtap="toggleWeeklyMealDone" data-date="{{dayItem.date}}" data-meal-type="{{mealItem.mealType}}">{{mealItem.done ? '取消完成' : '标记完成'}}</text>
+                </view>
               </view>
             </block>
           </view>
         </block>
       </view>
-      <view class="generated-link" bindtap="viewGeneratedPlan">查看完整概览</view>
+      <view class="generated-link" wx:if="{{generatedMealPlan}}" bindtap="viewGeneratedPlan">查看完整概览</view>
     </view>
   </view>
 

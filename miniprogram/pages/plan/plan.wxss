@@ -736,43 +736,80 @@
   font-size: 20rpx;
 }
 
-.generated-day-list {
+.weekly-panel {
+  margin-top: 20rpx;
+}
+
+.weekly-panel-empty {
+  margin-top: 20rpx;
+  background: #f6f7f3;
+  border-radius: 22rpx;
+}
+
+.weekly-day-list {
   display: flex;
   flex-direction: column;
   gap: 12rpx;
   margin-top: 18rpx;
 }
 
-.generated-day-card {
+.weekly-day-card {
   padding: 18rpx;
   border-radius: 20rpx;
   background: rgba(255, 255, 255, 0.72);
+  border: 1rpx solid rgba(39, 69, 57, 0.06);
 }
 
-.generated-day-title {
+.weekly-day-title {
   display: block;
   color: #244437;
   font-size: 24rpx;
   font-weight: 700;
 }
 
-.generated-meal-row {
+.weekly-meal-row {
+  margin-top: 12rpx;
+  padding: 16rpx;
+  border-radius: 18rpx;
+  background: #f6f7f3;
+}
+
+.weekly-meal-main {
   display: flex;
   align-items: flex-start;
   gap: 14rpx;
-  margin-top: 12rpx;
 }
 
-.generated-meal-type {
+.weekly-meal-type {
   flex-shrink: 0;
   color: #486154;
   font-size: 22rpx;
   font-weight: 600;
 }
 
-.generated-meal-name {
+.weekly-meal-name {
   flex: 1;
   color: #325849;
   font-size: 22rpx;
   line-height: 1.6;
+}
+
+.weekly-meal-name.is-empty {
+  color: #97a39b;
+}
+
+.weekly-meal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 14rpx;
+  padding-left: 72rpx;
+}
+
+.weekly-action {
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  background: #ffffff;
+  color: #2e6148;
+  font-size: 20rpx;
 }
