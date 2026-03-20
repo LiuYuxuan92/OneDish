@@ -80,6 +80,12 @@ function buildMemberSummary(summary) {
   };
 }
 
+function buildSwapExplanation(previousRecipe, nextRecipe) {
+  const previousName = previousRecipe?.name || previousRecipe?.title || '上一道菜';
+  const nextName = nextRecipe?.name || nextRecipe?.title || '这道菜';
+  return `已从${previousName}换成${nextName}。`;
+}
+
 function adaptRecipeData(recipe) {
   if (!recipe) return null;
 
@@ -155,6 +161,11 @@ Page({
     isFavorited: false,
     recentRecommendationIds: [],
     actionFeedback: null,
+    previousRecommendation: null,
+    swapExplanation: '',
+    canUndoSwap: false,
+    isUndoingSwap: false,
+    previousRecommendationHistory: [],
     quotaCards: [],
     memberSummary: {
       isMember: false,
@@ -190,6 +201,16 @@ Page({
     const baseList = reset ? [] : (Array.isArray(this.data.recentRecommendationIds) ? this.data.recentRecommendationIds : []);
     const nextList = [recipeId, ...baseList.filter((item) => item !== recipeId)].slice(0, 6);
     this.setData({ recentRecommendationIds: nextList });
+  },
+
+  cloneRecentRecommendationIds() {
+    return Array.isArray(this.data.recentRecommendationIds) ? [...this.data.recentRecommendationIds] : [];
+  },
+
+  restoreRecentRecommendationIds(list) {
+    this.setData({
+      recentRecommendationIds: Array.isArray(list) ? [...list] : [],
+    });
   },
 
   clearFeedbackTimer() {
@@ -327,7 +348,11 @@ Page({
     }
 
     const isFavorited = await this.syncFavoriteState(adaptedRecipe);
-    this.pushRecentRecommendationId(adaptedRecipe.id, Boolean(options.resetHistory));
+    if (options.restoreHistory) {
+      this.restoreRecentRecommendationIds(options.restoreHistory);
+    } else {
+      this.pushRecentRecommendationId(adaptedRecipe.id, Boolean(options.resetHistory));
+    }
 
     this.setData({
       recommendation: {
@@ -337,6 +362,11 @@ Page({
       currentVersion: adaptedRecipe?.baby_version ? 'adult' : 'adult',
       recommendationReasons: buildProductizedReasons(adaptedRecipe, this.data.preferenceSummaryText),
       isFavorited,
+      previousRecommendation: options.previousRecommendation !== undefined ? options.previousRecommendation : this.data.previousRecommendation,
+      previousRecommendationHistory: options.previousRecommendationHistory !== undefined ? options.previousRecommendationHistory : this.data.previousRecommendationHistory,
+      swapExplanation: options.swapExplanation !== undefined ? options.swapExplanation : this.data.swapExplanation,
+      canUndoSwap: options.canUndoSwap !== undefined ? options.canUndoSwap : this.data.canUndoSwap,
+      isUndoingSwap: options.isUndoingSwap !== undefined ? options.isUndoingSwap : this.data.isUndoingSwap,
     });
   },
 
@@ -345,7 +375,14 @@ Page({
 
     try {
       const data = await api.getTodayRecommendation();
-      await this.applyRecommendation(data?.recipe || null, { resetHistory: true });
+      await this.applyRecommendation(data?.recipe || null, {
+        resetHistory: true,
+        previousRecommendation: null,
+        previousRecommendationHistory: [],
+        swapExplanation: '',
+        canUndoSwap: false,
+        isUndoingSwap: false,
+      });
       this.setData({ loading: false });
     } catch (err) {
       console.error('[home] getTodayRecommendation failed:', err);
@@ -364,10 +401,10 @@ Page({
   async onSwap() {
     if (this.data.swapping) return;
 
-    const currentId = this.data.recommendation?.id;
-    const excludeRecipeIds = Array.isArray(this.data.recentRecommendationIds)
-      ? this.data.recentRecommendationIds.filter(Boolean)
-      : [];
+    const currentRecipe = this.data.recommendation;
+    const currentId = currentRecipe?.id;
+    const previousHistory = this.cloneRecentRecommendationIds();
+    const excludeRecipeIds = previousHistory.filter(Boolean);
     await this.ensureUserPreferences();
     this.setData({ swapping: true });
 
@@ -378,7 +415,13 @@ Page({
         return;
       }
 
-      await this.applyRecommendation(next);
+      await this.applyRecommendation(next, {
+        previousRecommendation: currentRecipe ? { ...currentRecipe } : null,
+        previousRecommendationHistory: previousHistory,
+        swapExplanation: buildSwapExplanation(currentRecipe, next),
+        canUndoSwap: Boolean(currentRecipe?.id),
+        isUndoingSwap: false,
+      });
       this.setActionFeedback('已换成一条新的今日推荐，卡片内容已经整体更新。', 'success');
       wx.showToast({ title: '已为你换一道', icon: 'success' });
     } catch (err) {
@@ -386,6 +429,43 @@ Page({
       wx.showToast({ title: '换菜失败，请稍后重试', icon: 'none' });
     } finally {
       this.setData({ swapping: false });
+    }
+  },
+
+  async undoSwap() {
+    if (!this.data.canUndoSwap || this.data.isUndoingSwap || !this.data.previousRecommendation?.id) {
+      return;
+    }
+
+    const previousRecommendation = { ...this.data.previousRecommendation };
+    const previousRecommendationHistory = Array.isArray(this.data.previousRecommendationHistory)
+      ? [...this.data.previousRecommendationHistory]
+      : [];
+
+    this.setData({ isUndoingSwap: true });
+
+    try {
+      await this.applyRecommendation(previousRecommendation, {
+        restoreHistory: previousRecommendationHistory,
+        previousRecommendation: null,
+        previousRecommendationHistory: [],
+        swapExplanation: '',
+        canUndoSwap: false,
+        isUndoingSwap: false,
+      });
+    } catch (err) {
+      console.error('[home] undo swap failed:', err);
+      this.setData({
+        previousRecommendation,
+        previousRecommendationHistory,
+        canUndoSwap: true,
+        isUndoingSwap: false,
+      });
+      wx.showToast({ title: '恢复失败，请稍后重试', icon: 'none' });
+    } finally {
+      if (this.data.isUndoingSwap) {
+        this.setData({ isUndoingSwap: false });
+      }
     }
   },
 
